@@ -1,72 +1,145 @@
-import Head from 'next/head';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 
 export default function Details() {
   const router = useRouter();
 
-  const handleLogout = async () => {
-      // Clear cookie route call
-      await fetch('/api/logout', { method: 'POST' });
-      router.push('/login');
+  const handleLogout = () => {
+    router.push('/login');
   };
 
   return (
     <>
-      <Head>
-        <title>Account Details - PromptMagic</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
-      </Head>
-
-      <div className="nav">
-          <a href="/">Home</a> 
-          <a href="/chat">Chat</a> 
-      </div>
-      <div className="logo" onClick={() => router.push('/')}></div>
-
-      <div className="profile-container">
-          <div className="profile-card">
-              <div className="avatar">
-                  <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-              </div>
-              <h2>My Account</h2>
-              
-              <div className="info-group">
-                  <label>Current Plan</label>
-                  <div className="plan-badge">Free Tier</div>
-              </div>
-              
-              <button className="upgrade-btn" onClick={() => alert("Stripe checkout logic here")}>
-                  Upgrade to Pro
-              </button>
-
-              <button className="logout-btn" onClick={handleLogout}>
-                  Log Out
-              </button>
+      <Head><title>My Account - PromptMagic</title></Head>
+      <div className="container">
+        <div className="logo" onClick={() => router.push('/')}>
+          <img src="/assets/ailogo.png" alt="AI Logo" />
+        </div>
+        <nav className="nav-pill">
+          <a href="/">Home</a>
+          <a href="/features">Features</a>
+          <a href="/#about-section">About Us</a>
+          <a href="/#faq-section">FAQ</a>
+          <div className="user-icon" onClick={() => router.push('/details')}>
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
           </div>
+        </nav>
+
+        <main>
+          <h1 className="page-title">My Account</h1>
+          <div className="section-divider"></div>
+          <section className="section-block">
+            <h2 className="section-title">Account</h2>
+            <p className="section-subtitle">View and edit your personal info below.</p>
+          </section>
+          <div className="section-divider"></div>
+          <section className="section-block">
+            <h2 className="section-title">Personal info</h2>
+            <p className="section-subtitle">Update your personal information.</p>
+            <form onSubmit={(e) => { e.preventDefault(); alert('Profile updated (demo)'); }}>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>First name</label>
+                  <input type="text" defaultValue="User" required />
+                </div>
+                <div className="form-group">
+                  <label>Last name</label>
+                  <input type="text" defaultValue="" />
+                </div>
+                <div className="form-group">
+                  <label>Email</label>
+                  <input type="email" defaultValue="user@example.com" required />
+                </div>
+                <div className="form-group">
+                  <label>Password (Leave blank to keep current)</label>
+                  <input type="password" placeholder="Enter new password" />
+                </div>
+              </div>
+              <div className="submit-container">
+                <button type="button" onClick={handleLogout} className="logout-btn">Logout</button>
+                <button type="submit" className="submit-btn">Submit</button>
+              </div>
+            </form>
+          </section>
+        </main>
       </div>
 
       <style jsx>{`
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: #020202; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .logo { height: 50px; width: 50px; display: block; position: fixed; left: 26px; top: 23px; background: url("/assets/ailogo.png") center/contain no-repeat; cursor: pointer; }
-        .nav { position: fixed; top: 31px; right: 55px; display: flex; align-items: center; gap: 24px; border: 1px solid white; border-radius: 50px; padding: 6px 24px; background: #020202; }
-        .nav a { color: white; text-decoration: none; font-weight: 500; font-size: 16px; }
-        
-        .profile-container { width: 100%; max-width: 500px; padding: 20px; }
-        .profile-card { background: #111; border: 1px solid #333; border-radius: 20px; padding: 50px; text-align: center; }
-        .avatar { width: 80px; height: 80px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px; }
-        .avatar svg { width: 40px; height: 40px; fill: white; }
-        .profile-card h2 { font-size: 28px; margin-bottom: 40px; font-weight: 700; }
-        
-        .info-group { text-align: left; margin-bottom: 30px; }
-        .info-group label { display: block; font-size: 14px; color: #888; margin-bottom: 8px; }
-        .plan-badge { display: inline-block; background: #333; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold; }
-        
-        .upgrade-btn { width: 100%; height: 50px; background: white; color: black; font-weight: bold; font-size: 16px; border: none; border-radius: 12px; cursor: pointer; margin-bottom: 15px; transition: 0.3s; }
-        .upgrade-btn:hover { background: #e0e0e0; }
-        
-        .logout-btn { width: 100%; height: 50px; background: transparent; color: #ff4a4a; font-weight: bold; font-size: 16px; border: 1px solid #ff4a4a; border-radius: 12px; cursor: pointer; transition: 0.3s; }
-        .logout-btn:hover { background: #ff4a4a; color: white; }
+        :root {
+          --color-black: #000000; --color-white: #ffffff;
+          --color-subtitle: #b0b0b0; --color-divider: #333333;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .container {
+          width: 100%; min-height: 100vh; position: relative;
+          padding: 0 40px; background: #000; color: white;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .logo {
+          height: 50px; width: 50px; position: absolute;
+          left: 26px; top: 23px; z-index: 100; cursor: pointer;
+        }
+        .logo img { width: 100%; height: 100%; object-fit: contain; }
+        .nav-pill {
+          position: absolute; top: 31px; right: 86px;
+          display: flex; align-items: center; gap: 25px;
+          border: 1px solid white; border-radius: 50px;
+          background: #000; padding: 6px 25px; z-index: 20;
+        }
+        .nav-pill a {
+          color: white; text-decoration: none; font-weight: 500; font-size: 16px;
+        }
+        .user-icon { display: flex; align-items: center; margin-left: 5px; cursor: pointer; }
+        .user-icon svg { width: 24px; height: 24px; fill: white; }
+
+        main {
+          width: 100%; max-width: 1350px; margin: 0 auto;
+          padding-top: 120px;
+        }
+        .page-title {
+          text-align: center; font-size: 32px; font-weight: 700;
+          margin-bottom: 50px; letter-spacing: -0.5px;
+        }
+        .section-divider {
+          border: 0; border-top: 1px solid #333; margin: 30px 0; width: 100%;
+        }
+        .section-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        .section-subtitle {
+          color: #b0b0b0; font-size: 16px; font-weight: 500; margin-bottom: 20px;
+        }
+        .form-grid {
+          display: grid; grid-template-columns: 1fr 1fr;
+          column-gap: 60px; row-gap: 20px; margin-top: 40px;
+        }
+        .form-group { display: flex; flex-direction: column; }
+        label {
+          font-size: 14px; font-weight: 700; margin-bottom: 10px; display: block;
+        }
+        input {
+          background: transparent; border: 1px solid white; border-radius: 50px;
+          padding: 12px 20px; font-size: 14px; color: white; width: 100%; outline: none;
+        }
+        input:focus { border-color: #ccc; }
+        .submit-container {
+          display: flex; justify-content: flex-end; gap: 20px;
+          margin-top: 60px; padding-bottom: 60px;
+        }
+        .submit-btn, .logout-btn {
+          background: black; color: white; border: 1px solid white;
+          border-radius: 50px; padding: 14px 40px; font-size: 16px;
+          font-weight: 700; cursor: pointer; min-width: 140px;
+          transition: 0.2s;
+        }
+        .submit-btn:hover { background: white; color: black; }
+        .logout-btn:hover { background: #ff4444; border-color: #ff4444; }
+
+        @media (max-width: 768px) {
+          .form-grid { grid-template-columns: 1fr; }
+          .nav-pill { right: 12px; gap: 10px; padding: 4px 12px; }
+          .nav-pill a { font-size: 13px; }
+          .page-title { font-size: 26px; }
+          main { padding-top: 100px; }
+        }
       `}</style>
     </>
   );

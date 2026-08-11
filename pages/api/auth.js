@@ -7,24 +7,23 @@ export default async function handler(req, res) {
     const { uid, email, name } = req.body;
 
     try {
-        // Check if user exists in DB
         const [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
         
         let userId;
         if (rows.length === 0) {
-            // New user, insert into DB
-            const [result] = await pool.query("INSERT INTO users (name, email, firebase_uid) VALUES (?, ?, ?)", [name, email, uid]);
+            const [result] = await pool.query(
+                "INSERT INTO users (name, email, firebase_uid) VALUES (?, ?, ?)", 
+                [name, email, uid]
+            );
             userId = result.insertId;
         } else {
-            // Existing user
             userId = rows[0].id;
         }
 
-        // Set Cookie so backend remembers the user
-        res.setHeader('Set-Cookie', cookie.serialize('user_id', userId, {
+        res.setHeader('Set-Cookie', cookie.serialize('user_id', String(userId), {
             httpOnly: true,
             secure: process.env.NODE_ENV !== 'development',
-            maxAge: 60 * 60 * 24 * 7, // 1 week
+            maxAge: 60 * 60 * 24 * 7,
             sameSite: 'strict',
             path: '/'
         }));

@@ -113,7 +113,6 @@ export default function Home() {
 
       const rect = wrap.getBoundingClientRect();
       const vh = window.innerHeight;
-      // progress: 0 when section top hits bottom of viewport, 1 when section fully scrolled past
       const total = rect.height + vh;
       const scrolled = vh - rect.top;
       const progress = Math.max(0, Math.min(1, scrolled / total));
@@ -132,7 +131,6 @@ export default function Home() {
         <title>PromptMagic - AI Prompt Generator</title>
       </Head>
 
-      {/* ===================== FIXED CHROME (same on every screen size) ===================== */}
       <Logo onClick={() => router.push('/')} />
       <div className="nav-fixed">
         <NavPill />
@@ -141,7 +139,7 @@ export default function Home() {
         GET STARTED
       </div>
 
-      {/* ===================== DESKTOP / LAPTOP / TABLET (>=901px) - pixel identical to the original design, scaled to fit ===================== */}
+      {/* DESKTOP LAYOUT */}
       <div className="desktop-only">
         <ScaleFit baseWidth={1920}>
           <div className="container">
@@ -167,28 +165,34 @@ export default function Home() {
             <div className="features-container" ref={featuresWrapRef}>
               <div className="feature-row" ref={row1Ref}>
                 <div className="feature-card">
+                  <div className="card-bg-number">01</div>
                   <div className="card-header">FEATURE 1</div>
                   <div className="card-body white">Ready-to-use prompts.</div>
                 </div>
                 <div className="feature-card">
+                  <div className="card-bg-number">02</div>
                   <div className="card-header">FEATURE 2</div>
                   <div className="card-body dark">Your ideas stay private.</div>
                 </div>
                 <div className="feature-card">
+                  <div className="card-bg-number">03</div>
                   <div className="card-header">FEATURE 3</div>
                   <div className="card-body white">Instant, quality results.</div>
                 </div>
               </div>
               <div className="feature-row" ref={row2Ref} style={{ marginTop: 52 }}>
                 <div className="feature-card">
+                  <div className="card-bg-number">04</div>
                   <div className="card-header">FEATURE 4</div>
                   <div className="card-body dark">Keep and reuse your best ones.</div>
                 </div>
                 <div className="feature-card">
+                  <div className="card-bg-number">05</div>
                   <div className="card-header">FEATURE 5</div>
                   <div className="card-body white">Think ideas, not words.</div>
                 </div>
                 <div className="feature-card">
+                  <div className="card-bg-number">06</div>
                   <div className="card-header">FEATURE 6</div>
                   <div className="card-body dark">Copy & use anywhere fast.</div>
                 </div>
@@ -207,12 +211,15 @@ export default function Home() {
               <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" style={{ width: 18, height: 18 }} />
             </div>
 
-            <FaqAccordion />
+            {/* Wrapped FAQ to resolve scoping issues */}
+            <div className="desktop-faq-wrapper">
+              <FaqAccordion />
+            </div>
           </div>
         </ScaleFit>
       </div>
 
-      {/* ===================== MOBILE (<901px) - same visual language, reflowed to a single column ===================== */}
+      {/* MOBILE LAYOUT */}
       <div className="mobile-only">
         <div className="m-hero">
           <h1 className="m-heading">Get AI-generated production-ready prompts in seconds</h1>
@@ -229,26 +236,32 @@ export default function Home() {
 
         <div className="m-feature-grid">
           <div className="feature-card">
+            <div className="card-bg-number">01</div>
             <div className="card-header">FEATURE 1</div>
             <div className="card-body white">Ready-to-use prompts.</div>
           </div>
           <div className="feature-card">
+            <div className="card-bg-number">02</div>
             <div className="card-header">FEATURE 2</div>
             <div className="card-body dark">Your ideas stay private.</div>
           </div>
           <div className="feature-card">
+            <div className="card-bg-number">03</div>
             <div className="card-header">FEATURE 3</div>
             <div className="card-body white">Instant, quality results.</div>
           </div>
           <div className="feature-card">
+            <div className="card-bg-number">04</div>
             <div className="card-header">FEATURE 4</div>
             <div className="card-body dark">Keep and reuse your best ones.</div>
           </div>
           <div className="feature-card">
+            <div className="card-bg-number">05</div>
             <div className="card-header">FEATURE 5</div>
             <div className="card-body white">Think ideas, not words.</div>
           </div>
           <div className="feature-card">
+            <div className="card-bg-number">06</div>
             <div className="card-header">FEATURE 6</div>
             <div className="card-body dark">Copy & use anywhere fast.</div>
           </div>
@@ -305,11 +318,12 @@ export default function Home() {
           color: black;
         }
 
-        /* ---------- desktop: (near) verbatim copy of main.php ---------- */
         .container {
           width: 1920px;
+          min-height: 4200px;
           position: relative;
           background: #020202;
+          overflow: hidden;
         }
         .hero-bg {
           position: absolute;
@@ -397,14 +411,30 @@ export default function Home() {
           gap: 35px;
           transition: transform 0.1s ease-out;
         }
+        
+        /* Updated Feature Cards for half-hidden numbers */
         .feature-card {
+          position: relative;
           width: 502px;
           height: 176px;
           border-radius: 25px;
           overflow: hidden;
           flex-shrink: 0;
         }
+        .card-bg-number {
+          position: absolute;
+          right: -15px;
+          bottom: -40px;
+          font-size: 160px;
+          font-weight: 900;
+          color: rgba(128, 128, 128, 0.15);
+          z-index: 0;
+          pointer-events: none;
+          user-select: none;
+        }
         .card-header {
+          position: relative;
+          z-index: 1;
           height: 66px;
           background: #1e1e1e;
           padding: 21px 32px;
@@ -413,11 +443,14 @@ export default function Home() {
           color: white;
         }
         .card-body {
+          position: relative;
+          z-index: 1;
           height: 110px;
           padding: 32px;
           font-size: 25px;
           font-weight: bold;
         }
+        
         .white {
           background: white;
           color: black;
@@ -475,7 +508,9 @@ export default function Home() {
         .second-btn:hover {
           background: #e0e0e0;
         }
-        .faq-wrapper {
+        
+        /* Updated wrapper specific to Home component scope */
+        .desktop-faq-wrapper {
           position: absolute;
           top: 3700px;
           left: 130px;
@@ -559,16 +594,21 @@ export default function Home() {
             height: auto;
             border-radius: 18px;
             overflow: hidden;
+            position: relative;
           }
           .m-feature-grid .card-header {
             height: auto;
             padding: 14px 20px;
             font-size: 15px;
+            position: relative;
+            z-index: 1;
           }
           .m-feature-grid .card-body {
             height: auto;
             padding: 22px 20px;
             font-size: 18px;
+            position: relative;
+            z-index: 1;
           }
           .m-second-heading {
             font-size: clamp(26px, 7vw, 36px);

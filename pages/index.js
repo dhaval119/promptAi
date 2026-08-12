@@ -41,6 +41,9 @@ function FaqAccordion() {
         </div>
       ))}
       <style jsx>{`
+        .faq-wrapper {
+          width: 100%;
+        }
         .faq-heading {
           font-size: 70px;
           font-weight: 900;
@@ -131,6 +134,7 @@ export default function Home() {
         <title>PromptMagic - AI Prompt Generator</title>
       </Head>
 
+      {/* ===================== FIXED NAV & HEADER ===================== */}
       <Logo onClick={() => router.push('/')} />
       <div className="nav-fixed">
         <NavPill />
@@ -139,7 +143,7 @@ export default function Home() {
         GET STARTED
       </div>
 
-      {/* DESKTOP LAYOUT */}
+      {/* ===================== DESKTOP VIEW ===================== */}
       <div className="desktop-only">
         <ScaleFit baseWidth={1920}>
           <div className="container">
@@ -151,8 +155,10 @@ export default function Home() {
               <span>GET STARTED</span>
               <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" />
             </div>
+
             <h2 className="section-title title1">A Seamless User Experience</h2>
             <h2 className="section-title title2">Built by Professionals, for Professionals</h2>
+            
             <p className="description">
               This is the place where you simply write your imagination, and AI transforms it into a fully AI-ready prompt.
               <br />
@@ -162,6 +168,8 @@ export default function Home() {
               <br />
               See how your simple ideas become "AI-ready prompts" — ready to use instantly with Gemini or any other model. Your words, our intelligence — together, we craft the perfect prompt.
             </p>
+
+            {/* Feature Sliders */}
             <div className="features-container" ref={featuresWrapRef}>
               <div className="feature-row" ref={row1Ref}>
                 <div className="feature-card">
@@ -198,29 +206,36 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {/* Main Middle Image */}
             <div className="main-img" />
 
+            {/* Second Hero Section */}
             <div className="second-hero" id="about-section" />
 
             <h1 className="second-heading">
               Get All the Type of prompt You Need <br />
               In a Single Platform
             </h1>
+            
             <div className="second-btn" onClick={() => router.push('/chat')}>
               GET STARTED
               <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" style={{ width: 18, height: 18 }} />
             </div>
 
-            {/* Wrapped FAQ to resolve scoping issues */}
-            <div className="desktop-faq-wrapper">
+            {/* FAQ Section */}
+            <div className="faq-desktop-wrap">
               <FaqAccordion />
             </div>
           </div>
         </ScaleFit>
       </div>
 
-      {/* MOBILE LAYOUT */}
+      {/* ===================== MOBILE VIEW ===================== */}
       <div className="mobile-only">
+        {/* Mobile Hero Background */}
+        <div className="m-hero-bg" />
+
         <div className="m-hero">
           <h1 className="m-heading">Get AI-generated production-ready prompts in seconds</h1>
           <div className="m-btn-big" onClick={() => router.push('/chat')}>
@@ -267,6 +282,11 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Mobile Middle Image Graphic */}
+        <div className="m-main-img-container">
+          <img src="/assets/main12.gif" alt="Prompt Graphic" className="m-main-img" />
+        </div>
+
         <h2 className="m-section-title" id="about-section">
           Built by Professionals, for Professionals
         </h2>
@@ -275,6 +295,9 @@ export default function Home() {
           <span>GET STARTED</span>
           <img src="/assets/arrow.png" alt="Arrow" />
         </div>
+
+        {/* Mobile FAQ Background Glow */}
+        <div className="m-second-hero-bg" />
 
         <div className="m-faq">
           <FaqAccordion />
@@ -285,6 +308,9 @@ export default function Home() {
         html,
         body {
           background: #020202;
+          margin: 0;
+          padding: 0;
+          overflow-x: hidden;
         }
       `}</style>
 
@@ -318,9 +344,10 @@ export default function Home() {
           color: black;
         }
 
+        /* ---------------- DESKTOP LAYOUT ---------------- */
         .container {
           width: 1920px;
-          min-height: 4200px;
+          height: 4850px;
           position: relative;
           background: #020202;
           overflow: hidden;
@@ -333,6 +360,7 @@ export default function Home() {
           height: 906px;
           background: url('/assets/video.gif') center/cover no-repeat;
           filter: blur(35px);
+          z-index: 0;
         }
         .main-heading {
           position: absolute;
@@ -341,6 +369,7 @@ export default function Home() {
           font-size: 130px;
           font-weight: 900;
           color: #fff;
+          z-index: 2;
         }
         .sub-heading {
           position: absolute;
@@ -349,6 +378,7 @@ export default function Home() {
           font-size: 22px;
           font-weight: bold;
           color: #fff;
+          z-index: 2;
         }
         .btn-big {
           position: absolute;
@@ -367,6 +397,7 @@ export default function Home() {
           color: black;
           cursor: pointer;
           transition: 0.4s;
+          z-index: 2;
         }
         .btn-big:hover {
           background: #e0e0e0;
@@ -381,6 +412,7 @@ export default function Home() {
           font-weight: 900;
           font-size: 50px;
           color: #fff;
+          z-index: 2;
         }
         .title1 {
           top: 1049px;
@@ -399,12 +431,14 @@ export default function Home() {
           font-weight: bold;
           line-height: 1.8;
           color: #fff;
+          z-index: 2;
         }
         .features-container {
           position: absolute;
           top: 1229px;
           left: 107px;
           width: 1650px;
+          z-index: 2;
         }
         .feature-row {
           display: flex;
@@ -412,7 +446,6 @@ export default function Home() {
           transition: transform 0.1s ease-out;
         }
         
-        /* Updated Feature Cards for half-hidden numbers */
         .feature-card {
           position: relative;
           width: 502px;
@@ -459,25 +492,27 @@ export default function Home() {
           background: #0e0e0e;
           color: white;
         }
+        
         .main-img {
           position: absolute;
-          top: 1700px;
-          left: 750px;
-          width: 1300px;
-          height: 1300px;
-          background: url('/assets/main12.gif') center/cover no-repeat;
+          top: 1850px;
+          left: 880px;
+          width: 1000px;
+          height: 900px;
+          background: url('/assets/main12.gif') center/contain no-repeat;
           border-radius: 20px;
-          z-index: -1;
-          filter: blur(25px);
+          z-index: 1;
+          pointer-events: none;
         }
         .second-hero {
           position: absolute;
-          top: 2680px;
+          top: 2850px;
           left: 0;
           width: 100%;
           height: 906px;
           background: url('/assets/video.gif') center/cover no-repeat;
           filter: blur(35px);
+          z-index: 0;
         }
         .second-heading {
           position: absolute;
@@ -488,6 +523,7 @@ export default function Home() {
           width: 1650px;
           line-height: 1.4;
           color: #fff;
+          z-index: 2;
         }
         .second-btn {
           position: absolute;
@@ -504,18 +540,18 @@ export default function Home() {
           font-weight: bold;
           color: black;
           cursor: pointer;
+          z-index: 2;
         }
         .second-btn:hover {
           background: #e0e0e0;
         }
-        
-        /* Updated wrapper specific to Home component scope */
-        .desktop-faq-wrapper {
+        .faq-desktop-wrap {
           position: absolute;
-          top: 3700px;
+          top: 3650px;
           left: 130px;
           width: 1650px;
-          padding-bottom: 120px;
+          padding-bottom: 200px;
+          z-index: 2;
         }
 
         .desktop-only {
@@ -525,13 +561,16 @@ export default function Home() {
           display: none;
         }
 
+        /* ---------------- MOBILE RESPONSIVE ---------------- */
         @media (max-width: 900px) {
           .desktop-only {
             display: none;
           }
           .mobile-only {
             display: block;
-            padding: 100px 20px 60px;
+            position: relative;
+            padding: 100px 20px 80px;
+            overflow: hidden;
           }
           .nav-fixed {
             right: 20px;
@@ -542,7 +581,35 @@ export default function Home() {
             display: none;
           }
 
+          .m-hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 500px;
+            background: url('/assets/video.gif') center/cover no-repeat;
+            filter: blur(30px);
+            opacity: 0.6;
+            z-index: 0;
+            pointer-events: none;
+          }
+
+          .m-second-hero-bg {
+            position: absolute;
+            bottom: 300px;
+            left: 0;
+            width: 100%;
+            height: 500px;
+            background: url('/assets/video.gif') center/cover no-repeat;
+            filter: blur(30px);
+            opacity: 0.5;
+            z-index: 0;
+            pointer-events: none;
+          }
+
           .m-hero {
+            position: relative;
+            z-index: 2;
             text-align: center;
             padding: 20px 0 40px;
           }
@@ -572,18 +639,24 @@ export default function Home() {
             height: 18px;
           }
           .m-section-title {
+            position: relative;
+            z-index: 2;
             font-size: clamp(24px, 7vw, 32px);
             font-weight: 900;
             color: #fff;
             margin: 50px 0 16px;
           }
           .m-description {
+            position: relative;
+            z-index: 2;
             font-size: 16px;
             font-weight: 500;
             line-height: 1.7;
             color: #d8d8d8;
           }
           .m-feature-grid {
+            position: relative;
+            z-index: 2;
             display: grid;
             grid-template-columns: 1fr;
             gap: 16px;
@@ -610,7 +683,26 @@ export default function Home() {
             position: relative;
             z-index: 1;
           }
+
+          .m-main-img-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin: 40px 0;
+          }
+          .m-main-img {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            border-radius: 15px;
+            object-fit: cover;
+          }
+
           .m-second-heading {
+            position: relative;
+            z-index: 2;
             font-size: clamp(26px, 7vw, 36px);
             font-weight: 900;
             color: #fff;
@@ -618,6 +710,8 @@ export default function Home() {
             margin-bottom: 24px;
           }
           .m-faq {
+            position: relative;
+            z-index: 2;
             margin-top: 60px;
           }
           .m-faq :global(.faq-heading) {

@@ -1,144 +1,287 @@
-import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import NavPill from '../components/NavPill';
+import Logo from '../components/Logo';
+
+const PROFILE_KEY = 'promptai_profile';
 
 export default function Details() {
-  const router = useRouter();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [message, setMessage] = useState('');
 
-  const handleLogout = () => {
-    router.push('/login');
-  };
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(PROFILE_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        setFirstName(p.firstName || '');
+        setLastName(p.lastName || '');
+        setEmail(p.email || '');
+      }
+    } catch {}
+  }, []);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    window.localStorage.setItem(
+      PROFILE_KEY,
+      JSON.stringify({ firstName, lastName, email })
+    );
+    // Note: there's no backend/auth anymore, so password is not stored anywhere.
+    setPassword('');
+    setMessage('Profile updated successfully!');
+    setTimeout(() => setMessage(''), 3000);
+  }
+
+  function handleReset() {
+    window.localStorage.removeItem(PROFILE_KEY);
+    window.localStorage.removeItem('promptai_conversations');
+    setFirstName('');
+    setLastName('');
+    setEmail('');
+    setPassword('');
+    setMessage('Local data cleared.');
+    setTimeout(() => setMessage(''), 3000);
+  }
 
   return (
     <>
-      <Head><title>My Account - PromptMagic</title></Head>
+      <Head>
+        <title>My Account</title>
+      </Head>
       <div className="container">
-        <div className="logo" onClick={() => router.push('/')}>
-          <img src="/assets/ailogo.png" alt="AI Logo" />
+        <Logo />
+        <div className="nav-fixed">
+          <NavPill />
         </div>
-        <nav className="nav-pill">
-          <a href="/">Home</a>
-          <a href="/features">Features</a>
-          <a href="/#about-section">About Us</a>
-          <a href="/#faq-section">FAQ</a>
-          <div className="user-icon" onClick={() => router.push('/details')}>
-            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-          </div>
-        </nav>
-
         <main>
+          {message ? <div className="success-msg">{message}</div> : null}
           <h1 className="page-title">My Account</h1>
-          <div className="section-divider"></div>
+          <div className="section-divider" />
           <section className="section-block">
             <h2 className="section-title">Account</h2>
             <p className="section-subtitle">View and edit your personal info below.</p>
           </section>
-          <div className="section-divider"></div>
+          <div className="section-divider" />
           <section className="section-block">
             <h2 className="section-title">Personal info</h2>
-            <p className="section-subtitle">Update your personal information.</p>
-            <form onSubmit={(e) => { e.preventDefault(); alert('Profile updated (demo)'); }}>
+            <p className="section-subtitle">
+              Saved locally in your browser - this build has no login/database.
+            </p>
+            <form onSubmit={handleSubmit}>
               <div className="form-grid">
                 <div className="form-group">
-                  <label>First name</label>
-                  <input type="text" defaultValue="User" required />
+                  <label htmlFor="first_name">First name</label>
+                  <input
+                    id="first_name"
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="form-group">
-                  <label>Last name</label>
-                  <input type="text" defaultValue="" />
+                  <label htmlFor="last_name">Last name</label>
+                  <input
+                    id="last_name"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="form-group">
-                  <label>Email</label>
-                  <input type="email" defaultValue="user@example.com" required />
+                  <label htmlFor="email">E mail</label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="form-group">
-                  <label>Password (Leave blank to keep current)</label>
-                  <input type="password" placeholder="Enter new password" />
+                  <label htmlFor="password">Password (Leave blank to keep current)</label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter new password"
+                  />
                 </div>
               </div>
               <div className="submit-container">
-                <button type="button" onClick={handleLogout} className="logout-btn">Logout</button>
-                <button type="submit" className="submit-btn">Submit</button>
+                <button type="button" onClick={handleReset} className="logout-btn">
+                  Reset
+                </button>
+                <button type="submit" className="submit-btn">
+                  Submit
+                </button>
               </div>
             </form>
           </section>
         </main>
       </div>
 
-      <style jsx>{`
-        :root {
-          --color-black: #000000; --color-white: #ffffff;
-          --color-subtitle: #b0b0b0; --color-divider: #333333;
+      <style jsx global>{`
+        html,
+        body {
+          background: #000;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        .container {
-          width: 100%; min-height: 100vh; position: relative;
-          padding: 0 40px; background: #000; color: white;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        .logo {
-          height: 50px; width: 50px; position: absolute;
-          left: 26px; top: 23px; z-index: 100; cursor: pointer;
-        }
-        .logo img { width: 100%; height: 100%; object-fit: contain; }
-        .nav-pill {
-          position: absolute; top: 31px; right: 86px;
-          display: flex; align-items: center; gap: 25px;
-          border: 1px solid white; border-radius: 50px;
-          background: #000; padding: 6px 25px; z-index: 20;
-        }
-        .nav-pill a {
-          color: white; text-decoration: none; font-weight: 500; font-size: 16px;
-        }
-        .user-icon { display: flex; align-items: center; margin-left: 5px; cursor: pointer; }
-        .user-icon svg { width: 24px; height: 24px; fill: white; }
+      `}</style>
 
-        main {
-          width: 100%; max-width: 1350px; margin: 0 auto;
-          padding-top: 120px;
+      <style jsx>{`
+        .container {
+          width: 100%;
+          min-height: 100vh;
+          position: relative;
+          padding: 0 40px;
         }
-        .page-title {
-          text-align: center; font-size: 32px; font-weight: 700;
-          margin-bottom: 50px; letter-spacing: -0.5px;
+        .nav-fixed {
+          position: fixed;
+          top: 31px;
+          right: 86px;
+          z-index: 20;
+        }
+        main {
+          width: 100%;
+          max-width: 1350px;
+          margin: 0 auto;
+          padding-top: 110px;
+        }
+        h1.page-title {
+          text-align: center;
+          font-size: 32px;
+          font-weight: 700;
+          margin-bottom: 50px;
+          letter-spacing: -0.5px;
+          color: #fff;
         }
         .section-divider {
-          border: 0; border-top: 1px solid #333; margin: 30px 0; width: 100%;
+          border: 0;
+          border-top: 1px solid #333;
+          margin: 30px 0;
+          width: 100%;
         }
-        .section-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
-        .section-subtitle {
-          color: #b0b0b0; font-size: 16px; font-weight: 500; margin-bottom: 20px;
+        h2.section-title {
+          font-size: 24px;
+          font-weight: 700;
+          margin-bottom: 8px;
+          color: #fff;
+        }
+        p.section-subtitle {
+          color: #b0b0b0;
+          font-size: 16px;
+          font-weight: 500;
+          margin-bottom: 20px;
         }
         .form-grid {
-          display: grid; grid-template-columns: 1fr 1fr;
-          column-gap: 60px; row-gap: 20px; margin-top: 40px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          column-gap: 60px;
+          row-gap: 20px;
+          margin-top: 40px;
         }
-        .form-group { display: flex; flex-direction: column; }
+        .form-group {
+          display: flex;
+          flex-direction: column;
+        }
         label {
-          font-size: 14px; font-weight: 700; margin-bottom: 10px; display: block;
+          font-size: 14px;
+          font-weight: 700;
+          margin-bottom: 10px;
+          display: block;
+          color: #fff;
         }
-        input {
-          background: transparent; border: 1px solid white; border-radius: 50px;
-          padding: 12px 20px; font-size: 14px; color: white; width: 100%; outline: none;
+        input[type='text'],
+        input[type='email'],
+        input[type='password'] {
+          background-color: transparent;
+          border: 1px solid #fff;
+          border-radius: 50px;
+          padding: 12px 20px;
+          font-size: 14px;
+          color: #fff;
+          width: 100%;
+          outline: none;
+          transition: border-color 0.2s;
         }
-        input:focus { border-color: #ccc; }
+        input:focus {
+          border-color: #ccc;
+        }
         .submit-container {
-          display: flex; justify-content: flex-end; gap: 20px;
-          margin-top: 60px; padding-bottom: 60px;
+          display: flex;
+          justify-content: flex-end;
+          gap: 20px;
+          margin-top: 60px;
+          padding-bottom: 60px;
         }
-        .submit-btn, .logout-btn {
-          background: black; color: white; border: 1px solid white;
-          border-radius: 50px; padding: 14px 40px; font-size: 16px;
-          font-weight: 700; cursor: pointer; min-width: 140px;
-          transition: 0.2s;
+        button.submit-btn {
+          background-color: #000;
+          color: #fff;
+          border: 1px solid #fff;
+          border-radius: 50px;
+          padding: 14px 40px;
+          font-size: 16px;
+          font-weight: 700;
+          cursor: pointer;
+          min-width: 140px;
+          transition: background-color 0.2s, color 0.2s;
         }
-        .submit-btn:hover { background: white; color: black; }
-        .logout-btn:hover { background: #ff4444; border-color: #ff4444; }
+        button.submit-btn:hover {
+          background-color: #fff;
+          color: #000;
+        }
+        button.logout-btn {
+          background-color: #000;
+          color: #fff;
+          border: 1px solid #fff;
+          border-radius: 50px;
+          padding: 14px 40px;
+          font-size: 16px;
+          font-weight: 700;
+          cursor: pointer;
+          min-width: 140px;
+          transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+        }
+        button.logout-btn:hover {
+          background-color: #ff4444;
+          color: #fff;
+          border-color: #ff4444;
+        }
+        .success-msg {
+          text-align: center;
+          color: #4caf50;
+          margin-bottom: 20px;
+          font-weight: bold;
+        }
 
-        @media (max-width: 768px) {
-          .form-grid { grid-template-columns: 1fr; }
-          .nav-pill { right: 12px; gap: 10px; padding: 4px 12px; }
-          .nav-pill a { font-size: 13px; }
-          .page-title { font-size: 26px; }
-          main { padding-top: 100px; }
+        @media (max-width: 780px) {
+          .container {
+            padding: 0 20px;
+          }
+          .nav-fixed {
+            right: 16px;
+            transform: scale(0.8);
+            transform-origin: top right;
+          }
+          main {
+            padding-top: 100px;
+          }
+          .form-grid {
+            grid-template-columns: 1fr;
+          }
+          .submit-container {
+            flex-direction: column-reverse;
+          }
+          button.submit-btn,
+          button.logout-btn {
+            width: 100%;
+          }
         }
       `}</style>
     </>

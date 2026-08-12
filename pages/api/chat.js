@@ -1,14 +1,12 @@
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+// pages/api/chat.js
+// Serverless replacement for the PHP callGemini()/callGroq() pipeline.
+// No database, no login, no payment - just: text in -> refined prompt out.
 
-  const { msg } = req.body;
-  if (!msg || !msg.trim()) return res.status(400).json({ error: 'Message required' });
+const SYSTEM_PROMPT = (userText) => `You are the world's BEST Prompt Engineer with over 10 years of experience working with Gemini, GPT-4o, Claude 3.5, Groq, and other top AI models.
 
-  const systemPrompt = `You are the world's BEST Prompt Engineer with over 10 years of experience working with Gemini, GPT-4o, Claude 3.5, Groq, and other top AI models.
+The user has given a casual situation: '${userText}'
 
-The user has given a casual situation: '${msg}'
-
-Your only job is to transform this casual input into an **EXTREMELY POWERFUL, HIGHLY DETAILED, and PROFESSIONAL** prompt that will produce the absolute best possible output when used in any AI model.
+Your only job is to transform this casual input into an EXTREMELY POWERFUL, HIGHLY DETAILED, and PROFESSIONAL prompt that will produce the absolute best possible output when used in any AI model.
 
 STRICT RULES (never break these):
 1. Output ONLY the final prompt. Do not add any introduction, explanation, 'Here is your prompt', or any extra text.
@@ -19,34 +17,76 @@ STRICT RULES (never break these):
 
 Now create a perfect, unique, and high-quality prompt.`;
 
-  try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
-    }
+async function callGemini(prompt, key) {
+  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${key}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+  });
+  if (!res.ok) return false;
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  return text ? text.trim() : false;
+}
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: systemPrompt }] }]
-        })
-      }
-    );
+async function callGroq(prompt, key, model) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      max_tokens: 2048,
+    }),
+  });
+  if (!res.ok) return false;
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content;
+  return text ? text.trim() : false;
+}
 
-    const data = await response.json();
-
-    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-      console.error('Gemini error:', JSON.stringify(data));
-      return res.status(500).json({ error: 'AI failed to generate', details: data });
-    }
-
-    const aiText = data.candidates[0].content.parts[0].text.trim();
-    return res.status(200).json({ aiText });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Server error' });
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'method_not_allowed' });
   }
+
+  const userText = (req.body?.msg || '').toString().trim();
+  if (!userText) {
+    return res.status(400).json({ error: 'empty_message' });
+  }
+
+  const geminiKey = process.env.GEMINI_API_KEY || '';
+  const groqKey = process.env.GROQ_API_KEY || '';
+  const groqModel = process.env.GROQ_MODEL || 'llama3-70b-8192';
+  const primary = (process.env.PRIMARY_API || 'gemini').toLowerCase();
+
+  const prompt = SYSTEM_PROMPT(userText);
+  let aiText = false;
+
+  try {
+    if (primary === 'groq' && groqKey) {
+      aiText = await callGroq(prompt, groqKey, groqModel);
+      if (aiText === false && geminiKey) aiText = await callGemini(prompt, geminiKey);
+    } else {
+      if (geminiKey) aiText = await callGemini(prompt, geminiKey);
+      if (aiText === false && groqKey) aiText = await callGroq(prompt, groqKey, groqModel);
+    }
+  } catch (err) {
+    aiText = false;
+  }
+
+  if (aiText === false) {
+    return res.status(200).json({
+      error: 'generation_failed',
+      text: 'Error generating prompt. Please check your API keys in .env.local and try again.',
+    });
+  }
+
+  const title = userText.length > 45 ? userText.slice(0, 45) + '...' : userText;
+  return res.status(200).json({ text: aiText, title });
 }

@@ -41,14 +41,11 @@ function FaqAccordion() {
         </div>
       ))}
       <style jsx>{`
-        .faq-wrapper {
-          width: 100%;
-        }
         .faq-heading {
           font-size: 70px;
           font-weight: 900;
           line-height: 1.1;
-          margin-bottom: 80px;
+          margin-bottom: 60px;
           letter-spacing: -1px;
           color: #fff;
         }
@@ -134,7 +131,7 @@ export default function Home() {
         <title>PromptMagic - AI Prompt Generator</title>
       </Head>
 
-      {/* ===================== FIXED NAV & HEADER ===================== */}
+      {/* FIXED NAVBAR & BUTTONS */}
       <Logo onClick={() => router.push('/')} />
       <div className="nav-fixed">
         <NavPill />
@@ -143,7 +140,7 @@ export default function Home() {
         GET STARTED
       </div>
 
-      {/* ===================== DESKTOP VIEW ===================== */}
+      {/* DESKTOP LAYOUT (>=901px) */}
       <div className="desktop-only">
         <ScaleFit baseWidth={1920}>
           <div className="container">
@@ -158,7 +155,7 @@ export default function Home() {
 
             <h2 className="section-title title1">A Seamless User Experience</h2>
             <h2 className="section-title title2">Built by Professionals, for Professionals</h2>
-            
+
             <p className="description">
               This is the place where you simply write your imagination, and AI transforms it into a fully AI-ready prompt.
               <br />
@@ -169,7 +166,6 @@ export default function Home() {
               See how your simple ideas become "AI-ready prompts" — ready to use instantly with Gemini or any other model. Your words, our intelligence — together, we craft the perfect prompt.
             </p>
 
-            {/* Feature Sliders */}
             <div className="features-container" ref={featuresWrapRef}>
               <div className="feature-row" ref={row1Ref}>
                 <div className="feature-card">
@@ -207,35 +203,32 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Main Middle Image */}
+            {/* Main Showcase Image GIF (Blurred into a background glow) */}
             <div className="main-img" />
 
-            {/* Second Hero Section */}
+            {/* Second Hero Background */}
             <div className="second-hero" id="about-section" />
 
             <h1 className="second-heading">
               Get All the Type of prompt You Need <br />
               In a Single Platform
             </h1>
-            
             <div className="second-btn" onClick={() => router.push('/chat')}>
               GET STARTED
               <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" style={{ width: 18, height: 18 }} />
             </div>
 
-            {/* FAQ Section */}
-            <div className="faq-desktop-wrap">
+            {/* Desktop FAQ Wrapper */}
+            <div className="desktop-faq-wrapper">
               <FaqAccordion />
             </div>
           </div>
         </ScaleFit>
       </div>
 
-      {/* ===================== MOBILE VIEW ===================== */}
+      {/* MOBILE LAYOUT (<901px) */}
       <div className="mobile-only">
-        {/* Mobile Hero Background */}
         <div className="m-hero-bg" />
-
         <div className="m-hero">
           <h1 className="m-heading">Get AI-generated production-ready prompts in seconds</h1>
           <div className="m-btn-big" onClick={() => router.push('/chat')}>
@@ -282,10 +275,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile Middle Image Graphic */}
-        <div className="m-main-img-container">
-          <img src="/assets/main12.gif" alt="Prompt Graphic" className="m-main-img" />
-        </div>
+        {/* Mobile Showcase Glow (Replaces sharp image with ambient blur) */}
+        <div className="m-ambient-glow" />
 
         <h2 className="m-section-title" id="about-section">
           Built by Professionals, for Professionals
@@ -295,9 +286,6 @@ export default function Home() {
           <span>GET STARTED</span>
           <img src="/assets/arrow.png" alt="Arrow" />
         </div>
-
-        {/* Mobile FAQ Background Glow */}
-        <div className="m-second-hero-bg" />
 
         <div className="m-faq">
           <FaqAccordion />
@@ -310,7 +298,14 @@ export default function Home() {
           background: #020202;
           margin: 0;
           padding: 0;
-          overflow-x: hidden;
+        }
+
+        /* Hack to hide the login/profile icon from the NavPill component */
+        .nav-fixed svg, 
+        .nav-fixed img[alt*="user" i], 
+        .nav-fixed img[alt*="login" i],
+        .nav-fixed a:last-of-type svg {
+          display: none !important;
         }
       `}</style>
 
@@ -344,10 +339,10 @@ export default function Home() {
           color: black;
         }
 
-        /* ---------------- DESKTOP LAYOUT ---------------- */
+        /* ---------- DESKTOP CONTAINER ---------- */
         .container {
           width: 1920px;
-          height: 4850px;
+          height: 4050px; /* FIXED: Height shrunk to remove the massive empty space */
           position: relative;
           background: #020202;
           overflow: hidden;
@@ -445,7 +440,6 @@ export default function Home() {
           gap: 35px;
           transition: transform 0.1s ease-out;
         }
-        
         .feature-card {
           position: relative;
           width: 502px;
@@ -483,7 +477,6 @@ export default function Home() {
           font-size: 25px;
           font-weight: bold;
         }
-        
         .white {
           background: white;
           color: black;
@@ -492,21 +485,24 @@ export default function Home() {
           background: #0e0e0e;
           color: white;
         }
-        
+
+        /* FIXED MAIN IMAGE VISIBILITY & BLUR */
         .main-img {
           position: absolute;
-          top: 1850px;
-          left: 880px;
-          width: 1000px;
-          height: 900px;
-          background: url('/assets/main12.gif') center/contain no-repeat;
-          border-radius: 20px;
-          z-index: 1;
-          pointer-events: none;
+          top: 1700px;
+          left: 750px;
+          width: 1300px;
+          height: 1300px;
+          background: url('/assets/main12.gif') center/cover no-repeat;
+          border-radius: 50%;
+          z-index: 0; 
+          filter: blur(45px); /* Strong blur matching the top hero glow */
+          opacity: 0.7;
         }
+
         .second-hero {
           position: absolute;
-          top: 2850px;
+          top: 2680px;
           left: 0;
           width: 100%;
           height: 906px;
@@ -516,7 +512,7 @@ export default function Home() {
         }
         .second-heading {
           position: absolute;
-          top: 3200px;
+          top: 3100px;
           left: 130px;
           font-size: 60px;
           font-weight: 900;
@@ -527,7 +523,7 @@ export default function Home() {
         }
         .second-btn {
           position: absolute;
-          top: 3400px;
+          top: 3300px;
           left: 130px;
           width: 170px;
           height: 50px;
@@ -545,13 +541,14 @@ export default function Home() {
         .second-btn:hover {
           background: #e0e0e0;
         }
-        .faq-desktop-wrap {
+
+        .desktop-faq-wrapper {
           position: absolute;
-          top: 3650px;
+          top: 3500px;
           left: 130px;
           width: 1650px;
-          padding-bottom: 200px;
           z-index: 2;
+          padding-bottom: 50px;
         }
 
         .desktop-only {
@@ -561,7 +558,7 @@ export default function Home() {
           display: none;
         }
 
-        /* ---------------- MOBILE RESPONSIVE ---------------- */
+        /* ---------- MOBILE RESPONSIVE LAYOUT (<901px) ---------- */
         @media (max-width: 900px) {
           .desktop-only {
             display: none;
@@ -586,30 +583,16 @@ export default function Home() {
             top: 0;
             left: 0;
             width: 100%;
-            height: 500px;
+            height: 450px;
             background: url('/assets/video.gif') center/cover no-repeat;
-            filter: blur(30px);
-            opacity: 0.6;
+            filter: blur(25px);
+            opacity: 0.7;
             z-index: 0;
-            pointer-events: none;
-          }
-
-          .m-second-hero-bg {
-            position: absolute;
-            bottom: 300px;
-            left: 0;
-            width: 100%;
-            height: 500px;
-            background: url('/assets/video.gif') center/cover no-repeat;
-            filter: blur(30px);
-            opacity: 0.5;
-            z-index: 0;
-            pointer-events: none;
           }
 
           .m-hero {
             position: relative;
-            z-index: 2;
+            z-index: 1;
             text-align: center;
             padding: 20px 0 40px;
           }
@@ -638,9 +621,10 @@ export default function Home() {
             width: 18px;
             height: 18px;
           }
+
           .m-section-title {
             position: relative;
-            z-index: 2;
+            z-index: 1;
             font-size: clamp(24px, 7vw, 32px);
             font-weight: 900;
             color: #fff;
@@ -648,15 +632,16 @@ export default function Home() {
           }
           .m-description {
             position: relative;
-            z-index: 2;
+            z-index: 1;
             font-size: 16px;
             font-weight: 500;
             line-height: 1.7;
             color: #d8d8d8;
           }
+
           .m-feature-grid {
             position: relative;
-            z-index: 2;
+            z-index: 1;
             display: grid;
             grid-template-columns: 1fr;
             gap: 16px;
@@ -684,34 +669,33 @@ export default function Home() {
             z-index: 1;
           }
 
-          .m-main-img-container {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            margin: 40px 0;
-          }
-          .m-main-img {
-            width: 100%;
-            max-width: 400px;
-            height: auto;
-            border-radius: 15px;
-            object-fit: cover;
+          /* MOBILE MAIN IMAGE SHOWCASE (Blurred Ambient Glow) */
+          .m-ambient-glow {
+            position: absolute;
+            top: 40%;
+            left: -10%;
+            width: 120%;
+            height: 500px;
+            background: url('/assets/main12.gif') center/cover no-repeat;
+            filter: blur(40px);
+            z-index: 0;
+            opacity: 0.6;
+            pointer-events: none;
           }
 
           .m-second-heading {
             position: relative;
-            z-index: 2;
+            z-index: 1;
             font-size: clamp(26px, 7vw, 36px);
             font-weight: 900;
             color: #fff;
             line-height: 1.3;
             margin-bottom: 24px;
+            margin-top: 50px;
           }
           .m-faq {
             position: relative;
-            z-index: 2;
+            z-index: 1;
             margin-top: 60px;
           }
           .m-faq :global(.faq-heading) {

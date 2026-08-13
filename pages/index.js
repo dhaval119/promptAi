@@ -20,10 +20,10 @@ const FAQS = [
   },
 ];
 
-function FaqAccordion() {
+function FaqAccordion({ idPrefix = '' }) {
   const [openIndex, setOpenIndex] = useState(0);
   return (
-    <div className="faq-wrapper" id="faq-section">
+    <div className="faq-wrapper" id={idPrefix ? `faq-section-${idPrefix}` : 'faq-section'}>
       <h2 className="faq-heading">
         Frequently asked
         <br />
@@ -41,6 +41,10 @@ function FaqAccordion() {
         </div>
       ))}
       <style jsx>{`
+        .faq-wrapper {
+          /* Adds spacing at the top when navigated via anchor link */
+          scroll-margin-top: 150px; 
+        }
         .faq-heading {
           font-size: 70px;
           font-weight: 900;
@@ -128,7 +132,11 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>PromptMagic - AI Prompt Generator</title>
+        <title>Prompt AI</title>
+        {/* Viewport tag exactly for mobile layout fixing */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        {/* Favicon tag for the logo in the browser tab */}
+        <link rel="icon" href="/favicon.ico" />
       </Head>
 
       {/* FIXED NAVBAR & BUTTONS */}
@@ -220,7 +228,7 @@ export default function Home() {
 
             {/* Desktop FAQ Wrapper */}
             <div className="desktop-faq-wrapper">
-              <FaqAccordion />
+              <FaqAccordion idPrefix="desktop" />
             </div>
           </div>
         </ScaleFit>
@@ -278,7 +286,7 @@ export default function Home() {
         {/* Mobile Showcase Glow (Replaces sharp image with ambient blur) */}
         <div className="m-ambient-glow" />
 
-        <h2 className="m-section-title" id="about-section">
+        <h2 className="m-section-title" id="about-section-mobile">
           Built by Professionals, for Professionals
         </h2>
         <h1 className="m-second-heading">Get All the Type of prompt You Need In a Single Platform</h1>
@@ -288,7 +296,7 @@ export default function Home() {
         </div>
 
         <div className="m-faq">
-          <FaqAccordion />
+          <FaqAccordion idPrefix="mobile" />
         </div>
       </div>
 
@@ -298,6 +306,7 @@ export default function Home() {
           background: #020202;
           margin: 0;
           padding: 0;
+          scroll-behavior: smooth;
         }
 
         /* Hack to hide the login/profile icon from the NavPill component */
@@ -342,7 +351,7 @@ export default function Home() {
         /* ---------- DESKTOP CONTAINER ---------- */
         .container {
           width: 1920px;
-          height: 4050px; /* FIXED: Height shrunk to remove the massive empty space */
+          height: 3900px; /* FIXED: Height exactly optimized to remove bottom space */
           position: relative;
           background: #020202;
           overflow: hidden;
@@ -496,7 +505,7 @@ export default function Home() {
           background: url('/assets/main12.gif') center/cover no-repeat;
           border-radius: 50%;
           z-index: 0; 
-          filter: blur(45px); /* Strong blur matching the top hero glow */
+          filter: blur(45px); 
           opacity: 0.7;
         }
 
@@ -544,7 +553,7 @@ export default function Home() {
 
         .desktop-faq-wrapper {
           position: absolute;
-          top: 3500px;
+          top: 3450px;
           left: 130px;
           width: 1650px;
           z-index: 2;
@@ -669,7 +678,7 @@ export default function Home() {
             z-index: 1;
           }
 
-          /* MOBILE MAIN IMAGE SHOWCASE (Blurred Ambient Glow) */
+          /* MOBILE MAIN IMAGE SHOWCASE */
           .m-ambient-glow {
             position: absolute;
             top: 40%;

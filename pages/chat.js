@@ -28,10 +28,13 @@ export default function Chat() {
   // load a chat if ?chat_id= is present
   useEffect(() => {
     if (!router.isReady) return;
+
     const idParam = router.query.chat_id;
+
     if (idParam) {
       const id = Number(idParam);
       const conv = getConversation(id);
+
       if (conv) {
         setCurrentChatId(id);
         setMessages([
@@ -40,11 +43,14 @@ export default function Chat() {
         ]);
       }
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.isReady, router.query.chat_id]);
 
   useEffect(() => {
-    if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
+    if (threadRef.current) {
+      threadRef.current.scrollTop = threadRef.current.scrollHeight;
+    }
   }, [messages, loading]);
 
   function startNewChat() {
@@ -56,17 +62,21 @@ export default function Chat() {
 
   function openChat(id) {
     const conv = getConversation(id);
+
     if (!conv) return;
+
     setCurrentChatId(id);
     setMessages([
       { sender: 'user', text: conv.request },
       ...(conv.response ? [{ sender: 'ai', text: conv.response }] : []),
     ]);
+
     router.replace(`/chat?chat_id=${id}`, undefined, { shallow: true });
   }
 
   async function sendMessage(overrideText) {
     const text = (overrideText ?? input).trim();
+
     if (!text || loading) return;
 
     setMessages((prev) => [...prev, { sender: 'user', text }]);
@@ -79,6 +89,7 @@ export default function Chat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ msg: text }),
       });
+
       const data = await res.json();
       const aiText = data.text || 'Something went wrong. Please try again.';
 
@@ -90,11 +101,15 @@ export default function Chat() {
         request: text,
         response: aiText,
       });
+
       setCurrentChatId(saved.id);
       setChats(listConversations());
       router.replace(`/chat?chat_id=${saved.id}`, undefined, { shallow: true });
     } catch (err) {
-      setMessages((prev) => [...prev, { sender: 'ai', text: 'Network error. Please try again.' }]);
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'ai', text: 'Network error. Please try again.' },
+      ]);
     } finally {
       setLoading(false);
       inputRef.current?.focus();
@@ -115,18 +130,15 @@ export default function Chat() {
       <Head>
         <title>AI Chat Interface</title>
       </Head>
+
       <div className="desktop">
         <nav className="nav-pill">
           <a href="/">Home</a>
           <a href="/features">Features</a>
-          <a href="/#about-section">About Us</a>
-          <a href="/#faq-section">FAQ</a>
-          <div className="user-icon" onClick={() => router.push('/details')}>
-            <svg viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-          </div>
+          <a href="/#page-3">About Us</a>
+          <a href="/#page-4">FAQ</a>
         </nav>
+
         <img
           src="/assets/ailogo.png"
           alt="AI Logo"
@@ -139,7 +151,9 @@ export default function Chat() {
             <button className="new-chat" onClick={startNewChat}>
               New chat
             </button>
+
             <h2 className="chats-heading">Recent</h2>
+
             <ul className="sidebar-list">
               {chats.length === 0 ? (
                 <li className="sidebar-item empty">No recent chats</li>
@@ -147,7 +161,9 @@ export default function Chat() {
                 chats.map((c) => (
                   <li className="sidebar-item" key={c.id}>
                     <a
-                      className={`sidebar-link ${currentChatId === c.id ? 'active' : ''}`}
+                      className={`sidebar-link ${
+                        currentChatId === c.id ? 'active' : ''
+                      }`}
                       onClick={(e) => {
                         e.preventDefault();
                         openChat(c.id);
@@ -163,24 +179,64 @@ export default function Chat() {
           </nav>
         </aside>
 
-        <main className={`main-content ${isLanding ? 'view-landing' : 'view-chat'} ${sidebarHidden ? 'no-sidebar' : ''}`}>
+        <main
+          className={`main-content ${
+            isLanding ? 'view-landing' : 'view-chat'
+          } ${sidebarHidden ? 'no-sidebar' : ''}`}
+        >
           <div className="landing-content">
             <h1 className="main-heading">Where should we begin?</h1>
+
             <div className="suggestion-buttons">
-              <button className="suggestion-button" onClick={() => sendMessage('Leave application email')}>
+              <button
+                className="suggestion-button"
+                onClick={() => sendMessage('Leave application email')}
+              >
                 <span>Leave application email</span>
-                <img src="/assets/arrow2.png" className="suggestion-arrow arrow-normal" alt="" />
-                <img src="/assets/arrow.png" className="suggestion-arrow arrow-hover" alt="" />
+                <img
+                  src="/assets/arrow2.png"
+                  className="suggestion-arrow arrow-normal"
+                  alt=""
+                />
+                <img
+                  src="/assets/arrow.png"
+                  className="suggestion-arrow arrow-hover"
+                  alt=""
+                />
               </button>
-              <button className="suggestion-button" onClick={() => sendMessage('Professional resume for')}>
+
+              <button
+                className="suggestion-button"
+                onClick={() => sendMessage('Professional resume for')}
+              >
                 <span>Professional resume for</span>
-                <img src="/assets/arrow2.png" className="suggestion-arrow arrow-normal" alt="" />
-                <img src="/assets/arrow.png" className="suggestion-arrow arrow-hover" alt="" />
+                <img
+                  src="/assets/arrow2.png"
+                  className="suggestion-arrow arrow-normal"
+                  alt=""
+                />
+                <img
+                  src="/assets/arrow.png"
+                  className="suggestion-arrow arrow-hover"
+                  alt=""
+                />
               </button>
-              <button className="suggestion-button" onClick={() => sendMessage('Make website for Store')}>
+
+              <button
+                className="suggestion-button"
+                onClick={() => sendMessage('Make website for Store')}
+              >
                 <span>Make website for Store</span>
-                <img src="/assets/arrow2.png" className="suggestion-arrow arrow-normal" alt="" />
-                <img src="/assets/arrow.png" className="suggestion-arrow arrow-hover" alt="" />
+                <img
+                  src="/assets/arrow2.png"
+                  className="suggestion-arrow arrow-normal"
+                  alt=""
+                />
+                <img
+                  src="/assets/arrow.png"
+                  className="suggestion-arrow arrow-hover"
+                  alt=""
+                />
               </button>
             </div>
           </div>
@@ -194,14 +250,27 @@ export default function Chat() {
               ) : (
                 <section className="ai-group" key={i}>
                   <h2 className="ai-heading">Generated Prompt:</h2>
+
                   <p className="ai-prompt">{m.text}</p>
-                  <div className="copy-container" onClick={() => copyPrompt(m.text, i)}>
-                    <span className="copy-text">{copiedIdx === i ? 'Copied!' : 'copy'}</span>
-                    <img src="/assets/copy.png" className="copy-icon" alt="" />
+
+                  <div
+                    className="copy-container"
+                    onClick={() => copyPrompt(m.text, i)}
+                  >
+                    <span className="copy-text">
+                      {copiedIdx === i ? 'Copied!' : 'copy'}
+                    </span>
+
+                    <img
+                      src="/assets/copy.png"
+                      className="copy-icon"
+                      alt=""
+                    />
                   </div>
                 </section>
               )
             )}
+
             {loading ? (
               <div className="ai-group loading">
                 <p>Generating optimized prompt...</p>
@@ -227,8 +296,16 @@ export default function Chat() {
                 }}
                 disabled={loading}
               />
-              <button className="chat-submit-button" onClick={() => sendMessage()}>
-                <img src="/assets/send.png" alt="Send" className="chat-submit-icon" />
+
+              <button
+                className="chat-submit-button"
+                onClick={() => sendMessage()}
+              >
+                <img
+                  src="/assets/send.png"
+                  alt="Send"
+                  className="chat-submit-icon"
+                />
               </button>
             </div>
           </div>
@@ -246,6 +323,7 @@ export default function Chat() {
       <style jsx>{`
         :root {
         }
+
         .desktop {
           position: relative;
           width: 100%;
@@ -253,6 +331,7 @@ export default function Chat() {
           background: #000;
           overflow: hidden;
         }
+
         .nav-pill {
           position: fixed;
           top: 31px;
@@ -266,6 +345,7 @@ export default function Chat() {
           padding: 6px 25px;
           z-index: 20;
         }
+
         .nav-pill a {
           color: #fff;
           text-decoration: none;
@@ -273,23 +353,12 @@ export default function Chat() {
           font-size: 16px;
           transition: color 0.3s, text-shadow 0.3s;
         }
+
         .nav-pill a:hover {
           color: #f0f0f0;
           text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
         }
-        .user-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-left: 5px;
-          cursor: pointer;
-        }
-        .user-icon svg {
-          width: 24px;
-          height: 24px;
-          fill: #fff;
-          stroke: none;
-        }
+
         .logo-main {
           height: 50px;
           width: 50px;
@@ -300,6 +369,7 @@ export default function Chat() {
           z-index: 100;
           cursor: pointer;
         }
+
         .sidebar {
           position: fixed;
           top: 0;
@@ -310,9 +380,11 @@ export default function Chat() {
           transition: transform 0.4s ease;
           z-index: 30;
         }
+
         .sidebar.hide {
           transform: translateX(-250px);
         }
+
         .sidebar-nav {
           position: absolute;
           top: 120px;
@@ -321,6 +393,7 @@ export default function Chat() {
           bottom: 20px;
           overflow-y: auto;
         }
+
         .new-chat {
           color: #fff;
           font-weight: 700;
@@ -332,6 +405,7 @@ export default function Chat() {
           text-align: left;
           padding: 0;
         }
+
         .chats-heading {
           color: #fff;
           opacity: 0.75;
@@ -339,19 +413,23 @@ export default function Chat() {
           font-size: 20px;
           margin: 0 0 25px 0;
         }
+
         .sidebar-list {
           list-style: none;
           padding: 0;
           margin: 0;
         }
+
         .sidebar-item {
           margin-bottom: 15px;
         }
+
         .sidebar-item.empty {
           opacity: 0.5;
           color: #fff;
           font-size: 14px;
         }
+
         .sidebar-link {
           color: #fff;
           font-weight: 500;
@@ -370,14 +448,17 @@ export default function Chat() {
           display: block;
           text-decoration: none;
         }
+
         .sidebar-link:hover {
           opacity: 1;
         }
+
         .sidebar-link.active {
           opacity: 1;
           color: #a9a9a9;
           font-weight: 700;
         }
+
         .main-content {
           position: fixed;
           top: 0;
@@ -389,13 +470,16 @@ export default function Chat() {
           transition: transform 0.4s ease, width 0.4s ease;
           transform: translateX(250px);
         }
+
         .main-content.no-sidebar {
           transform: translateX(0);
           width: 100%;
         }
+
         .view-landing .conversation-thread {
           display: none;
         }
+
         .view-landing .chat-input-form {
           position: absolute;
           top: 50%;
@@ -404,12 +488,15 @@ export default function Chat() {
           width: 700px;
           max-width: 90%;
         }
+
         .view-landing .landing-content {
           display: block;
         }
+
         .view-chat .conversation-thread {
           display: flex;
         }
+
         .view-chat .chat-input-form {
           position: fixed;
           bottom: 30px;
@@ -418,17 +505,21 @@ export default function Chat() {
           width: 750px;
           max-width: 90%;
         }
+
         .main-content:not(.no-sidebar) .view-chat .chat-input-form {
           left: calc(50% + 125px);
           transform: translateX(-50%);
         }
+
         .main-content.no-sidebar .view-chat .chat-input-form {
           left: 50%;
           transform: translateX(-50%);
         }
+
         .view-chat .landing-content {
           display: none;
         }
+
         .landing-content {
           position: absolute;
           top: calc(50% - 150px);
@@ -437,6 +528,7 @@ export default function Chat() {
           width: 700px;
           text-align: center;
         }
+
         .main-heading {
           color: #fff;
           font-weight: 700;
@@ -444,6 +536,7 @@ export default function Chat() {
           margin-bottom: 30px;
           white-space: nowrap;
         }
+
         .suggestion-buttons {
           display: flex;
           gap: 30px;
@@ -451,6 +544,7 @@ export default function Chat() {
           justify-content: space-between;
           margin-bottom: 30px;
         }
+
         .suggestion-button {
           width: 32%;
           max-width: 220px;
@@ -469,16 +563,19 @@ export default function Chat() {
           position: relative;
           transition: all 0.3s ease;
         }
+
         .suggestion-button:hover {
           background: #fff;
           color: #000;
         }
+
         .suggestion-button span {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
           max-width: 80%;
         }
+
         .suggestion-button :global(.suggestion-arrow) {
           position: absolute;
           right: 10px;
@@ -486,9 +583,11 @@ export default function Chat() {
           height: 9px;
           transition: opacity 0.3s ease;
         }
+
         .suggestion-button :global(.arrow-normal) {
           opacity: 1;
         }
+
         .suggestion-button :global(.arrow-hover) {
           opacity: 0;
           position: absolute;
@@ -496,12 +595,15 @@ export default function Chat() {
           right: 10px;
           transform: translateY(-50%);
         }
+
         .suggestion-button:hover :global(.arrow-normal) {
           opacity: 0;
         }
+
         .suggestion-button:hover :global(.arrow-hover) {
           opacity: 1;
         }
+
         .conversation-thread {
           flex: 1;
           width: 100%;
@@ -513,12 +615,14 @@ export default function Chat() {
           gap: 50px;
           background: #000;
         }
+
         .user-message,
         .ai-group {
           max-width: 750px;
           width: 100%;
           margin: 0 auto;
         }
+
         .user-message {
           align-self: flex-end;
           text-align: right;
@@ -526,12 +630,14 @@ export default function Chat() {
           color: #fff;
           font-size: 16px;
         }
+
         .ai-group {
           align-self: flex-start;
           display: flex;
           flex-direction: column;
           gap: 8px;
         }
+
         .ai-heading {
           font-weight: 700;
           color: #fff;
@@ -539,6 +645,7 @@ export default function Chat() {
           white-space: nowrap;
           margin-bottom: 5px;
         }
+
         .ai-prompt {
           font-weight: 400;
           color: #ececec;
@@ -550,6 +657,7 @@ export default function Chat() {
           border: 1px solid #222;
           white-space: pre-wrap;
         }
+
         .copy-container {
           display: flex;
           align-items: center;
@@ -558,26 +666,31 @@ export default function Chat() {
           user-select: none;
           width: fit-content;
         }
+
         .copy-text {
           color: #fff;
           font-size: 12px;
           font-weight: 700;
           opacity: 0.8;
         }
+
         .copy-icon {
           width: 14px;
           height: 14px;
           cursor: pointer;
           opacity: 0.8;
         }
+
         .chat-input-form {
           z-index: 10;
           transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
+
         .chat-input-wrapper {
           position: relative;
           width: 100%;
         }
+
         .chat-input {
           width: 100%;
           height: 50px;
@@ -589,9 +702,11 @@ export default function Chat() {
           color: #fff;
           outline: none;
         }
+
         .chat-input::placeholder {
           color: #a2a2a2;
         }
+
         .chat-submit-button {
           position: absolute;
           top: 50%;
@@ -603,10 +718,12 @@ export default function Chat() {
           border: none;
           cursor: pointer;
         }
+
         .chat-submit-icon {
           width: 30px;
           height: 30px;
         }
+
         .loading p {
           color: #888;
           font-style: italic;
@@ -624,48 +741,60 @@ export default function Chat() {
             transform: scale(0.85);
             transform-origin: top right;
           }
+
           .logo-main {
             left: 16px;
             top: 18px;
           }
+
           .sidebar {
             width: 78vw;
             max-width: 280px;
             box-shadow: 4px 0 30px rgba(0, 0, 0, 0.6);
           }
+
           .sidebar.hide {
             transform: translateX(-100%);
           }
+
           .main-content {
             width: 100% !important;
             transform: translateX(0) !important;
           }
+
           .main-content:not(.no-sidebar) .view-chat .chat-input-form {
             left: 50%;
           }
+
           .main-heading {
             font-size: 26px;
             white-space: normal;
           }
+
           .landing-content {
             width: 90%;
             top: 45%;
           }
+
           .suggestion-buttons {
             flex-direction: column;
             gap: 12px;
           }
+
           .suggestion-button {
             width: 100%;
             max-width: none;
           }
+
           .conversation-thread {
             padding: 90px 16px 140px;
           }
+
           .view-chat .chat-input-form {
             bottom: 16px;
             width: 92%;
           }
+
           .view-landing .chat-input-form {
             width: 90%;
           }

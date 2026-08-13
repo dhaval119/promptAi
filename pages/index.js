@@ -29,9 +29,11 @@ export default function Chat() {
   useEffect(() => {
     if (!router.isReady) return;
     const idParam = router.query.chat_id;
+
     if (idParam) {
       const id = Number(idParam);
       const conv = getConversation(id);
+
       if (conv) {
         setCurrentChatId(id);
         setMessages([
@@ -40,11 +42,14 @@ export default function Chat() {
         ]);
       }
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.isReady, router.query.chat_id]);
 
   useEffect(() => {
-    if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
+    if (threadRef.current) {
+      threadRef.current.scrollTop = threadRef.current.scrollHeight;
+    }
   }, [messages, loading]);
 
   function startNewChat() {
@@ -57,16 +62,20 @@ export default function Chat() {
   function openChat(id) {
     const conv = getConversation(id);
     if (!conv) return;
+
     setCurrentChatId(id);
+
     setMessages([
       { sender: 'user', text: conv.request },
       ...(conv.response ? [{ sender: 'ai', text: conv.response }] : []),
     ]);
+
     router.replace(`/chat?chat_id=${id}`, undefined, { shallow: true });
   }
 
   async function sendMessage(overrideText) {
     const text = (overrideText ?? input).trim();
+
     if (!text || loading) return;
 
     setMessages((prev) => [...prev, { sender: 'user', text }]);
@@ -76,13 +85,21 @@ export default function Chat() {
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ msg: text }),
       });
-      const data = await res.json();
-      const aiText = data.text || 'Something went wrong. Please try again.';
 
-      setMessages((prev) => [...prev, { sender: 'ai', text: aiText }]);
+      const data = await res.json();
+
+      const aiText =
+        data.text || 'Something went wrong. Please try again.';
+
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'ai', text: aiText },
+      ]);
 
       const saved = upsertConversation({
         id: currentChatId || null,
@@ -90,11 +107,23 @@ export default function Chat() {
         request: text,
         response: aiText,
       });
+
       setCurrentChatId(saved.id);
       setChats(listConversations());
-      router.replace(`/chat?chat_id=${saved.id}`, undefined, { shallow: true });
+
+      router.replace(
+        `/chat?chat_id=${saved.id}`,
+        undefined,
+        { shallow: true }
+      );
     } catch (err) {
-      setMessages((prev) => [...prev, { sender: 'ai', text: 'Network error. Please try again.' }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: 'ai',
+          text: 'Network error. Please try again.',
+        },
+      ]);
     } finally {
       setLoading(false);
       inputRef.current?.focus();
@@ -104,7 +133,10 @@ export default function Chat() {
   function copyPrompt(text, idx) {
     navigator.clipboard.writeText(text).then(() => {
       setCopiedIdx(idx);
-      setTimeout(() => setCopiedIdx(-1), 2000);
+
+      setTimeout(() => {
+        setCopiedIdx(-1);
+      }, 2000);
     });
   }
 
@@ -117,13 +149,53 @@ export default function Chat() {
       </Head>
 
       <div className="desktop">
+
+        {/* NAVIGATION BAR */}
         <nav className="nav-pill">
-          <a href="/">Home</a>
-          <a href="/features">Features</a>
-          <a href="/#about-section">About Us</a>
-          <a href="/#faq-section">FAQ</a>
+
+          <a
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              router.push('/');
+            }}
+          >
+            Home
+          </a>
+
+          <a
+            href="/features"
+            onClick={(e) => {
+              e.preventDefault();
+              router.push('/features');
+            }}
+          >
+            Features
+          </a>
+
+          <a
+            href="/#about-section"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.href = '/#about-section';
+            }}
+          >
+            About Us
+          </a>
+
+          <a
+            href="/#faq-section"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.href = '/#faq-section';
+            }}
+          >
+            FAQ
+          </a>
+
         </nav>
 
+        {/* AI LOGO */}
         <img
           src="/assets/ailogo.png"
           alt="AI Logo"
@@ -131,22 +203,41 @@ export default function Chat() {
           onClick={() => setSidebarHidden((h) => !h)}
         />
 
-        <aside className={`sidebar ${sidebarHidden ? 'hide' : ''}`}>
+        {/* SIDEBAR */}
+        <aside
+          className={`sidebar ${sidebarHidden ? 'hide' : ''}`}
+        >
           <nav className="sidebar-nav">
-            <button className="new-chat" onClick={startNewChat}>
+
+            <button
+              className="new-chat"
+              onClick={startNewChat}
+            >
               New chat
             </button>
 
-            <h2 className="chats-heading">Recent</h2>
+            <h2 className="chats-heading">
+              Recent
+            </h2>
 
             <ul className="sidebar-list">
+
               {chats.length === 0 ? (
-                <li className="sidebar-item empty">No recent chats</li>
+                <li className="sidebar-item empty">
+                  No recent chats
+                </li>
               ) : (
                 chats.map((c) => (
-                  <li className="sidebar-item" key={c.id}>
+                  <li
+                    className="sidebar-item"
+                    key={c.id}
+                  >
                     <a
-                      className={`sidebar-link ${currentChatId === c.id ? 'active' : ''}`}
+                      className={`sidebar-link ${
+                        currentChatId === c.id
+                          ? 'active'
+                          : ''
+                      }`}
                       onClick={(e) => {
                         e.preventDefault();
                         openChat(c.id);
@@ -158,29 +249,52 @@ export default function Chat() {
                   </li>
                 ))
               )}
+
             </ul>
+
           </nav>
         </aside>
 
+        {/* MAIN CONTENT */}
         <main
           className={`main-content ${
-            isLanding ? 'view-landing' : 'view-chat'
-          } ${sidebarHidden ? 'no-sidebar' : ''}`}
+            isLanding
+              ? 'view-landing'
+              : 'view-chat'
+          } ${
+            sidebarHidden
+              ? 'no-sidebar'
+              : ''
+          }`}
         >
+
+          {/* LANDING */}
           <div className="landing-content">
-            <h1 className="main-heading">Where should we begin?</h1>
+
+            <h1 className="main-heading">
+              Where should we begin?
+            </h1>
 
             <div className="suggestion-buttons">
+
               <button
                 className="suggestion-button"
-                onClick={() => sendMessage('Leave application email')}
+                onClick={() =>
+                  sendMessage(
+                    'Leave application email'
+                  )
+                }
               >
-                <span>Leave application email</span>
+                <span>
+                  Leave application email
+                </span>
+
                 <img
                   src="/assets/arrow2.png"
                   className="suggestion-arrow arrow-normal"
                   alt=""
                 />
+
                 <img
                   src="/assets/arrow.png"
                   className="suggestion-arrow arrow-hover"
@@ -190,14 +304,22 @@ export default function Chat() {
 
               <button
                 className="suggestion-button"
-                onClick={() => sendMessage('Professional resume for')}
+                onClick={() =>
+                  sendMessage(
+                    'Professional resume for'
+                  )
+                }
               >
-                <span>Professional resume for</span>
+                <span>
+                  Professional resume for
+                </span>
+
                 <img
                   src="/assets/arrow2.png"
                   className="suggestion-arrow arrow-normal"
                   alt=""
                 />
+
                 <img
                   src="/assets/arrow.png"
                   className="suggestion-arrow arrow-hover"
@@ -207,41 +329,76 @@ export default function Chat() {
 
               <button
                 className="suggestion-button"
-                onClick={() => sendMessage('Make website for Store')}
+                onClick={() =>
+                  sendMessage(
+                    'Make website for Store'
+                  )
+                }
               >
-                <span>Make website for Store</span>
+                <span>
+                  Make website for Store
+                </span>
+
                 <img
                   src="/assets/arrow2.png"
                   className="suggestion-arrow arrow-normal"
                   alt=""
                 />
+
                 <img
                   src="/assets/arrow.png"
                   className="suggestion-arrow arrow-hover"
                   alt=""
                 />
               </button>
+
             </div>
           </div>
 
-          <article className="conversation-thread" ref={threadRef}>
+          {/* CONVERSATION */}
+          <article
+            className="conversation-thread"
+            ref={threadRef}
+          >
+
             {messages.map((m, i) =>
               m.sender === 'user' ? (
-                <div className="user-message" key={i}>
+
+                <div
+                  className="user-message"
+                  key={i}
+                >
                   {m.text}
                 </div>
-              ) : (
-                <section className="ai-group" key={i}>
-                  <h2 className="ai-heading">Generated Prompt:</h2>
 
-                  <p className="ai-prompt">{m.text}</p>
+              ) : (
+
+                <section
+                  className="ai-group"
+                  key={i}
+                >
+
+                  <h2 className="ai-heading">
+                    Generated Prompt:
+                  </h2>
+
+                  <p className="ai-prompt">
+                    {m.text}
+                  </p>
 
                   <div
                     className="copy-container"
-                    onClick={() => copyPrompt(m.text, i)}
+                    onClick={() =>
+                      copyPrompt(m.text, i)
+                    }
                   >
+
                     <span className="copy-text">
-                      {copiedIdx === i ? 'Copied!' : 'copy'}
+                      {
+                        copiedIdx === i
+                          ? 'Copied!'
+                          : 'copy'
+                      }
                     </span>
 
                     <img
@@ -249,20 +406,28 @@ export default function Chat() {
                       className="copy-icon"
                       alt=""
                     />
+
                   </div>
+
                 </section>
               )
             )}
 
             {loading ? (
               <div className="ai-group loading">
-                <p>Generating optimized prompt...</p>
+                <p>
+                  Generating optimized prompt...
+                </p>
               </div>
             ) : null}
+
           </article>
 
+          {/* CHAT INPUT */}
           <div className="chat-input-form">
+
             <div className="chat-input-wrapper">
+
               <input
                 type="text"
                 className="chat-input"
@@ -270,12 +435,16 @@ export default function Chat() {
                 autoComplete="off"
                 ref={inputRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) =>
+                  setInput(e.target.value)
+                }
                 onKeyDown={(e) => {
+
                   if (e.key === 'Enter') {
                     e.preventDefault();
                     sendMessage();
                   }
+
                 }}
                 disabled={loading}
               />
@@ -284,17 +453,23 @@ export default function Chat() {
                 className="chat-submit-button"
                 onClick={() => sendMessage()}
               >
+
                 <img
                   src="/assets/send.png"
                   alt="Send"
                   className="chat-submit-icon"
                 />
+
               </button>
+
             </div>
+
           </div>
+
         </main>
       </div>
 
+      {/* GLOBAL CSS */}
       <style jsx global>{`
         html,
         body {
@@ -303,7 +478,9 @@ export default function Chat() {
         }
       `}</style>
 
+      {/* PAGE CSS */}
       <style jsx>{`
+
         :root {
         }
 
@@ -314,6 +491,8 @@ export default function Chat() {
           background: #000;
           overflow: hidden;
         }
+
+        /* NAVIGATION */
 
         .nav-pill {
           position: fixed;
@@ -334,13 +513,19 @@ export default function Chat() {
           text-decoration: none;
           font-weight: 500;
           font-size: 16px;
-          transition: color 0.3s, text-shadow 0.3s;
+          transition:
+            color 0.3s,
+            text-shadow 0.3s;
         }
 
         .nav-pill a:hover {
           color: #f0f0f0;
-          text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+          text-shadow:
+            0 0 8px
+            rgba(255, 255, 255, 0.6);
         }
+
+        /* LOGO */
 
         .logo-main {
           height: 50px;
@@ -353,6 +538,8 @@ export default function Chat() {
           cursor: pointer;
         }
 
+        /* SIDEBAR */
+
         .sidebar {
           position: fixed;
           top: 0;
@@ -360,12 +547,14 @@ export default function Chat() {
           width: 250px;
           height: 100%;
           background: #0e0e0e;
-          transition: transform 0.4s ease;
+          transition:
+            transform 0.4s ease;
           z-index: 30;
         }
 
         .sidebar.hide {
-          transform: translateX(-250px);
+          transform:
+            translateX(-250px);
         }
 
         .sidebar-nav {
@@ -394,7 +583,8 @@ export default function Chat() {
           opacity: 0.75;
           font-weight: 700;
           font-size: 20px;
-          margin: 0 0 25px 0;
+          margin:
+            0 0 25px 0;
         }
 
         .sidebar-list {
@@ -422,7 +612,8 @@ export default function Chat() {
           cursor: pointer;
           text-align: left;
           opacity: 0.7;
-          transition: opacity 0.3s;
+          transition:
+            opacity 0.3s;
           width: 100%;
           white-space: nowrap;
           overflow: hidden;
@@ -442,72 +633,102 @@ export default function Chat() {
           font-weight: 700;
         }
 
+        /* MAIN */
+
         .main-content {
           position: fixed;
           top: 0;
           left: 0;
-          width: calc(100% - 250px);
+          width:
+            calc(100% - 250px);
           height: 100vh;
           display: flex;
           flex-direction: column;
-          transition: transform 0.4s ease, width 0.4s ease;
-          transform: translateX(250px);
+          transition:
+            transform 0.4s ease,
+            width 0.4s ease;
+          transform:
+            translateX(250px);
         }
 
         .main-content.no-sidebar {
-          transform: translateX(0);
+          transform:
+            translateX(0);
           width: 100%;
         }
 
-        .view-landing .conversation-thread {
+        /* LANDING */
+
+        .view-landing
+        .conversation-thread {
           display: none;
         }
 
-        .view-landing .chat-input-form {
+        .view-landing
+        .chat-input-form {
           position: absolute;
           top: 50%;
           left: 50%;
-          transform: translate(-50%, -50%);
+          transform:
+            translate(-50%, -50%);
           width: 700px;
           max-width: 90%;
         }
 
-        .view-landing .landing-content {
+        .view-landing
+        .landing-content {
           display: block;
         }
 
-        .view-chat .conversation-thread {
+        /* CHAT */
+
+        .view-chat
+        .conversation-thread {
           display: flex;
         }
 
-        .view-chat .chat-input-form {
+        .view-chat
+        .chat-input-form {
           position: fixed;
           bottom: 30px;
           left: 50%;
-          transform: translateX(-50%);
+          transform:
+            translateX(-50%);
           width: 750px;
           max-width: 90%;
         }
 
-        .main-content:not(.no-sidebar) .view-chat .chat-input-form {
-          left: calc(50% + 125px);
-          transform: translateX(-50%);
+        .main-content:not(.no-sidebar)
+        .view-chat
+        .chat-input-form {
+          left:
+            calc(50% + 125px);
+          transform:
+            translateX(-50%);
         }
 
-        .main-content.no-sidebar .view-chat .chat-input-form {
+        .main-content.no-sidebar
+        .view-chat
+        .chat-input-form {
           left: 50%;
-          transform: translateX(-50%);
+          transform:
+            translateX(-50%);
         }
 
-        .view-chat .landing-content {
+        .view-chat
+        .landing-content {
           display: none;
         }
 
+        /* LANDING CONTENT */
+
         .landing-content {
           position: absolute;
-          top: calc(50% - 150px);
+          top:
+            calc(50% - 150px);
           left: 50%;
-          transform: translateX(-50%);
+          transform:
+            translateX(-50%);
           width: 700px;
           text-align: center;
         }
@@ -519,6 +740,8 @@ export default function Chat() {
           margin-bottom: 30px;
           white-space: nowrap;
         }
+
+        /* SUGGESTIONS */
 
         .suggestion-buttons {
           display: flex;
@@ -544,7 +767,8 @@ export default function Chat() {
           justify-content: space-between;
           cursor: pointer;
           position: relative;
-          transition: all 0.3s ease;
+          transition:
+            all 0.3s ease;
         }
 
         .suggestion-button:hover {
@@ -559,38 +783,48 @@ export default function Chat() {
           max-width: 80%;
         }
 
-        .suggestion-button :global(.suggestion-arrow) {
+        .suggestion-button
+        :global(.suggestion-arrow) {
           position: absolute;
           right: 10px;
           width: 10px;
           height: 9px;
-          transition: opacity 0.3s ease;
+          transition:
+            opacity 0.3s ease;
         }
 
-        .suggestion-button :global(.arrow-normal) {
+        .suggestion-button
+        :global(.arrow-normal) {
           opacity: 1;
         }
 
-        .suggestion-button :global(.arrow-hover) {
+        .suggestion-button
+        :global(.arrow-hover) {
           opacity: 0;
           position: absolute;
           top: 50%;
           right: 10px;
-          transform: translateY(-50%);
+          transform:
+            translateY(-50%);
         }
 
-        .suggestion-button:hover :global(.arrow-normal) {
+        .suggestion-button:hover
+        :global(.arrow-normal) {
           opacity: 0;
         }
 
-        .suggestion-button:hover :global(.arrow-hover) {
+        .suggestion-button:hover
+        :global(.arrow-hover) {
           opacity: 1;
         }
+
+        /* CONVERSATION */
 
         .conversation-thread {
           flex: 1;
           width: 100%;
-          padding: 120px 40px 120px 40px;
+          padding:
+            120px 40px 120px 40px;
           overflow-y: auto;
           overflow-x: hidden;
           display: flex;
@@ -637,9 +871,12 @@ export default function Chat() {
           background-color: #111;
           padding: 20px;
           border-radius: 12px;
-          border: 1px solid #222;
+          border:
+            1px solid #222;
           white-space: pre-wrap;
         }
+
+        /* COPY */
 
         .copy-container {
           display: flex;
@@ -664,9 +901,18 @@ export default function Chat() {
           opacity: 0.8;
         }
 
+        /* INPUT */
+
         .chat-input-form {
           z-index: 10;
-          transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+          transition:
+            all 0.5s
+            cubic-bezier(
+              0.25,
+              0.8,
+              0.25,
+              1
+            );
         }
 
         .chat-input-wrapper {
@@ -680,7 +926,8 @@ export default function Chat() {
           background: #0e0e0e;
           border-radius: 50px;
           border: none;
-          padding: 0 65px 0 35px;
+          padding:
+            0 65px 0 35px;
           font-size: 18px;
           color: #fff;
           outline: none;
@@ -694,7 +941,8 @@ export default function Chat() {
           position: absolute;
           top: 50%;
           right: 10px;
-          transform: translateY(-50%);
+          transform:
+            translateY(-50%);
           width: 42px;
           height: 42px;
           background: transparent;
@@ -707,6 +955,8 @@ export default function Chat() {
           height: 30px;
         }
 
+        /* LOADING */
+
         .loading p {
           color: #888;
           font-style: italic;
@@ -715,14 +965,20 @@ export default function Chat() {
           font-size: 14px;
         }
 
+        /* RESPONSIVE */
+
         @media (max-width: 900px) {
+
           .nav-pill {
             top: 18px;
             right: 16px;
             gap: 14px;
-            padding: 6px 16px;
-            transform: scale(0.85);
-            transform-origin: top right;
+            padding:
+              6px 16px;
+            transform:
+              scale(0.85);
+            transform-origin:
+              top right;
           }
 
           .logo-main {
@@ -733,19 +989,25 @@ export default function Chat() {
           .sidebar {
             width: 78vw;
             max-width: 280px;
-            box-shadow: 4px 0 30px rgba(0, 0, 0, 0.6);
+            box-shadow:
+              4px 0 30px
+              rgba(0, 0, 0, 0.6);
           }
 
           .sidebar.hide {
-            transform: translateX(-100%);
+            transform:
+              translateX(-100%);
           }
 
           .main-content {
             width: 100% !important;
-            transform: translateX(0) !important;
+            transform:
+              translateX(0) !important;
           }
 
-          .main-content:not(.no-sidebar) .view-chat .chat-input-form {
+          .main-content:not(.no-sidebar)
+          .view-chat
+          .chat-input-form {
             left: 50%;
           }
 
@@ -770,18 +1032,22 @@ export default function Chat() {
           }
 
           .conversation-thread {
-            padding: 90px 16px 140px;
+            padding:
+              90px 16px 140px;
           }
 
-          .view-chat .chat-input-form {
+          .view-chat
+          .chat-input-form {
             bottom: 16px;
             width: 92%;
           }
 
-          .view-landing .chat-input-form {
+          .view-landing
+          .chat-input-form {
             width: 90%;
           }
         }
+
       `}</style>
     </>
   );

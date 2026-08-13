@@ -42,7 +42,7 @@ function FaqAccordion({ sectionId }) {
       ))}
       <style jsx>{`
         .faq-wrapper {
-          scroll-margin-top: 120px; /* FAQ pe click karne par upar itni space chhodega */
+          scroll-margin-top: 120px;
         }
         .faq-heading {
           font-size: 70px;
@@ -90,7 +90,7 @@ function FaqAccordion({ sectionId }) {
           padding-right: 50px;
         }
         .faq-item.active .faq-answer {
-          max-height: 260px;
+          max-height: 400px;
           padding-top: 20px;
         }
         .faq-item.active .faq-icon {
@@ -113,7 +113,6 @@ export default function Home() {
       const row1 = row1Ref.current;
       const row2 = row2Ref.current;
       if (!wrap || !row1 || !row2) return;
-
       const rect = wrap.getBoundingClientRect();
       const vh = window.innerHeight;
       const total = rect.height + vh;
@@ -132,9 +131,7 @@ export default function Home() {
     <>
       <Head>
         <title>Prompt AI</title>
-        {/* Viewport Meta Tag for Perfect Mobile Rendering */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-        {/* Logo/Icon in Tab */}
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -154,15 +151,12 @@ export default function Home() {
             <div className="hero-bg" />
             <h1 className="main-heading">Get AI-generated</h1>
             <p className="sub-heading">production-ready prompts in seconds</p>
-
             <div className="btn-big" onClick={() => router.push('/chat')}>
               <span>GET STARTED</span>
               <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" />
             </div>
-
             <h2 className="section-title title1">A Seamless User Experience</h2>
             
-            {/* IN DONO TEXT KO UPAR SHIFT KIYA HAI KHALI SPACE HATANE KE LIYE */}
             <h2 className="section-title title2">Built by Professionals, for Professionals</h2>
             <p className="description">
               This is the place where you simply write your imagination, and AI transforms it into a fully AI-ready prompt.
@@ -216,7 +210,6 @@ export default function Home() {
 
             {/* Second Hero Background */}
             <div className="second-hero" id="about-section" />
-
             <h1 className="second-heading">
               Get All the Type of prompt You Need <br />
               In a Single Platform
@@ -226,7 +219,7 @@ export default function Home() {
               <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" style={{ width: 18, height: 18 }} />
             </div>
 
-            {/* Desktop FAQ Wrapper - EXACT ID FOR NAV PILL TO WORK */}
+            {/* Desktop FAQ Wrapper */}
             <div className="desktop-faq-wrapper">
               <FaqAccordion sectionId="faq-section" />
             </div>
@@ -244,12 +237,10 @@ export default function Home() {
             <img src="/assets/arrow.png" alt="Arrow" />
           </div>
         </div>
-
         <h2 className="m-section-title">A Seamless User Experience</h2>
         <p className="m-description">
           This is the place where you simply write your imagination, and AI transforms it into a fully AI-ready prompt. Whether you're writing blogs, social posts, or any creative project — AI helps you express your thoughts clearly and professionally.
         </p>
-
         <div className="m-feature-grid">
           <div className="feature-card">
             <div className="card-bg-number">01</div>
@@ -283,9 +274,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile Showcase Glow */}
         <div className="m-ambient-glow" />
-
         <h2 className="m-section-title" id="about-section-mobile">
           Built by Professionals, for Professionals
         </h2>
@@ -294,9 +283,7 @@ export default function Home() {
           <span>GET STARTED</span>
           <img src="/assets/arrow.png" alt="Arrow" />
         </div>
-
         <div className="m-faq">
-          {/* Mobile me id alag di hai taki React conflict na kare */}
           <FaqAccordion sectionId="faq-section-mobile" />
         </div>
       </div>
@@ -309,8 +296,6 @@ export default function Home() {
           padding: 0;
           scroll-behavior: smooth;
         }
-
-        /* Hiding Login/Profile Icon from NavPill component CSS hack */
         .nav-fixed svg, 
         .nav-fixed img[alt*="user" i], 
         .nav-fixed img[alt*="login" i],
@@ -352,7 +337,7 @@ export default function Home() {
         /* ---------- DESKTOP CONTAINER ---------- */
         .container {
           width: 1920px;
-          height: 3500px; /* FIXED: Height badhai hai 3100 se 3500 taki FAQ cut na ho! */
+          height: 3700px; /* FIXED: increased so FAQ fully visible */
           position: relative;
           background: #020202;
           overflow: hidden;
@@ -423,8 +408,6 @@ export default function Home() {
           top: 1049px;
           left: 107px;
         }
-
-        /* ALL BOTTOM SECTIONS SHIFTED UP TO REMOVE EMPTY SPACE */
         .title2 {
           top: 1720px;
           left: 107px;
@@ -460,8 +443,6 @@ export default function Home() {
           overflow: hidden;
           flex-shrink: 0;
         }
-        
-        /* Cropped numbers style intact per user design */
         .card-bg-number {
           position: absolute;
           right: -15px;
@@ -499,7 +480,6 @@ export default function Home() {
           background: #0e0e0e;
           color: white;
         }
-
         .main-img {
           position: absolute;
           top: 1500px;
@@ -512,10 +492,9 @@ export default function Home() {
           filter: blur(45px); 
           opacity: 0.7;
         }
-
         .second-hero {
           position: absolute;
-          top: 2100px;
+          top: 2300px; /* shifted down to avoid overlap with description */
           left: 0;
           width: 100%;
           height: 906px;
@@ -525,7 +504,7 @@ export default function Home() {
         }
         .second-heading {
           position: absolute;
-          top: 2200px;
+          top: 2400px; /* shifted down */
           left: 130px;
           font-size: 60px;
           font-weight: 900;
@@ -536,7 +515,7 @@ export default function Home() {
         }
         .second-btn {
           position: absolute;
-          top: 2450px;
+          top: 2650px; /* shifted down */
           left: 130px;
           width: 170px;
           height: 50px;
@@ -554,16 +533,14 @@ export default function Home() {
         .second-btn:hover {
           background: #e0e0e0;
         }
-
         .desktop-faq-wrapper {
           position: absolute;
-          top: 2650px;
+          top: 2800px; /* shifted down so full FAQ visible */
           left: 130px;
           width: 1650px;
           z-index: 2;
-          padding-bottom: 50px;
+          padding-bottom: 80px;
         }
-
         .desktop-only {
           display: block;
         }
@@ -590,7 +567,6 @@ export default function Home() {
           .btn-top {
             display: none;
           }
-
           .m-hero-bg {
             position: absolute;
             top: 0;
@@ -602,7 +578,6 @@ export default function Home() {
             opacity: 0.7;
             z-index: 0;
           }
-
           .m-hero {
             position: relative;
             z-index: 1;
@@ -634,7 +609,6 @@ export default function Home() {
             width: 18px;
             height: 18px;
           }
-
           .m-section-title {
             position: relative;
             z-index: 1;
@@ -651,7 +625,6 @@ export default function Home() {
             line-height: 1.7;
             color: #d8d8d8;
           }
-
           .m-feature-grid {
             position: relative;
             z-index: 1;
@@ -681,7 +654,6 @@ export default function Home() {
             position: relative;
             z-index: 1;
           }
-
           .m-ambient-glow {
             position: absolute;
             top: 40%;
@@ -694,7 +666,6 @@ export default function Home() {
             opacity: 0.6;
             pointer-events: none;
           }
-
           .m-second-heading {
             position: relative;
             z-index: 1;

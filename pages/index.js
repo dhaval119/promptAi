@@ -22,449 +22,298 @@ const FAQS = [
 
 function FaqAccordion({ sectionId }) {
   const [openIndex, setOpenIndex] = useState(0);
-
   return (
-    <section className="faq-wrapper" id={sectionId}>
+    <div className="faq-wrapper" id={sectionId}>
       <h2 className="faq-heading">
         Frequently asked
         <br />
         questions
       </h2>
-
-      <div className="faq-list">
-        {FAQS.map((item, i) => {
-          const open = openIndex === i;
-
-          return (
-            <div key={item.q} className={`faq-item ${open ? 'active' : ''}`}>
-              <button
-                type="button"
-                className="faq-question"
-                aria-expanded={open}
-                onClick={() => setOpenIndex(open ? -1 : i)}
-              >
-                <span>{item.q}</span>
-                <svg className="faq-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-
-              <div className="faq-answer-grid">
-                <div className="faq-answer">{item.a}</div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
+      {FAQS.map((item, i) => (
+        <div key={i} className={`faq-item ${openIndex === i ? 'active' : ''}`}>
+          <div className="faq-question" onClick={() => setOpenIndex(openIndex === i ? -1 : i)}>
+            {item.q}
+            <svg className="faq-icon" viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div className="faq-answer">{item.a}</div>
+        </div>
+      ))}
       <style jsx>{`
         .faq-wrapper {
-          width: 100%;
-          scroll-margin-top: 110px;
+          scroll-margin-top: 120px; /* FAQ pe click karne par upar itni space chhodega */
         }
-
         .faq-heading {
-          margin: 0 0 48px;
-          color: #fff;
-          font-size: 68px;
-          line-height: 0.98;
+          font-size: 70px;
           font-weight: 900;
-          letter-spacing: -2.5px;
-        }
-
-        .faq-list {
-          width: 100%;
-        }
-
-        .faq-item {
-          width: 100%;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.16);
-        }
-
-        .faq-question {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 30px;
-          padding: 26px 0;
-          border: 0;
-          background: transparent;
+          line-height: 1.1;
+          margin-bottom: 60px;
+          letter-spacing: -1px;
           color: #fff;
-          font: inherit;
-          font-size: 22px;
+        }
+        .faq-item {
+          border-bottom: 1px solid #333;
+          padding: 30px 0;
+        }
+        .faq-question {
+          font-size: 24px;
           font-weight: 700;
-          line-height: 1.35;
-          text-align: left;
           cursor: pointer;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          user-select: none;
+          color: #fff;
         }
-
         .faq-question:hover {
-          opacity: 0.92;
+          opacity: 0.9;
         }
-
         .faq-icon {
-          width: 22px;
-          height: 22px;
-          flex: 0 0 22px;
+          width: 24px;
+          height: 24px;
           fill: none;
-          stroke: #fff;
+          stroke: white;
           stroke-width: 2;
           stroke-linecap: round;
           stroke-linejoin: round;
-          transition: transform 0.25s ease;
+          transition: transform 0.3s ease;
+          flex-shrink: 0;
         }
-
+        .faq-answer {
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.4s ease, padding 0.4s ease;
+          font-size: 18px;
+          line-height: 1.6;
+          color: #e0e0e0;
+          padding-right: 50px;
+        }
+        .faq-item.active .faq-answer {
+          max-height: 260px;
+          padding-top: 20px;
+        }
         .faq-item.active .faq-icon {
           transform: rotate(180deg);
         }
-
-        .faq-answer-grid {
-          display: grid;
-          grid-template-rows: 0fr;
-          transition: grid-template-rows 0.34s ease;
-        }
-
-        .faq-answer {
-          min-height: 0;
-          overflow: hidden;
-          padding-right: 48px;
-          color: #d9d9d9;
-          font-size: 17px;
-          line-height: 1.65;
-        }
-
-        .faq-item.active .faq-answer-grid {
-          grid-template-rows: 1fr;
-        }
-
-        .faq-item.active .faq-answer {
-          padding-bottom: 28px;
-        }
-
-        @media (max-width: 900px) {
-          .faq-wrapper {
-            scroll-margin-top: 90px;
-          }
-
-          .faq-heading {
-            margin-bottom: 28px;
-            font-size: clamp(38px, 11vw, 52px);
-            line-height: 0.98;
-            letter-spacing: -1.5px;
-          }
-
-          .faq-question {
-            padding: 20px 0;
-            gap: 16px;
-            font-size: 17px;
-            line-height: 1.4;
-          }
-
-          .faq-icon {
-            width: 18px;
-            height: 18px;
-            flex-basis: 18px;
-          }
-
-          .faq-answer {
-            padding-right: 2px;
-            font-size: 14px;
-            line-height: 1.6;
-          }
-
-          .faq-item.active .faq-answer {
-            padding-bottom: 20px;
-          }
-        }
       `}</style>
-    </section>
+    </div>
   );
 }
 
 export default function Home() {
   const router = useRouter();
-
   const row1Ref = useRef(null);
   const row2Ref = useRef(null);
   const featuresWrapRef = useRef(null);
 
-  const scrollToSection = (desktopId, mobileId) => {
-    if (typeof window === 'undefined') return;
-
-    const isMobile = window.innerWidth <= 900;
-    const targetId = isMobile ? mobileId : desktopId;
-    const target = document.getElementById(targetId);
-
-    if (!target) return;
-
-    const offset = isMobile ? 84 : 105;
-    const top = target.getBoundingClientRect().top + window.scrollY - offset;
-
-    window.scrollTo({
-      top,
-      behavior: 'smooth',
-    });
-  };
-
   useEffect(() => {
-    const onScroll = () => {
+    function onScroll() {
       const wrap = featuresWrapRef.current;
       const row1 = row1Ref.current;
       const row2 = row2Ref.current;
-
       if (!wrap || !row1 || !row2) return;
 
       const rect = wrap.getBoundingClientRect();
-      const viewport = window.innerHeight;
-      const progress = Math.max(
-        0,
-        Math.min(1, (viewport - rect.top) / (rect.height + viewport))
-      );
-
-      const moveAmount = progress * 360;
-
-      row1.style.transform = `translate3d(${moveAmount}px, 0, 0)`;
-      row2.style.transform = `translate3d(-${moveAmount}px, 0, 0)`;
-    };
-
+      const vh = window.innerHeight;
+      const total = rect.height + vh;
+      const scrolled = vh - rect.top;
+      const progress = Math.max(0, Math.min(1, scrolled / total));
+      const moveAmount = progress * 400;
+      row1.style.transform = `translateX(${moveAmount}px)`;
+      row2.style.transform = `translateX(-${moveAmount}px)`;
+    }
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
     onScroll();
-
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-    };
-  }, []);
-
-  useEffect(() => {
-    // Works even when NavPill doesn't expose a custom FAQ callback prop.
-    const nav = document.querySelector('.nav-fixed');
-    if (!nav) return;
-
-    const onNavClick = (event) => {
-      const item = event.target.closest('a, button');
-      if (!item || !nav.contains(item)) return;
-
-      const label = (item.textContent || '').trim().toLowerCase();
-      const href = item.getAttribute('href') || '';
-
-      if (label === 'faq' || href.includes('#faq-section')) {
-        event.preventDefault();
-        event.stopPropagation();
-        scrollToSection('faq-section', 'faq-section-mobile');
-      }
-    };
-
-    nav.addEventListener('click', onNavClick, true);
-
-    return () => nav.removeEventListener('click', onNavClick, true);
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   return (
     <>
       <Head>
         <title>Prompt AI</title>
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"
-        />
+        {/* Viewport Meta Tag for Perfect Mobile Rendering */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+        {/* Logo/Icon in Tab */}
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
+      {/* FIXED NAVBAR & BUTTONS */}
       <Logo onClick={() => router.push('/')} />
-
       <div className="nav-fixed">
         <NavPill />
       </div>
-
-      <div
-        className="btn-top"
-        onClick={() => router.push('/chat')}
-        role="button"
-        tabIndex={0}
-      >
+      <div className="btn-top" onClick={() => router.push('/chat')}>
         GET STARTED
       </div>
 
-      {/* ================= DESKTOP ================= */}
-
+      {/* DESKTOP LAYOUT (>=901px) */}
       <div className="desktop-only">
         <ScaleFit baseWidth={1920}>
-          <main className="desktop-page">
+          <div className="container">
             <div className="hero-bg" />
+            <h1 className="main-heading">Get AI-generated</h1>
+            <p className="sub-heading">production-ready prompts in seconds</p>
 
-            <section className="hero-section">
-              <h1 className="main-heading">Get AI-generated</h1>
-              <p className="sub-heading">production-ready prompts in seconds</p>
+            <div className="btn-big" onClick={() => router.push('/chat')}>
+              <span>GET STARTED</span>
+              <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" />
+            </div>
 
-              <div className="btn-big" onClick={() => router.push('/chat')}>
-                <span>GET STARTED</span>
-                <img src="/assets/arrow.png" alt="Arrow" />
-              </div>
-            </section>
+            <h2 className="section-title title1">A Seamless User Experience</h2>
+            
+            {/* IN DONO TEXT KO UPAR SHIFT KIYA HAI KHALI SPACE HATANE KE LIYE */}
+            <h2 className="section-title title2">Built by Professionals, for Professionals</h2>
+            <p className="description">
+              This is the place where you simply write your imagination, and AI transforms it into a fully AI-ready prompt.
+              <br />
+              <br />
+              Whether you're writing blogs, creating social media posts, or working on any creative project — AI helps you express your thoughts clearly and professionally.
+              <br />
+              <br />
+              See how your simple ideas become "AI-ready prompts" — ready to use instantly with Gemini or any other model. Your words, our intelligence — together, we craft the perfect prompt.
+            </p>
 
-            <section className="experience-section">
-              <h2 className="section-title experience-title">
-                A Seamless User Experience
-              </h2>
-
-              <div className="features-container" ref={featuresWrapRef}>
-                <div className="feature-row" ref={row1Ref}>
-                  <FeatureCard number="01" header="FEATURE 1" body="Ready-to-use prompts." light />
-                  <FeatureCard number="02" header="FEATURE 2" body="Your ideas stay private." />
-                  <FeatureCard number="03" header="FEATURE 3" body="Instant, quality results." light />
+            <div className="features-container" ref={featuresWrapRef}>
+              <div className="feature-row" ref={row1Ref}>
+                <div className="feature-card">
+                  <div className="card-bg-number">01</div>
+                  <div className="card-header">FEATURE 1</div>
+                  <div className="card-body white">Ready-to-use prompts.</div>
                 </div>
-
-                <div className="feature-row row-two" ref={row2Ref}>
-                  <FeatureCard number="04" header="FEATURE 4" body="Keep and reuse your best ones." />
-                  <FeatureCard number="05" header="FEATURE 5" body="Think ideas, not words." light />
-                  <FeatureCard number="06" header="FEATURE 6" body="Copy & use anywhere fast." />
+                <div className="feature-card">
+                  <div className="card-bg-number">02</div>
+                  <div className="card-header">FEATURE 2</div>
+                  <div className="card-body dark">Your ideas stay private.</div>
+                </div>
+                <div className="feature-card">
+                  <div className="card-bg-number">03</div>
+                  <div className="card-header">FEATURE 3</div>
+                  <div className="card-body white">Instant, quality results.</div>
                 </div>
               </div>
-            </section>
+              <div className="feature-row" ref={row2Ref} style={{ marginTop: 52 }}>
+                <div className="feature-card">
+                  <div className="card-bg-number">04</div>
+                  <div className="card-header">FEATURE 4</div>
+                  <div className="card-body dark">Keep and reuse your best ones.</div>
+                </div>
+                <div className="feature-card">
+                  <div className="card-bg-number">05</div>
+                  <div className="card-header">FEATURE 5</div>
+                  <div className="card-body white">Think ideas, not words.</div>
+                </div>
+                <div className="feature-card">
+                  <div className="card-bg-number">06</div>
+                  <div className="card-header">FEATURE 6</div>
+                  <div className="card-body dark">Copy & use anywhere fast.</div>
+                </div>
+              </div>
+            </div>
 
-            <section className="professional-section">
-              <h2 className="section-title professional-title">
-                Built by Professionals, for Professionals
-              </h2>
-
-              <p className="description">
-                This is the place where you simply write your imagination,
-                and AI transforms it into a fully AI-ready prompt.
-                <br /><br />
-                Whether you're writing blogs, creating social media posts,
-                or working on any creative project — AI helps you express
-                your thoughts clearly and professionally.
-                <br /><br />
-                See how your simple ideas become "AI-ready prompts" —
-                ready to use instantly with Gemini or any other model.
-                Your words, our intelligence — together, we craft the
-                perfect prompt.
-              </p>
-            </section>
-
+            {/* Main Showcase Image (Blurred Ambient Glow) */}
             <div className="main-img" />
 
-            <section className="showcase-section">
-              <div className="second-hero" />
+            {/* Second Hero Background */}
+            <div className="second-hero" id="about-section" />
 
-              <h1 className="second-heading">
-                Get All the Type of prompt You Need
-                <br />
-                In a Single Platform
-              </h1>
+            <h1 className="second-heading">
+              Get All the Type of prompt You Need <br />
+              In a Single Platform
+            </h1>
+            <div className="second-btn" onClick={() => router.push('/chat')}>
+              GET STARTED
+              <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" style={{ width: 18, height: 18 }} />
+            </div>
 
-              <div
-                className="second-btn"
-                onClick={() => router.push('/chat')}
-              >
-                <span>GET STARTED</span>
-                <img src="/assets/arrow.png" alt="Arrow" />
-              </div>
-            </section>
-
-            <section className="desktop-faq-wrapper">
+            {/* Desktop FAQ Wrapper - EXACT ID FOR NAV PILL TO WORK */}
+            <div className="desktop-faq-wrapper">
               <FaqAccordion sectionId="faq-section" />
-            </section>
-          </main>
+            </div>
+          </div>
         </ScaleFit>
       </div>
 
-      {/* ================= MOBILE ================= */}
-
-      <main className="mobile-only">
+      {/* MOBILE LAYOUT (<901px) */}
+      <div className="mobile-only">
         <div className="m-hero-bg" />
-
-        <section className="m-hero">
-          <h1 className="m-heading">
-            Get AI-generated production-ready prompts in seconds
-          </h1>
-
+        <div className="m-hero">
+          <h1 className="m-heading">Get AI-generated production-ready prompts in seconds</h1>
           <div className="m-btn-big" onClick={() => router.push('/chat')}>
             <span>GET STARTED</span>
             <img src="/assets/arrow.png" alt="Arrow" />
           </div>
-        </section>
+        </div>
 
-        <section className="m-content-section">
-          <h2 className="m-section-title">
-            A Seamless User Experience
-          </h2>
+        <h2 className="m-section-title">A Seamless User Experience</h2>
+        <p className="m-description">
+          This is the place where you simply write your imagination, and AI transforms it into a fully AI-ready prompt. Whether you're writing blogs, social posts, or any creative project — AI helps you express your thoughts clearly and professionally.
+        </p>
 
-          <p className="m-description">
-            This is the place where you simply write your imagination,
-            and AI transforms it into a fully AI-ready prompt.
-            Whether you're writing blogs, social posts, or any creative
-            project — AI helps you express your thoughts clearly and
-            professionally.
-          </p>
-
-          <div className="m-feature-grid">
-            <FeatureCard number="01" header="FEATURE 1" body="Ready-to-use prompts." light />
-            <FeatureCard number="02" header="FEATURE 2" body="Your ideas stay private." />
-            <FeatureCard number="03" header="FEATURE 3" body="Instant, quality results." light />
-            <FeatureCard number="04" header="FEATURE 4" body="Keep and reuse your best ones." />
-            <FeatureCard number="05" header="FEATURE 5" body="Think ideas, not words." light />
-            <FeatureCard number="06" header="FEATURE 6" body="Copy & use anywhere fast." />
+        <div className="m-feature-grid">
+          <div className="feature-card">
+            <div className="card-bg-number">01</div>
+            <div className="card-header">FEATURE 1</div>
+            <div className="card-body white">Ready-to-use prompts.</div>
           </div>
-        </section>
+          <div className="feature-card">
+            <div className="card-bg-number">02</div>
+            <div className="card-header">FEATURE 2</div>
+            <div className="card-body dark">Your ideas stay private.</div>
+          </div>
+          <div className="feature-card">
+            <div className="card-bg-number">03</div>
+            <div className="card-header">FEATURE 3</div>
+            <div className="card-body white">Instant, quality results.</div>
+          </div>
+          <div className="feature-card">
+            <div className="card-bg-number">04</div>
+            <div className="card-header">FEATURE 4</div>
+            <div className="card-body dark">Keep and reuse your best ones.</div>
+          </div>
+          <div className="feature-card">
+            <div className="card-bg-number">05</div>
+            <div className="card-header">FEATURE 5</div>
+            <div className="card-body white">Think ideas, not words.</div>
+          </div>
+          <div className="feature-card">
+            <div className="card-bg-number">06</div>
+            <div className="card-header">FEATURE 6</div>
+            <div className="card-body dark">Copy & use anywhere fast.</div>
+          </div>
+        </div>
 
+        {/* Mobile Showcase Glow */}
         <div className="m-ambient-glow" />
 
-        <section className="m-content-section m-professional">
-          <h2 className="m-section-title">
-            Built by Professionals, for Professionals
-          </h2>
+        <h2 className="m-section-title" id="about-section-mobile">
+          Built by Professionals, for Professionals
+        </h2>
+        <h1 className="m-second-heading">Get All the Type of prompt You Need In a Single Platform</h1>
+        <div className="m-btn-big" onClick={() => router.push('/chat')}>
+          <span>GET STARTED</span>
+          <img src="/assets/arrow.png" alt="Arrow" />
+        </div>
 
-          <p className="m-description">
-            This is the place where you simply write your imagination,
-            and AI transforms it into a fully AI-ready prompt.
-            <br /><br />
-            Whether you're writing blogs, creating social media posts,
-            or working on any creative project — AI helps you express
-            your thoughts clearly and professionally.
-            <br /><br />
-            See how your simple ideas become "AI-ready prompts" —
-            ready to use instantly with Gemini or any other model.
-          </p>
-
-          <h1 className="m-second-heading">
-            Get All the Type of prompt You Need In a Single Platform
-          </h1>
-
-          <div className="m-btn-big" onClick={() => router.push('/chat')}>
-            <span>GET STARTED</span>
-            <img src="/assets/arrow.png" alt="Arrow" />
-          </div>
-        </section>
-
-        <section className="m-faq">
+        <div className="m-faq">
+          {/* Mobile me id alag di hai taki React conflict na kare */}
           <FaqAccordion sectionId="faq-section-mobile" />
-        </section>
-      </main>
+        </div>
+      </div>
 
       <style jsx global>{`
         html,
         body {
+          background: #020202;
           margin: 0;
           padding: 0;
-          background: #020202;
-          color: #fff;
           scroll-behavior: smooth;
-          overflow-x: hidden;
         }
 
-        *,
-        *::before,
-        *::after {
-          box-sizing: border-box;
-        }
-
-        .nav-fixed svg,
-        .nav-fixed img[alt*='user' i],
-        .nav-fixed img[alt*='login' i],
+        /* Hiding Login/Profile Icon from NavPill component CSS hack */
+        .nav-fixed svg, 
+        .nav-fixed img[alt*="user" i], 
+        .nav-fixed img[alt*="login" i],
         .nav-fixed a:last-of-type svg {
           display: none !important;
         }
@@ -475,341 +324,269 @@ export default function Home() {
           position: fixed;
           top: 31px;
           right: 240px;
-          z-index: 9999;
+          z-index: 999;
         }
-
         .btn-top {
           position: fixed;
           top: 31px;
           right: 55px;
           width: 144px;
           height: 37px;
+          background: black;
+          border: 1px solid white;
+          border-radius: 50px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid #fff;
-          border-radius: 50px;
-          background: #000;
-          color: #fff;
+          font-weight: bold;
           font-size: 15px;
-          font-weight: 700;
           cursor: pointer;
-          z-index: 9999;
-          transition: background 0.25s ease, color 0.25s ease;
+          transition: 0.3s;
+          z-index: 999;
         }
-
         .btn-top:hover {
-          background: #fff;
-          color: #000;
+          background: white;
+          color: black;
         }
 
-        .desktop-only {
-          display: block;
-        }
-
-        .mobile-only {
-          display: none;
-        }
-
-        /* ---------------- DESKTOP PAGE ---------------- */
-
-        .desktop-page {
-          position: relative;
+        /* ---------- DESKTOP CONTAINER ---------- */
+        .container {
           width: 1920px;
-          min-height: 3520px;
-          overflow: hidden;
+          height: 3100px; /* FIXED: Height drastically reduced to eliminate empty bottom space */
+          position: relative;
           background: #020202;
+          overflow: hidden;
         }
-
         .hero-bg {
           position: absolute;
-          inset: 0 0 auto;
-          height: 900px;
-          background: url('/assets/video.gif') center / cover no-repeat;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 906px;
+          background: url('/assets/video.gif') center/cover no-repeat;
           filter: blur(35px);
-          opacity: 0.92;
           z-index: 0;
         }
-
-        .hero-section {
-          position: relative;
-          height: 900px;
-          z-index: 1;
-        }
-
         .main-heading {
           position: absolute;
           top: 328px;
           left: 369px;
-          margin: 0;
-          color: #fff;
           font-size: 130px;
           font-weight: 900;
-          line-height: 0.95;
-          letter-spacing: -4px;
+          color: #fff;
+          z-index: 2;
         }
-
         .sub-heading {
           position: absolute;
           top: 827px;
           left: 1184px;
-          margin: 0;
-          color: #fff;
           font-size: 22px;
-          font-weight: 700;
+          font-weight: bold;
+          color: #fff;
+          z-index: 2;
         }
-
         .btn-big {
           position: absolute;
           top: 814px;
           left: 1630px;
           width: 204px;
           height: 53px;
+          background: white;
+          border-radius: 50px;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 12px;
-          border-radius: 50px;
-          background: #fff;
-          color: #000;
+          font-weight: bold;
           font-size: 18px;
-          font-weight: 800;
+          color: black;
           cursor: pointer;
-          z-index: 2;
-          transition: transform 0.25s ease, background 0.25s ease;
-        }
-
-        .btn-big:hover,
-        .second-btn:hover,
-        .m-btn-big:hover {
-          transform: translateY(-2px);
-        }
-
-        .btn-big img,
-        .second-btn img,
-        .m-btn-big img {
-          width: 20px;
-          height: 20px;
-          object-fit: contain;
-        }
-
-        .experience-section {
-          position: relative;
-          height: 720px;
+          transition: 0.4s;
           z-index: 2;
         }
-
+        .btn-big:hover {
+          background: #e0e0e0;
+        }
+        .arrow-img {
+          width: 24px;
+          height: 24px;
+          transition: 0.4s;
+        }
         .section-title {
-          margin: 0;
-          color: #fff;
-          font-size: 50px;
-          line-height: 1.08;
-          font-weight: 900;
-          letter-spacing: -1.5px;
-        }
-
-        .experience-title {
           position: absolute;
-          top: 145px;
+          font-weight: 900;
+          font-size: 50px;
+          color: #fff;
+          z-index: 2;
+        }
+        .title1 {
+          top: 1049px;
           left: 107px;
         }
 
+        /* ALL BOTTOM SECTIONS SHIFTED UP TO REMOVE EMPTY SPACE */
+        .title2 {
+          top: 1720px;
+          left: 107px;
+        }
+        .description {
+          position: absolute;
+          top: 1820px;
+          left: 107px;
+          width: 755px;
+          font-size: 25px;
+          font-weight: bold;
+          line-height: 1.8;
+          color: #fff;
+          z-index: 2;
+        }
         .features-container {
           position: absolute;
-          top: 325px;
+          top: 1229px;
           left: 107px;
-          width: 1700px;
+          width: 1650px;
+          z-index: 2;
         }
-
         .feature-row {
           display: flex;
           gap: 35px;
-          will-change: transform;
-          transition: transform 0.12s linear;
+          transition: transform 0.1s ease-out;
         }
-
-        .row-two {
-          margin-top: 52px;
-        }
-
         .feature-card {
           position: relative;
           width: 502px;
           height: 176px;
-          flex: 0 0 502px;
-          overflow: hidden;
           border-radius: 25px;
+          overflow: hidden;
+          flex-shrink: 0;
         }
-
+        
+        /* Cropped numbers style intact per user design */
         .card-bg-number {
           position: absolute;
           right: -15px;
-          bottom: -42px;
-          color: rgba(128, 128, 128, 0.15);
+          bottom: -40px;
           font-size: 160px;
-          line-height: 1;
           font-weight: 900;
+          color: rgba(128, 128, 128, 0.15);
+          z-index: 0;
           pointer-events: none;
+          user-select: none;
         }
-
         .card-header {
           position: relative;
           z-index: 1;
           height: 66px;
-          padding: 21px 32px;
           background: #1e1e1e;
-          color: #fff;
+          padding: 21px 32px;
           font-size: 20px;
-          line-height: 1;
-          font-weight: 700;
+          font-weight: bold;
+          color: white;
         }
-
         .card-body {
           position: relative;
           z-index: 1;
           height: 110px;
           padding: 32px;
           font-size: 25px;
-          line-height: 1.1;
-          font-weight: 800;
+          font-weight: bold;
         }
-
         .white {
-          background: #fff;
-          color: #000;
+          background: white;
+          color: black;
         }
-
         .dark {
           background: #0e0e0e;
-          color: #fff;
-        }
-
-        /* ---------------- PROFESSIONAL SECTION ---------------- */
-
-        .professional-section {
-          position: relative;
-          height: 610px;
-          z-index: 2;
-        }
-
-        .professional-title {
-          position: absolute;
-          top: 42px;
-          left: 107px;
-        }
-
-        .description {
-          position: absolute;
-          top: 145px;
-          left: 107px;
-          width: 755px;
-          margin: 0;
-          color: #fff;
-          font-size: 25px;
-          line-height: 1.7;
-          font-weight: 600;
+          color: white;
         }
 
         .main-img {
           position: absolute;
-          top: 1430px;
-          left: 760px;
-          width: 1250px;
-          height: 1250px;
+          top: 1500px;
+          left: 750px;
+          width: 1300px;
+          height: 1300px;
+          background: url('/assets/main12.gif') center/cover no-repeat;
           border-radius: 50%;
-          background: url('/assets/main12.gif') center / cover no-repeat;
-          filter: blur(45px);
-          opacity: 0.72;
-          pointer-events: none;
-          z-index: 0;
-        }
-
-        /* ---------------- SECOND SHOWCASE ---------------- */
-
-        .showcase-section {
-          position: relative;
-          height: 655px;
-          z-index: 2;
+          z-index: 0; 
+          filter: blur(45px); 
+          opacity: 0.7;
         }
 
         .second-hero {
           position: absolute;
-          top: 0;
+          top: 2100px;
           left: 0;
           width: 100%;
-          height: 655px;
-          background: url('/assets/video.gif') center / cover no-repeat;
+          height: 906px;
+          background: url('/assets/video.gif') center/cover no-repeat;
           filter: blur(35px);
-          opacity: 0.88;
           z-index: 0;
         }
-
         .second-heading {
           position: absolute;
-          top: 95px;
+          top: 2200px;
           left: 130px;
-          width: 1650px;
-          margin: 0;
-          color: #fff;
           font-size: 60px;
-          line-height: 1.15;
           font-weight: 900;
-          letter-spacing: -1.5px;
-          z-index: 1;
+          width: 1650px;
+          line-height: 1.4;
+          color: #fff;
+          z-index: 2;
         }
-
         .second-btn {
           position: absolute;
-          top: 315px;
+          top: 2450px;
           left: 130px;
           width: 170px;
           height: 50px;
+          background: white;
+          border-radius: 50px;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
-          border-radius: 50px;
-          background: #fff;
-          color: #000;
-          font-size: 14px;
-          font-weight: 800;
+          font-weight: bold;
+          color: black;
           cursor: pointer;
-          z-index: 1;
-          transition: transform 0.25s ease;
+          z-index: 2;
         }
-
-        /* ---------------- FAQ ---------------- */
+        .second-btn:hover {
+          background: #e0e0e0;
+        }
 
         .desktop-faq-wrapper {
-          position: relative;
-          z-index: 4;
+          position: absolute;
+          top: 2650px;
+          left: 130px;
           width: 1650px;
-          margin-left: 130px;
-          padding-top: 105px;
-          padding-bottom: 90px;
+          z-index: 2;
+          padding-bottom: 50px;
         }
 
+        .desktop-only {
+          display: block;
+        }
+        .mobile-only {
+          display: none;
+        }
+
+        /* ---------- MOBILE RESPONSIVE LAYOUT (<901px) ---------- */
         @media (max-width: 900px) {
           .desktop-only {
             display: none;
           }
-
           .mobile-only {
             display: block;
             position: relative;
-            width: 100%;
-            min-height: 100vh;
-            padding: 94px 20px 80px;
+            padding: 100px 20px 80px;
             overflow: hidden;
           }
-
           .nav-fixed {
-            top: 18px;
-            right: 16px;
+            right: 20px;
             transform: scale(0.82);
             transform-origin: top right;
           }
-
           .btn-top {
             display: none;
           }
@@ -817,183 +594,135 @@ export default function Home() {
           .m-hero-bg {
             position: absolute;
             top: 0;
-            left: -15%;
-            width: 130%;
+            left: 0;
+            width: 100%;
             height: 450px;
-            background: url('/assets/video.gif') center / cover no-repeat;
+            background: url('/assets/video.gif') center/cover no-repeat;
             filter: blur(25px);
-            opacity: 0.72;
+            opacity: 0.7;
             z-index: 0;
           }
 
           .m-hero {
             position: relative;
             z-index: 1;
-            padding: 28px 0 38px;
             text-align: center;
+            padding: 20px 0 40px;
           }
-
           .m-heading {
-            margin: 0 auto 24px;
-            max-width: 620px;
-            color: #fff;
-            font-size: clamp(30px, 8vw, 44px);
-            line-height: 1.12;
+            font-size: clamp(28px, 8vw, 42px);
             font-weight: 900;
-            letter-spacing: -0.8px;
+            color: #fff;
+            line-height: 1.15;
+            margin-bottom: 24px;
           }
-
           .m-btn-big {
-            width: fit-content;
-            min-height: 46px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 9px;
-            margin: 0 auto;
-            padding: 13px 23px;
-            border-radius: 50px;
+            gap: 10px;
             background: #fff;
             color: #000;
-            font-size: 14px;
-            font-weight: 800;
+            font-weight: bold;
+            font-size: 16px;
+            border-radius: 50px;
+            padding: 14px 26px;
             cursor: pointer;
-            transition: transform 0.25s ease;
+            margin: 0 auto;
           }
-
-          .m-content-section {
-            position: relative;
-            z-index: 2;
+          .m-btn-big img {
+            width: 18px;
+            height: 18px;
           }
 
           .m-section-title {
-            margin: 52px 0 16px;
-            color: #fff;
-            font-size: clamp(26px, 7vw, 34px);
-            line-height: 1.12;
+            position: relative;
+            z-index: 1;
+            font-size: clamp(24px, 7vw, 32px);
             font-weight: 900;
-            letter-spacing: -0.6px;
+            color: #fff;
+            margin: 50px 0 16px;
           }
-
           .m-description {
-            margin: 0;
-            color: #d8d8d8;
-            font-size: 15px;
-            line-height: 1.7;
+            position: relative;
+            z-index: 1;
+            font-size: 16px;
             font-weight: 500;
+            line-height: 1.7;
+            color: #d8d8d8;
           }
 
           .m-feature-grid {
             position: relative;
-            z-index: 2;
+            z-index: 1;
             display: grid;
             grid-template-columns: 1fr;
-            gap: 14px;
-            margin-top: 28px;
+            gap: 16px;
+            margin-top: 30px;
           }
-
-          .m-feature-grid :global(.feature-card) {
+          .m-feature-grid .feature-card {
             width: 100%;
             height: auto;
-            min-height: 116px;
-            flex: none;
             border-radius: 18px;
+            overflow: hidden;
+            position: relative;
           }
-
-          .m-feature-grid :global(.card-header) {
+          .m-feature-grid .card-header {
             height: auto;
-            padding: 13px 18px;
-            font-size: 14px;
+            padding: 14px 20px;
+            font-size: 15px;
+            position: relative;
+            z-index: 1;
           }
-
-          .m-feature-grid :global(.card-body) {
+          .m-feature-grid .card-body {
             height: auto;
-            min-height: 70px;
-            padding: 21px 18px;
+            padding: 22px 20px;
             font-size: 18px;
-            line-height: 1.18;
-          }
-
-          .m-feature-grid :global(.card-bg-number) {
-            right: -8px;
-            bottom: -28px;
-            font-size: 100px;
+            position: relative;
+            z-index: 1;
           }
 
           .m-ambient-glow {
             position: absolute;
-            top: 39%;
-            left: -25%;
-            width: 150%;
-            height: 520px;
-            background: url('/assets/main12.gif') center / cover no-repeat;
-            filter: blur(42px);
-            opacity: 0.58;
+            top: 40%;
+            left: -10%;
+            width: 120%;
+            height: 500px;
+            background: url('/assets/main12.gif') center/cover no-repeat;
+            filter: blur(40px);
             z-index: 0;
+            opacity: 0.6;
             pointer-events: none;
           }
 
-          .m-professional {
-            margin-top: 62px;
-          }
-
           .m-second-heading {
             position: relative;
-            z-index: 2;
-            margin: 42px 0 22px;
-            color: #fff;
-            font-size: clamp(28px, 7.5vw, 40px);
-            line-height: 1.22;
+            z-index: 1;
+            font-size: clamp(26px, 7vw, 36px);
             font-weight: 900;
-            letter-spacing: -0.7px;
+            color: #fff;
+            line-height: 1.3;
+            margin-bottom: 24px;
+            margin-top: 50px;
           }
-
           .m-faq {
             position: relative;
-            z-index: 3;
-            width: 100%;
-            margin-top: 72px;
-            padding-bottom: 20px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .mobile-only {
-            padding-left: 16px;
-            padding-right: 16px;
-          }
-
-          .m-heading {
-            font-size: 30px;
-          }
-
-          .m-section-title {
-            font-size: 27px;
-          }
-
-          .m-description {
-            font-size: 14px;
-          }
-
-          .m-second-heading {
-            font-size: 28px;
-          }
-
-          .m-faq {
+            z-index: 1;
             margin-top: 60px;
+          }
+          .m-faq :global(.faq-heading) {
+            font-size: clamp(32px, 9vw, 44px) !important;
+            margin-bottom: 30px !important;
+          }
+          .m-faq :global(.faq-question) {
+            font-size: 17px !important;
+          }
+          .m-faq :global(.faq-answer) {
+            font-size: 15px !important;
+            padding-right: 10px !important;
           }
         }
       `}</style>
     </>
-  );
-}
-
-function FeatureCard({ number, header, body, light = false }) {
-  return (
-    <div className="feature-card">
-      <div className="card-bg-number">{number}</div>
-      <div className="card-header">{header}</div>
-      <div className={`card-body ${light ? 'white' : 'dark'}`}>{body}</div>
-    </div>
   );
 }

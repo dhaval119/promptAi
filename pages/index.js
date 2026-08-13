@@ -20,10 +20,10 @@ const FAQS = [
   },
 ];
 
-function FaqAccordion({ sectionId }) {
+function FaqAccordion({ idPrefix = '' }) {
   const [openIndex, setOpenIndex] = useState(0);
   return (
-    <div className="faq-wrapper" id={sectionId}>
+    <div className="faq-wrapper" id={idPrefix ? `faq-section-${idPrefix}` : 'faq-section'}>
       <h2 className="faq-heading">
         Frequently asked
         <br />
@@ -42,7 +42,8 @@ function FaqAccordion({ sectionId }) {
       ))}
       <style jsx>{`
         .faq-wrapper {
-          scroll-margin-top: 120px; /* FAQ pe click karne par upar itni space chhodega */
+          /* Adds spacing at the top when navigated via anchor link */
+          scroll-margin-top: 150px; 
         }
         .faq-heading {
           font-size: 70px;
@@ -132,9 +133,9 @@ export default function Home() {
     <>
       <Head>
         <title>Prompt AI</title>
-        {/* Viewport Meta Tag for Perfect Mobile Rendering */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-        {/* Logo/Icon in Tab */}
+        {/* Viewport tag exactly for mobile layout fixing */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        {/* Favicon tag for the logo in the browser tab */}
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -161,9 +162,8 @@ export default function Home() {
             </div>
 
             <h2 className="section-title title1">A Seamless User Experience</h2>
-            
-            {/* IN DONO TEXT KO UPAR SHIFT KIYA HAI KHALI SPACE HATANE KE LIYE */}
             <h2 className="section-title title2">Built by Professionals, for Professionals</h2>
+
             <p className="description">
               This is the place where you simply write your imagination, and AI transforms it into a fully AI-ready prompt.
               <br />
@@ -211,7 +211,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Main Showcase Image (Blurred Ambient Glow) */}
+            {/* Main Showcase Image GIF (Blurred into a background glow) */}
             <div className="main-img" />
 
             {/* Second Hero Background */}
@@ -226,9 +226,9 @@ export default function Home() {
               <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" style={{ width: 18, height: 18 }} />
             </div>
 
-            {/* Desktop FAQ Wrapper - EXACT ID FOR NAV PILL TO WORK */}
+            {/* Desktop FAQ Wrapper */}
             <div className="desktop-faq-wrapper">
-              <FaqAccordion sectionId="faq-section" />
+              <FaqAccordion idPrefix="desktop" />
             </div>
           </div>
         </ScaleFit>
@@ -283,7 +283,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile Showcase Glow */}
+        {/* Mobile Showcase Glow (Replaces sharp image with ambient blur) */}
         <div className="m-ambient-glow" />
 
         <h2 className="m-section-title" id="about-section-mobile">
@@ -296,8 +296,7 @@ export default function Home() {
         </div>
 
         <div className="m-faq">
-          {/* Mobile me id alag di hai taki React conflict na kare */}
-          <FaqAccordion sectionId="faq-section-mobile" />
+          <FaqAccordion idPrefix="mobile" />
         </div>
       </div>
 
@@ -310,7 +309,7 @@ export default function Home() {
           scroll-behavior: smooth;
         }
 
-        /* Hiding Login/Profile Icon from NavPill component CSS hack */
+        /* Hack to hide the login/profile icon from the NavPill component */
         .nav-fixed svg, 
         .nav-fixed img[alt*="user" i], 
         .nav-fixed img[alt*="login" i],
@@ -352,7 +351,7 @@ export default function Home() {
         /* ---------- DESKTOP CONTAINER ---------- */
         .container {
           width: 1920px;
-          height: 3100px; /* FIXED: Height drastically reduced to eliminate empty bottom space */
+          height: 3900px; /* FIXED: Height exactly optimized to remove bottom space */
           position: relative;
           background: #020202;
           overflow: hidden;
@@ -423,15 +422,13 @@ export default function Home() {
           top: 1049px;
           left: 107px;
         }
-
-        /* ALL BOTTOM SECTIONS SHIFTED UP TO REMOVE EMPTY SPACE */
         .title2 {
-          top: 1720px;
+          top: 1943px;
           left: 107px;
         }
         .description {
           position: absolute;
-          top: 1820px;
+          top: 2083px;
           left: 107px;
           width: 755px;
           font-size: 25px;
@@ -460,8 +457,6 @@ export default function Home() {
           overflow: hidden;
           flex-shrink: 0;
         }
-        
-        /* Cropped numbers style intact per user design */
         .card-bg-number {
           position: absolute;
           right: -15px;
@@ -500,9 +495,10 @@ export default function Home() {
           color: white;
         }
 
+        /* FIXED MAIN IMAGE VISIBILITY & BLUR */
         .main-img {
           position: absolute;
-          top: 1500px;
+          top: 1700px;
           left: 750px;
           width: 1300px;
           height: 1300px;
@@ -515,7 +511,7 @@ export default function Home() {
 
         .second-hero {
           position: absolute;
-          top: 2100px;
+          top: 2680px;
           left: 0;
           width: 100%;
           height: 906px;
@@ -525,7 +521,7 @@ export default function Home() {
         }
         .second-heading {
           position: absolute;
-          top: 2200px;
+          top: 3100px;
           left: 130px;
           font-size: 60px;
           font-weight: 900;
@@ -536,7 +532,7 @@ export default function Home() {
         }
         .second-btn {
           position: absolute;
-          top: 2450px;
+          top: 3300px;
           left: 130px;
           width: 170px;
           height: 50px;
@@ -557,7 +553,7 @@ export default function Home() {
 
         .desktop-faq-wrapper {
           position: absolute;
-          top: 2650px;
+          top: 3450px;
           left: 130px;
           width: 1650px;
           z-index: 2;
@@ -682,6 +678,7 @@ export default function Home() {
             z-index: 1;
           }
 
+          /* MOBILE MAIN IMAGE SHOWCASE */
           .m-ambient-glow {
             position: absolute;
             top: 40%;

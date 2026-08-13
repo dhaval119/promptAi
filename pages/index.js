@@ -20,10 +20,10 @@ const FAQS = [
   },
 ];
 
-function FaqAccordion({ idPrefix = '' }) {
+function FaqAccordion() {
   const [openIndex, setOpenIndex] = useState(0);
   return (
-    <div className="faq-wrapper" id={idPrefix ? `faq-section-${idPrefix}` : 'faq-section'}>
+    <div className="faq-wrapper" id="faq-section">
       <h2 className="faq-heading">
         Frequently asked
         <br />
@@ -37,14 +37,15 @@ function FaqAccordion({ idPrefix = '' }) {
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </div>
-          <div className="faq-answer">{item.a}</div>
+          {/* grid-rows collapse trick: always sized to real content height,
+              so it can never clip or overlap the next question no matter
+              how long the answer text is. */}
+          <div className="faq-answer-grid">
+            <div className="faq-answer">{item.a}</div>
+          </div>
         </div>
       ))}
       <style jsx>{`
-        .faq-wrapper {
-          /* Adds spacing at the top when navigated via anchor link */
-          scroll-margin-top: 150px; 
-        }
         .faq-heading {
           font-size: 70px;
           font-weight: 900;
@@ -81,17 +82,23 @@ function FaqAccordion({ idPrefix = '' }) {
           transition: transform 0.3s ease;
           flex-shrink: 0;
         }
+        .faq-answer-grid {
+          display: grid;
+          grid-template-rows: 0fr;
+          transition: grid-template-rows 0.4s ease;
+        }
+        .faq-item.active .faq-answer-grid {
+          grid-template-rows: 1fr;
+        }
         .faq-answer {
-          max-height: 0;
           overflow: hidden;
-          transition: max-height 0.4s ease, padding 0.4s ease;
+          min-height: 0;
           font-size: 18px;
           line-height: 1.6;
           color: #e0e0e0;
           padding-right: 50px;
         }
         .faq-item.active .faq-answer {
-          max-height: 260px;
           padding-top: 20px;
         }
         .faq-item.active .faq-icon {
@@ -132,11 +139,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Prompt AI</title>
-        {/* Viewport tag exactly for mobile layout fixing */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-        {/* Favicon tag for the logo in the browser tab */}
-        <link rel="icon" href="/favicon.ico" />
+        <title>PromptAi - AI Prompt Generator</title>
       </Head>
 
       {/* FIXED NAVBAR & BUTTONS */}
@@ -228,8 +231,22 @@ export default function Home() {
 
             {/* Desktop FAQ Wrapper */}
             <div className="desktop-faq-wrapper">
-              <FaqAccordion idPrefix="desktop" />
+              <FaqAccordion />
             </div>
+
+            {/*
+              Flow "spacer" - this is the actual fix for the container-height
+              bug. Every element above is position:absolute, which means
+              (per normal CSS rules) none of them count toward this div's
+              own height - so without something in normal document flow,
+              .container would collapse close to 0px tall and everything
+              below the very top would get clipped/overlap the fixed navbar.
+              This 1px div sits in normal flow and is pushed down past the
+              lowest possible point of the FAQ section (even fully expanded),
+              which forces .container to always be exactly as tall as it
+              needs to be - no magic hardcoded height number required.
+            */}
+            <div style={{ marginTop: 4550, height: 1 }} aria-hidden="true" />
           </div>
         </ScaleFit>
       </div>
@@ -238,10 +255,12 @@ export default function Home() {
       <div className="mobile-only">
         <div className="m-hero-bg" />
         <div className="m-hero">
-          <h1 className="m-heading">Get AI-generated production-ready prompts in seconds</h1>
-          <div className="m-btn-big" onClick={() => router.push('/chat')}>
-            <span>GET STARTED</span>
-            <img src="/assets/arrow.png" alt="Arrow" />
+          <h1 className="m-heading">Get AI-generated</h1>
+          <div className="m-hero-sub-row">
+            <p className="m-subtext">production-ready prompts in seconds</p>
+            <div className="m-btn-small" onClick={() => router.push('/chat')}>
+              GET STARTED
+            </div>
           </div>
         </div>
 
@@ -286,7 +305,7 @@ export default function Home() {
         {/* Mobile Showcase Glow (Replaces sharp image with ambient blur) */}
         <div className="m-ambient-glow" />
 
-        <h2 className="m-section-title" id="about-section-mobile">
+        <h2 className="m-section-title" id="about-section">
           Built by Professionals, for Professionals
         </h2>
         <h1 className="m-second-heading">Get All the Type of prompt You Need In a Single Platform</h1>
@@ -296,7 +315,7 @@ export default function Home() {
         </div>
 
         <div className="m-faq">
-          <FaqAccordion idPrefix="mobile" />
+          <FaqAccordion />
         </div>
       </div>
 
@@ -306,7 +325,6 @@ export default function Home() {
           background: #020202;
           margin: 0;
           padding: 0;
-          scroll-behavior: smooth;
         }
 
         /* Hack to hide the login/profile icon from the NavPill component */
@@ -351,10 +369,8 @@ export default function Home() {
         /* ---------- DESKTOP CONTAINER ---------- */
         .container {
           width: 1920px;
-          height: 3900px; /* FIXED: Height exactly optimized to remove bottom space */
           position: relative;
           background: #020202;
-          overflow: hidden;
         }
         .hero-bg {
           position: absolute;
@@ -505,7 +521,7 @@ export default function Home() {
           background: url('/assets/main12.gif') center/cover no-repeat;
           border-radius: 50%;
           z-index: 0; 
-          filter: blur(45px); 
+          filter: blur(45px);
           opacity: 0.7;
         }
 
@@ -553,7 +569,7 @@ export default function Home() {
 
         .desktop-faq-wrapper {
           position: absolute;
-          top: 3450px;
+          top: 3500px;
           left: 130px;
           width: 1650px;
           z-index: 2;
@@ -610,7 +626,34 @@ export default function Home() {
             font-weight: 900;
             color: #fff;
             line-height: 1.15;
-            margin-bottom: 24px;
+            margin-bottom: 14px;
+          }
+          .m-hero-sub-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+          }
+          .m-subtext {
+            font-size: 13px;
+            font-weight: 600;
+            color: #d8d8d8;
+            white-space: nowrap;
+          }
+          .m-btn-small {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            color: #000;
+            font-weight: bold;
+            font-size: 11px;
+            letter-spacing: 0.3px;
+            border-radius: 50px;
+            padding: 9px 16px;
+            cursor: pointer;
+            white-space: nowrap;
           }
           .m-btn-big {
             display: inline-flex;
@@ -678,7 +721,7 @@ export default function Home() {
             z-index: 1;
           }
 
-          /* MOBILE MAIN IMAGE SHOWCASE */
+          /* MOBILE MAIN IMAGE SHOWCASE (Blurred Ambient Glow) */
           .m-ambient-glow {
             position: absolute;
             top: 40%;

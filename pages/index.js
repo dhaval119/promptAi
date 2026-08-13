@@ -22,6 +22,7 @@ const FAQS = [
 
 function FaqAccordion({ sectionId }) {
   const [openIndex, setOpenIndex] = useState(0);
+
   return (
     <div className="faq-wrapper" id={sectionId}>
       <h2 className="faq-heading">
@@ -29,46 +30,88 @@ function FaqAccordion({ sectionId }) {
         <br />
         questions
       </h2>
-      {FAQS.map((item, i) => (
-        <div key={i} className={`faq-item ${openIndex === i ? 'active' : ''}`}>
-          <div className="faq-question" onClick={() => setOpenIndex(openIndex === i ? -1 : i)}>
-            {item.q}
-            <svg className="faq-icon" viewBox="0 0 24 24">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
+
+      {FAQS.map((item, i) => {
+        const isOpen = openIndex === i;
+
+        return (
+          <div
+            key={i}
+            className={`faq-item ${isOpen ? 'active' : ''}`}
+          >
+            <button
+              type="button"
+              className="faq-question"
+              onClick={() =>
+                setOpenIndex(isOpen ? -1 : i)
+              }
+              aria-expanded={isOpen}
+            >
+              <span>{item.q}</span>
+
+              <svg
+                className="faq-icon"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <div className="faq-answer-wrap">
+              <div className="faq-answer">
+                {item.a}
+              </div>
+            </div>
           </div>
-          <div className="faq-answer">{item.a}</div>
-        </div>
-      ))}
+        );
+      })}
+
       <style jsx>{`
         .faq-wrapper {
+          width: 100%;
           scroll-margin-top: 120px;
         }
+
         .faq-heading {
           font-size: 70px;
           font-weight: 900;
           line-height: 1.1;
-          margin-bottom: 60px;
+          margin: 0 0 60px;
           letter-spacing: -1px;
           color: #fff;
         }
+
         .faq-item {
+          width: 100%;
           border-bottom: 1px solid #333;
-          padding: 30px 0;
+          padding: 0;
         }
+
         .faq-question {
+          width: 100%;
+          border: 0;
+          outline: 0;
+          background: transparent;
+          padding: 30px 0;
+          margin: 0;
+          font-family: inherit;
           font-size: 24px;
           font-weight: 700;
           cursor: pointer;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          user-select: none;
+          gap: 30px;
+          text-align: left;
           color: #fff;
+          user-select: none;
         }
+
         .faq-question:hover {
           opacity: 0.9;
         }
+
         .faq-icon {
           width: 24px;
           height: 24px;
@@ -80,21 +123,67 @@ function FaqAccordion({ sectionId }) {
           transition: transform 0.3s ease;
           flex-shrink: 0;
         }
+
+        .faq-item.active .faq-icon {
+          transform: rotate(180deg);
+        }
+
+        .faq-answer-wrap {
+          display: grid;
+          grid-template-rows: 0fr;
+          transition: grid-template-rows 0.35s ease;
+        }
+
         .faq-answer {
-          max-height: 0;
+          min-height: 0;
           overflow: hidden;
-          transition: max-height 0.4s ease, padding 0.4s ease;
           font-size: 18px;
           line-height: 1.6;
           color: #e0e0e0;
           padding-right: 50px;
         }
-        .faq-item.active .faq-answer {
-          max-height: 400px;
-          padding-top: 20px;
+
+        .faq-item.active .faq-answer-wrap {
+          grid-template-rows: 1fr;
         }
-        .faq-item.active .faq-icon {
-          transform: rotate(180deg);
+
+        .faq-item.active .faq-answer {
+          padding-bottom: 28px;
+        }
+
+        @media (max-width: 900px) {
+          .faq-wrapper {
+            scroll-margin-top: 100px;
+          }
+
+          .faq-heading {
+            font-size: clamp(34px, 10vw, 46px);
+            line-height: 1.05;
+            margin-bottom: 28px;
+            letter-spacing: -0.5px;
+          }
+
+          .faq-question {
+            font-size: 17px;
+            line-height: 1.4;
+            padding: 22px 0;
+            gap: 15px;
+          }
+
+          .faq-icon {
+            width: 18px;
+            height: 18px;
+          }
+
+          .faq-answer {
+            font-size: 15px;
+            line-height: 1.6;
+            padding-right: 5px;
+          }
+
+          .faq-item.active .faq-answer {
+            padding-bottom: 20px;
+          }
         }
       `}</style>
     </div>
@@ -103,6 +192,7 @@ function FaqAccordion({ sectionId }) {
 
 export default function Home() {
   const router = useRouter();
+
   const row1Ref = useRef(null);
   const row2Ref = useRef(null);
   const featuresWrapRef = useRef(null);
@@ -112,192 +202,511 @@ export default function Home() {
       const wrap = featuresWrapRef.current;
       const row1 = row1Ref.current;
       const row2 = row2Ref.current;
+
       if (!wrap || !row1 || !row2) return;
+
       const rect = wrap.getBoundingClientRect();
       const vh = window.innerHeight;
+
       const total = rect.height + vh;
       const scrolled = vh - rect.top;
-      const progress = Math.max(0, Math.min(1, scrolled / total));
+
+      const progress = Math.max(
+        0,
+        Math.min(1, scrolled / total)
+      );
+
       const moveAmount = progress * 400;
-      row1.style.transform = `translateX(${moveAmount}px)`;
-      row2.style.transform = `translateX(-${moveAmount}px)`;
+
+      row1.style.transform =
+        `translateX(${moveAmount}px)`;
+
+      row2.style.transform =
+        `translateX(-${moveAmount}px)`;
     }
-    window.addEventListener('scroll', onScroll, { passive: true });
+
+    window.addEventListener(
+      'scroll',
+      onScroll,
+      { passive: true }
+    );
+
     onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
+
+    return () => {
+      window.removeEventListener(
+        'scroll',
+        onScroll
+      );
+    };
   }, []);
+
+  const goToFaq = () => {
+    const isMobile =
+      typeof window !== 'undefined' &&
+      window.innerWidth <= 900;
+
+    const targetId = isMobile
+      ? 'faq-section-mobile'
+      : 'faq-section';
+
+    const target =
+      document.getElementById(targetId);
+
+    if (!target) return;
+
+    const offset = isMobile ? 85 : 110;
+
+    const top =
+      target.getBoundingClientRect().top +
+      window.scrollY -
+      offset;
+
+    window.scrollTo({
+      top,
+      behavior: 'smooth',
+    });
+  };
 
   return (
     <>
       <Head>
         <title>Prompt AI</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-        <link rel="icon" href="/favicon.ico" />
+
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"
+        />
+
+        <link
+          rel="icon"
+          href="/favicon.ico"
+        />
       </Head>
 
-      {/* FIXED NAVBAR & BUTTONS */}
-      <Logo onClick={() => router.push('/')} />
+      {/* FIXED NAVIGATION */}
+
+      <Logo
+        onClick={() => router.push('/')}
+      />
+
       <div className="nav-fixed">
-        <NavPill />
+        <NavPill
+          onFaqClick={goToFaq}
+        />
       </div>
-      <div className="btn-top" onClick={() => router.push('/chat')}>
+
+      <div
+        className="btn-top"
+        onClick={() => router.push('/chat')}
+      >
         GET STARTED
       </div>
 
-      {/* DESKTOP LAYOUT (>=901px) */}
+      {/* ================= DESKTOP ================= */}
+
       <div className="desktop-only">
         <ScaleFit baseWidth={1920}>
           <div className="container">
+
             <div className="hero-bg" />
-            <h1 className="main-heading">Get AI-generated</h1>
-            <p className="sub-heading">production-ready prompts in seconds</p>
-            <div className="btn-big" onClick={() => router.push('/chat')}>
-              <span>GET STARTED</span>
-              <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" />
-            </div>
-            <h2 className="section-title title1">A Seamless User Experience</h2>
-            
-            <h2 className="section-title title2">Built by Professionals, for Professionals</h2>
-            <p className="description">
-              This is the place where you simply write your imagination, and AI transforms it into a fully AI-ready prompt.
-              <br />
-              <br />
-              Whether you're writing blogs, creating social media posts, or working on any creative project — AI helps you express your thoughts clearly and professionally.
-              <br />
-              <br />
-              See how your simple ideas become "AI-ready prompts" — ready to use instantly with Gemini or any other model. Your words, our intelligence — together, we craft the perfect prompt.
+
+            <h1 className="main-heading">
+              Get AI-generated
+            </h1>
+
+            <p className="sub-heading">
+              production-ready prompts in seconds
             </p>
 
-            <div className="features-container" ref={featuresWrapRef}>
-              <div className="feature-row" ref={row1Ref}>
+            <div
+              className="btn-big"
+              onClick={() => router.push('/chat')}
+            >
+              <span>GET STARTED</span>
+
+              <img
+                src="/assets/arrow.png"
+                alt="Arrow"
+                className="arrow-img"
+              />
+            </div>
+
+            {/* FEATURE INTRO */}
+
+            <h2 className="section-title title1">
+              A Seamless User Experience
+            </h2>
+
+            {/* FEATURE CARDS */}
+
+            <div
+              className="features-container"
+              ref={featuresWrapRef}
+            >
+              <div
+                className="feature-row"
+                ref={row1Ref}
+              >
                 <div className="feature-card">
-                  <div className="card-bg-number">01</div>
-                  <div className="card-header">FEATURE 1</div>
-                  <div className="card-body white">Ready-to-use prompts.</div>
+                  <div className="card-bg-number">
+                    01
+                  </div>
+
+                  <div className="card-header">
+                    FEATURE 1
+                  </div>
+
+                  <div className="card-body white">
+                    Ready-to-use prompts.
+                  </div>
                 </div>
+
                 <div className="feature-card">
-                  <div className="card-bg-number">02</div>
-                  <div className="card-header">FEATURE 2</div>
-                  <div className="card-body dark">Your ideas stay private.</div>
+                  <div className="card-bg-number">
+                    02
+                  </div>
+
+                  <div className="card-header">
+                    FEATURE 2
+                  </div>
+
+                  <div className="card-body dark">
+                    Your ideas stay private.
+                  </div>
                 </div>
+
                 <div className="feature-card">
-                  <div className="card-bg-number">03</div>
-                  <div className="card-header">FEATURE 3</div>
-                  <div className="card-body white">Instant, quality results.</div>
+                  <div className="card-bg-number">
+                    03
+                  </div>
+
+                  <div className="card-header">
+                    FEATURE 3
+                  </div>
+
+                  <div className="card-body white">
+                    Instant, quality results.
+                  </div>
                 </div>
               </div>
-              <div className="feature-row" ref={row2Ref} style={{ marginTop: 52 }}>
+
+              <div
+                className="feature-row row-two"
+                ref={row2Ref}
+              >
                 <div className="feature-card">
-                  <div className="card-bg-number">04</div>
-                  <div className="card-header">FEATURE 4</div>
-                  <div className="card-body dark">Keep and reuse your best ones.</div>
+                  <div className="card-bg-number">
+                    04
+                  </div>
+
+                  <div className="card-header">
+                    FEATURE 4
+                  </div>
+
+                  <div className="card-body dark">
+                    Keep and reuse your best ones.
+                  </div>
                 </div>
+
                 <div className="feature-card">
-                  <div className="card-bg-number">05</div>
-                  <div className="card-header">FEATURE 5</div>
-                  <div className="card-body white">Think ideas, not words.</div>
+                  <div className="card-bg-number">
+                    05
+                  </div>
+
+                  <div className="card-header">
+                    FEATURE 5
+                  </div>
+
+                  <div className="card-body white">
+                    Think ideas, not words.
+                  </div>
                 </div>
+
                 <div className="feature-card">
-                  <div className="card-bg-number">06</div>
-                  <div className="card-header">FEATURE 6</div>
-                  <div className="card-body dark">Copy & use anywhere fast.</div>
+                  <div className="card-bg-number">
+                    06
+                  </div>
+
+                  <div className="card-header">
+                    FEATURE 6
+                  </div>
+
+                  <div className="card-body dark">
+                    Copy & use anywhere fast.
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Main Showcase Image (Blurred Ambient Glow) */}
+            {/* PROFESSIONAL SECTION */}
+
+            <h2 className="section-title title2">
+              Built by Professionals, for Professionals
+            </h2>
+
+            <p className="description">
+              This is the place where you simply write your imagination,
+              and AI transforms it into a fully AI-ready prompt.
+
+              <br />
+              <br />
+
+              Whether you're writing blogs, creating social media posts,
+              or working on any creative project — AI helps you express
+              your thoughts clearly and professionally.
+
+              <br />
+              <br />
+
+              See how your simple ideas become "AI-ready prompts" —
+              ready to use instantly with Gemini or any other model.
+              Your words, our intelligence — together, we craft the
+              perfect prompt.
+            </p>
+
+            {/* MAIN PURPLE GLOW */}
+
             <div className="main-img" />
 
-            {/* Second Hero Background */}
-            <div className="second-hero" id="about-section" />
+            {/* SECOND HERO */}
+
+            <div
+              className="second-hero"
+              id="about-section"
+            />
+
             <h1 className="second-heading">
-              Get All the Type of prompt You Need <br />
+              Get All the Type of prompt You Need
+              <br />
               In a Single Platform
             </h1>
-            <div className="second-btn" onClick={() => router.push('/chat')}>
+
+            <div
+              className="second-btn"
+              onClick={() => router.push('/chat')}
+            >
               GET STARTED
-              <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" style={{ width: 18, height: 18 }} />
+
+              <img
+                src="/assets/arrow.png"
+                alt="Arrow"
+                className="arrow-img small-arrow"
+              />
             </div>
 
-            {/* Desktop FAQ Wrapper */}
-            <div className="desktop-faq-wrapper">
-              <FaqAccordion sectionId="faq-section" />
+            {/* FAQ */}
+
+            <div
+              className="desktop-faq-wrapper"
+            >
+              <FaqAccordion
+                sectionId="faq-section"
+              />
             </div>
           </div>
         </ScaleFit>
       </div>
 
-      {/* MOBILE LAYOUT (<901px) */}
+      {/* ================= MOBILE ================= */}
+
       <div className="mobile-only">
+
         <div className="m-hero-bg" />
+
         <div className="m-hero">
-          <h1 className="m-heading">Get AI-generated production-ready prompts in seconds</h1>
-          <div className="m-btn-big" onClick={() => router.push('/chat')}>
+          <h1 className="m-heading">
+            Get AI-generated production-ready
+            prompts in seconds
+          </h1>
+
+          <div
+            className="m-btn-big"
+            onClick={() => router.push('/chat')}
+          >
             <span>GET STARTED</span>
-            <img src="/assets/arrow.png" alt="Arrow" />
-          </div>
-        </div>
-        <h2 className="m-section-title">A Seamless User Experience</h2>
-        <p className="m-description">
-          This is the place where you simply write your imagination, and AI transforms it into a fully AI-ready prompt. Whether you're writing blogs, social posts, or any creative project — AI helps you express your thoughts clearly and professionally.
-        </p>
-        <div className="m-feature-grid">
-          <div className="feature-card">
-            <div className="card-bg-number">01</div>
-            <div className="card-header">FEATURE 1</div>
-            <div className="card-body white">Ready-to-use prompts.</div>
-          </div>
-          <div className="feature-card">
-            <div className="card-bg-number">02</div>
-            <div className="card-header">FEATURE 2</div>
-            <div className="card-body dark">Your ideas stay private.</div>
-          </div>
-          <div className="feature-card">
-            <div className="card-bg-number">03</div>
-            <div className="card-header">FEATURE 3</div>
-            <div className="card-body white">Instant, quality results.</div>
-          </div>
-          <div className="feature-card">
-            <div className="card-bg-number">04</div>
-            <div className="card-header">FEATURE 4</div>
-            <div className="card-body dark">Keep and reuse your best ones.</div>
-          </div>
-          <div className="feature-card">
-            <div className="card-bg-number">05</div>
-            <div className="card-header">FEATURE 5</div>
-            <div className="card-body white">Think ideas, not words.</div>
-          </div>
-          <div className="feature-card">
-            <div className="card-bg-number">06</div>
-            <div className="card-header">FEATURE 6</div>
-            <div className="card-body dark">Copy & use anywhere fast.</div>
+
+            <img
+              src="/assets/arrow.png"
+              alt="Arrow"
+            />
           </div>
         </div>
 
+        <h2 className="m-section-title">
+          A Seamless User Experience
+        </h2>
+
+        <p className="m-description">
+          This is the place where you simply write
+          your imagination, and AI transforms it into
+          a fully AI-ready prompt. Whether you're
+          writing blogs, social posts, or any creative
+          project — AI helps you express your thoughts
+          clearly and professionally.
+        </p>
+
+        {/* MOBILE FEATURES */}
+
+        <div className="m-feature-grid">
+
+          <div className="feature-card">
+            <div className="card-bg-number">
+              01
+            </div>
+            <div className="card-header">
+              FEATURE 1
+            </div>
+            <div className="card-body white">
+              Ready-to-use prompts.
+            </div>
+          </div>
+
+          <div className="feature-card">
+            <div className="card-bg-number">
+              02
+            </div>
+            <div className="card-header">
+              FEATURE 2
+            </div>
+            <div className="card-body dark">
+              Your ideas stay private.
+            </div>
+          </div>
+
+          <div className="feature-card">
+            <div className="card-bg-number">
+              03
+            </div>
+            <div className="card-header">
+              FEATURE 3
+            </div>
+            <div className="card-body white">
+              Instant, quality results.
+            </div>
+          </div>
+
+          <div className="feature-card">
+            <div className="card-bg-number">
+              04
+            </div>
+            <div className="card-header">
+              FEATURE 4
+            </div>
+            <div className="card-body dark">
+              Keep and reuse your best ones.
+            </div>
+          </div>
+
+          <div className="feature-card">
+            <div className="card-bg-number">
+              05
+            </div>
+            <div className="card-header">
+              FEATURE 5
+            </div>
+            <div className="card-body white">
+              Think ideas, not words.
+            </div>
+          </div>
+
+          <div className="feature-card">
+            <div className="card-bg-number">
+              06
+            </div>
+            <div className="card-header">
+              FEATURE 6
+            </div>
+            <div className="card-body dark">
+              Copy & use anywhere fast.
+            </div>
+          </div>
+
+        </div>
+
         <div className="m-ambient-glow" />
-        <h2 className="m-section-title" id="about-section-mobile">
+
+        {/* MOBILE ABOUT */}
+
+        <h2
+          className="m-section-title m-about-title"
+          id="about-section-mobile"
+        >
           Built by Professionals, for Professionals
         </h2>
-        <h1 className="m-second-heading">Get All the Type of prompt You Need In a Single Platform</h1>
-        <div className="m-btn-big" onClick={() => router.push('/chat')}>
+
+        <p className="m-description m-about-description">
+          This is the place where you simply write
+          your imagination, and AI transforms it into
+          a fully AI-ready prompt.
+
+          <br />
+          <br />
+
+          Whether you're writing blogs, creating
+          social media posts, or working on any
+          creative project — AI helps you express
+          your thoughts clearly and professionally.
+
+          <br />
+          <br />
+
+          See how your simple ideas become
+          "AI-ready prompts" — ready to use instantly
+          with Gemini or any other model.
+        </p>
+
+        <h1 className="m-second-heading">
+          Get All the Type of prompt You Need
+          In a Single Platform
+        </h1>
+
+        <div
+          className="m-btn-big"
+          onClick={() => router.push('/chat')}
+        >
           <span>GET STARTED</span>
-          <img src="/assets/arrow.png" alt="Arrow" />
+
+          <img
+            src="/assets/arrow.png"
+            alt="Arrow"
+          />
         </div>
+
+        {/* MOBILE FAQ */}
+
         <div className="m-faq">
-          <FaqAccordion sectionId="faq-section-mobile" />
+          <FaqAccordion
+            sectionId="faq-section-mobile"
+          />
         </div>
       </div>
+
+      {/* ================= GLOBAL ================= */}
 
       <style jsx global>{`
         html,
         body {
-          background: #020202;
           margin: 0;
           padding: 0;
+          background: #020202;
+          color: white;
           scroll-behavior: smooth;
+          overflow-x: hidden;
         }
-        .nav-fixed svg, 
-        .nav-fixed img[alt*="user" i], 
+
+        *,
+        *::before,
+        *::after {
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .nav-fixed svg,
+        .nav-fixed img[alt*="user" i],
         .nav-fixed img[alt*="login" i],
         .nav-fixed a:last-of-type svg {
           display: none !important;
@@ -305,20 +714,23 @@ export default function Home() {
       `}</style>
 
       <style jsx>{`
+        /* ================= NAV ================= */
+
         .nav-fixed {
           position: fixed;
           top: 31px;
           right: 240px;
-          z-index: 999;
+          z-index: 9999;
         }
+
         .btn-top {
           position: fixed;
           top: 31px;
           right: 55px;
           width: 144px;
           height: 37px;
-          background: black;
-          border: 1px solid white;
+          background: #000;
+          border: 1px solid #fff;
           border-radius: 50px;
           display: flex;
           align-items: center;
@@ -326,32 +738,55 @@ export default function Home() {
           font-weight: bold;
           font-size: 15px;
           cursor: pointer;
-          transition: 0.3s;
-          z-index: 999;
-        }
-        .btn-top:hover {
-          background: white;
-          color: black;
+          transition: 0.3s ease;
+          z-index: 9999;
         }
 
-        /* ---------- DESKTOP CONTAINER ---------- */
+        .btn-top:hover {
+          background: #fff;
+          color: #000;
+        }
+
+        /* ================= DESKTOP ================= */
+
+        .desktop-only {
+          display: block;
+        }
+
+        .mobile-only {
+          display: none;
+        }
+
         .container {
           width: 1920px;
-          height: 3700px; /* FIXED: increased so FAQ fully visible */
+
+          /*
+            IMPORTANT FIX:
+            Old value 3100px was cutting the FAQ section.
+          */
+          height: 3700px;
+
           position: relative;
           background: #020202;
           overflow: hidden;
         }
+
         .hero-bg {
           position: absolute;
           top: 0;
           left: 0;
           width: 100%;
           height: 906px;
-          background: url('/assets/video.gif') center/cover no-repeat;
+
+          background:
+            url('/assets/video.gif')
+            center / cover
+            no-repeat;
+
           filter: blur(35px);
           z-index: 0;
         }
+
         .main-heading {
           position: absolute;
           top: 328px;
@@ -360,7 +795,10 @@ export default function Home() {
           font-weight: 900;
           color: #fff;
           z-index: 2;
+          margin: 0;
+          letter-spacing: -4px;
         }
+
         .sub-heading {
           position: absolute;
           top: 827px;
@@ -369,60 +807,90 @@ export default function Home() {
           font-weight: bold;
           color: #fff;
           z-index: 2;
+          margin: 0;
         }
+
         .btn-big {
           position: absolute;
           top: 814px;
           left: 1630px;
           width: 204px;
           height: 53px;
-          background: white;
+          background: #fff;
           border-radius: 50px;
+
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 12px;
+
           font-weight: bold;
           font-size: 18px;
-          color: black;
+          color: #000;
+
           cursor: pointer;
-          transition: 0.4s;
+          transition: 0.3s ease;
           z-index: 2;
         }
-        .btn-big:hover {
+
+        .btn-big:hover,
+        .second-btn:hover {
           background: #e0e0e0;
         }
+
         .arrow-img {
           width: 24px;
           height: 24px;
-          transition: 0.4s;
+          transition: 0.3s ease;
+          object-fit: contain;
         }
+
+        .small-arrow {
+          width: 18px;
+          height: 18px;
+        }
+
         .section-title {
           position: absolute;
+          margin: 0;
           font-weight: 900;
           font-size: 50px;
+          line-height: 1.1;
           color: #fff;
           z-index: 2;
         }
+
         .title1 {
           top: 1049px;
           left: 107px;
         }
+
+        /*
+          Professional section moved slightly upward,
+          but second hero moved downward enough so
+          description and second heading never overlap.
+        */
+
         .title2 {
-          top: 1720px;
+          top: 1680px;
           left: 107px;
         }
+
         .description {
           position: absolute;
-          top: 1820px;
+          top: 1785px;
           left: 107px;
           width: 755px;
+
+          margin: 0;
+
           font-size: 25px;
           font-weight: bold;
-          line-height: 1.8;
+          line-height: 1.75;
           color: #fff;
           z-index: 2;
         }
+
         .features-container {
           position: absolute;
           top: 1229px;
@@ -430,11 +898,18 @@ export default function Home() {
           width: 1650px;
           z-index: 2;
         }
+
         .feature-row {
           display: flex;
           gap: 35px;
           transition: transform 0.1s ease-out;
+          will-change: transform;
         }
+
+        .feature-row.row-two {
+          margin-top: 52px;
+        }
+
         .feature-card {
           position: relative;
           width: 502px;
@@ -443,6 +918,7 @@ export default function Home() {
           overflow: hidden;
           flex-shrink: 0;
         }
+
         .card-bg-number {
           position: absolute;
           right: -15px;
@@ -454,6 +930,7 @@ export default function Home() {
           pointer-events: none;
           user-select: none;
         }
+
         .card-header {
           position: relative;
           z-index: 1;
@@ -464,6 +941,7 @@ export default function Home() {
           font-weight: bold;
           color: white;
         }
+
         .card-body {
           position: relative;
           z-index: 1;
@@ -472,40 +950,68 @@ export default function Home() {
           font-size: 25px;
           font-weight: bold;
         }
+
         .white {
-          background: white;
-          color: black;
+          background: #fff;
+          color: #000;
         }
+
         .dark {
           background: #0e0e0e;
-          color: white;
+          color: #fff;
         }
+
+        /* PURPLE GLOW */
+
         .main-img {
           position: absolute;
           top: 1500px;
           left: 750px;
           width: 1300px;
           height: 1300px;
-          background: url('/assets/main12.gif') center/cover no-repeat;
+
+          background:
+            url('/assets/main12.gif')
+            center / cover
+            no-repeat;
+
           border-radius: 50%;
-          z-index: 0; 
-          filter: blur(45px); 
+          z-index: 0;
+
+          filter: blur(45px);
           opacity: 0.7;
+          pointer-events: none;
         }
+
+        /*
+          IMPORTANT:
+          Moved the second section lower so the
+          professional description has enough room.
+        */
+
         .second-hero {
           position: absolute;
-          top: 2300px; /* shifted down to avoid overlap with description */
+          top: 2380px;
           left: 0;
           width: 100%;
           height: 906px;
-          background: url('/assets/video.gif') center/cover no-repeat;
+
+          background:
+            url('/assets/video.gif')
+            center / cover
+            no-repeat;
+
           filter: blur(35px);
           z-index: 0;
         }
+
         .second-heading {
           position: absolute;
-          top: 2400px; /* shifted down */
+          top: 2480px;
           left: 130px;
+
+          margin: 0;
+
           font-size: 60px;
           font-weight: 900;
           width: 1650px;
@@ -513,184 +1019,370 @@ export default function Home() {
           color: #fff;
           z-index: 2;
         }
+
         .second-btn {
           position: absolute;
-          top: 2650px; /* shifted down */
+          top: 2715px;
           left: 130px;
+
           width: 170px;
           height: 50px;
-          background: white;
+
+          background: #fff;
           border-radius: 50px;
+
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
+
           font-weight: bold;
-          color: black;
+          color: #000;
+
           cursor: pointer;
           z-index: 2;
-        }
-        .second-btn:hover {
-          background: #e0e0e0;
-        }
-        .desktop-faq-wrapper {
-          position: absolute;
-          top: 2800px; /* shifted down so full FAQ visible */
-          left: 130px;
-          width: 1650px;
-          z-index: 2;
-          padding-bottom: 80px;
-        }
-        .desktop-only {
-          display: block;
-        }
-        .mobile-only {
-          display: none;
+          transition: 0.3s ease;
         }
 
-        /* ---------- MOBILE RESPONSIVE LAYOUT (<901px) ---------- */
+        /*
+          IMPORTANT:
+          FAQ moved below second CTA,
+          so all 3 FAQ rows have room.
+        */
+
+        .desktop-faq-wrapper {
+          position: absolute;
+          top: 2910px;
+          left: 130px;
+
+          width: 1650px;
+
+          z-index: 3;
+
+          padding-bottom: 120px;
+        }
+
+        /* ================= MOBILE ================= */
+
         @media (max-width: 900px) {
           .desktop-only {
             display: none;
           }
+
           .mobile-only {
             display: block;
             position: relative;
+
+            width: 100%;
+            min-height: 100vh;
+
             padding: 100px 20px 80px;
+
             overflow: hidden;
           }
+
           .nav-fixed {
+            top: 20px;
             right: 20px;
             transform: scale(0.82);
             transform-origin: top right;
           }
+
           .btn-top {
             display: none;
           }
+
+          /* MOBILE HERO */
+
           .m-hero-bg {
             position: absolute;
             top: 0;
             left: 0;
+
             width: 100%;
             height: 450px;
-            background: url('/assets/video.gif') center/cover no-repeat;
+
+            background:
+              url('/assets/video.gif')
+              center / cover
+              no-repeat;
+
             filter: blur(25px);
             opacity: 0.7;
             z-index: 0;
           }
+
           .m-hero {
             position: relative;
             z-index: 1;
+
             text-align: center;
+
             padding: 20px 0 40px;
           }
+
           .m-heading {
-            font-size: clamp(28px, 8vw, 42px);
+            margin: 0 0 24px;
+
+            font-size: clamp(
+              28px,
+              8vw,
+              42px
+            );
+
             font-weight: 900;
             color: #fff;
+
             line-height: 1.15;
-            margin-bottom: 24px;
+            letter-spacing: -0.5px;
           }
+
           .m-btn-big {
+            width: fit-content;
+
             display: inline-flex;
             align-items: center;
             justify-content: center;
+
             gap: 10px;
+
             background: #fff;
             color: #000;
+
             font-weight: bold;
             font-size: 16px;
+
             border-radius: 50px;
+
             padding: 14px 26px;
+
             cursor: pointer;
+
             margin: 0 auto;
           }
+
           .m-btn-big img {
             width: 18px;
             height: 18px;
+            object-fit: contain;
           }
+
+          /* SECTION HEADINGS */
+
           .m-section-title {
             position: relative;
             z-index: 1;
-            font-size: clamp(24px, 7vw, 32px);
-            font-weight: 900;
-            color: #fff;
+
             margin: 50px 0 16px;
+
+            font-size: clamp(
+              24px,
+              7vw,
+              32px
+            );
+
+            font-weight: 900;
+            line-height: 1.15;
+
+            color: #fff;
           }
+
           .m-description {
             position: relative;
             z-index: 1;
+
+            margin: 0;
+
             font-size: 16px;
             font-weight: 500;
             line-height: 1.7;
+
             color: #d8d8d8;
           }
+
+          /* MOBILE FEATURE CARDS */
+
           .m-feature-grid {
             position: relative;
             z-index: 1;
+
             display: grid;
+
             grid-template-columns: 1fr;
+
             gap: 16px;
+
             margin-top: 30px;
           }
+
           .m-feature-grid .feature-card {
             width: 100%;
             height: auto;
+            min-height: 120px;
+
             border-radius: 18px;
             overflow: hidden;
+
             position: relative;
           }
+
           .m-feature-grid .card-header {
             height: auto;
+
             padding: 14px 20px;
+
             font-size: 15px;
-            position: relative;
-            z-index: 1;
+            line-height: 1.2;
           }
+
           .m-feature-grid .card-body {
             height: auto;
+            min-height: 70px;
+
             padding: 22px 20px;
+
             font-size: 18px;
-            position: relative;
-            z-index: 1;
+            line-height: 1.25;
           }
+
+          .m-feature-grid .card-bg-number {
+            font-size: 100px;
+            right: -10px;
+            bottom: -30px;
+          }
+
+          /* GLOW */
+
           .m-ambient-glow {
             position: absolute;
-            top: 40%;
-            left: -10%;
-            width: 120%;
+
+            top: 38%;
+            left: -20%;
+
+            width: 140%;
             height: 500px;
-            background: url('/assets/main12.gif') center/cover no-repeat;
+
+            background:
+              url('/assets/main12.gif')
+              center / cover
+              no-repeat;
+
             filter: blur(40px);
             z-index: 0;
             opacity: 0.6;
+
             pointer-events: none;
           }
+
+          /* MOBILE ABOUT */
+
+          .m-about-title {
+            margin-top: 60px;
+          }
+
+          .m-about-description {
+            margin-top: 0;
+          }
+
           .m-second-heading {
             position: relative;
             z-index: 1;
-            font-size: clamp(26px, 7vw, 36px);
+
+            margin: 45px 0 24px;
+
+            font-size: clamp(
+              26px,
+              7vw,
+              36px
+            );
+
             font-weight: 900;
+
             color: #fff;
+
             line-height: 1.3;
-            margin-bottom: 24px;
-            margin-top: 50px;
+            letter-spacing: -0.5px;
           }
+
+          /* MOBILE FAQ */
+
           .m-faq {
             position: relative;
-            z-index: 1;
-            margin-top: 60px;
+            z-index: 2;
+
+            width: 100%;
+
+            margin-top: 75px;
+
+            padding-bottom: 30px;
           }
+
+          .m-faq :global(.faq-wrapper) {
+            width: 100%;
+          }
+
           .m-faq :global(.faq-heading) {
-            font-size: clamp(32px, 9vw, 44px) !important;
-            margin-bottom: 30px !important;
+            font-size: clamp(
+              34px,
+              10vw,
+              46px
+            ) !important;
+
+            line-height: 1.05 !important;
+
+            margin-bottom: 25px !important;
           }
+
           .m-faq :global(.faq-question) {
             font-size: 17px !important;
+            padding: 21px 0 !important;
           }
+
           .m-faq :global(.faq-answer) {
             font-size: 15px !important;
-            padding-right: 10px !important;
+            line-height: 1.6 !important;
+            padding-right: 4px !important;
+          }
+
+          .m-faq :global(.faq-item.active .faq-answer) {
+            padding-bottom: 20px !important;
+          }
+        }
+
+        /* SMALL PHONES */
+
+        @media (max-width: 480px) {
+          .mobile-only {
+            padding-left: 16px;
+            padding-right: 16px;
+          }
+
+          .m-heading {
+            font-size: 30px;
+          }
+
+          .m-section-title {
+            font-size: 27px;
+          }
+
+          .m-description {
+            font-size: 15px;
+          }
+
+          .m-second-heading {
+            font-size: 28px;
+          }
+
+          .m-faq {
+            margin-top: 60px;
+          }
+
+          .m-faq :global(.faq-question) {
+            font-size: 16px !important;
+          }
+
+          .m-faq :global(.faq-answer) {
+            font-size: 14px !important;
           }
         }
       `}</style>

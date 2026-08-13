@@ -24,126 +24,117 @@ function FaqAccordion({ sectionId }) {
   const [openIndex, setOpenIndex] = useState(0);
 
   return (
-    <div className="faq-wrapper" id={sectionId}>
+    <section className="faq-wrapper" id={sectionId}>
       <h2 className="faq-heading">
         Frequently asked
         <br />
         questions
       </h2>
 
-      {FAQS.map((item, i) => {
-        const isOpen = openIndex === i;
+      <div className="faq-list">
+        {FAQS.map((item, i) => {
+          const open = openIndex === i;
 
-        return (
-          <div
-            key={i}
-            className={`faq-item ${isOpen ? 'active' : ''}`}
-          >
-            <button
-              type="button"
-              className="faq-question"
-              onClick={() =>
-                setOpenIndex(isOpen ? -1 : i)
-              }
-              aria-expanded={isOpen}
-            >
-              <span>{item.q}</span>
-
-              <svg
-                className="faq-icon"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
+          return (
+            <div key={item.q} className={`faq-item ${open ? 'active' : ''}`}>
+              <button
+                type="button"
+                className="faq-question"
+                aria-expanded={open}
+                onClick={() => setOpenIndex(open ? -1 : i)}
               >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
+                <span>{item.q}</span>
+                <svg className="faq-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
 
-            <div className="faq-answer-wrap">
-              <div className="faq-answer">
-                {item.a}
+              <div className="faq-answer-grid">
+                <div className="faq-answer">{item.a}</div>
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
 
       <style jsx>{`
         .faq-wrapper {
           width: 100%;
-          scroll-margin-top: 120px;
+          scroll-margin-top: 110px;
         }
 
         .faq-heading {
-          font-size: 70px;
-          font-weight: 900;
-          line-height: 1.1;
-          margin: 0 0 60px;
-          letter-spacing: -1px;
+          margin: 0 0 48px;
           color: #fff;
+          font-size: 68px;
+          line-height: 0.98;
+          font-weight: 900;
+          letter-spacing: -2.5px;
+        }
+
+        .faq-list {
+          width: 100%;
         }
 
         .faq-item {
           width: 100%;
-          border-bottom: 1px solid #333;
-          padding: 0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.16);
         }
 
         .faq-question {
           width: 100%;
-          border: 0;
-          outline: 0;
-          background: transparent;
-          padding: 30px 0;
-          margin: 0;
-          font-family: inherit;
-          font-size: 24px;
-          font-weight: 700;
-          cursor: pointer;
           display: flex;
-          justify-content: space-between;
           align-items: center;
+          justify-content: space-between;
           gap: 30px;
-          text-align: left;
+          padding: 26px 0;
+          border: 0;
+          background: transparent;
           color: #fff;
-          user-select: none;
+          font: inherit;
+          font-size: 22px;
+          font-weight: 700;
+          line-height: 1.35;
+          text-align: left;
+          cursor: pointer;
         }
 
         .faq-question:hover {
-          opacity: 0.9;
+          opacity: 0.92;
         }
 
         .faq-icon {
-          width: 24px;
-          height: 24px;
+          width: 22px;
+          height: 22px;
+          flex: 0 0 22px;
           fill: none;
-          stroke: white;
+          stroke: #fff;
           stroke-width: 2;
           stroke-linecap: round;
           stroke-linejoin: round;
-          transition: transform 0.3s ease;
-          flex-shrink: 0;
+          transition: transform 0.25s ease;
         }
 
         .faq-item.active .faq-icon {
           transform: rotate(180deg);
         }
 
-        .faq-answer-wrap {
+        .faq-answer-grid {
           display: grid;
           grid-template-rows: 0fr;
-          transition: grid-template-rows 0.35s ease;
+          transition: grid-template-rows 0.34s ease;
         }
 
         .faq-answer {
           min-height: 0;
           overflow: hidden;
-          font-size: 18px;
-          line-height: 1.6;
-          color: #e0e0e0;
-          padding-right: 50px;
+          padding-right: 48px;
+          color: #d9d9d9;
+          font-size: 17px;
+          line-height: 1.65;
         }
 
-        .faq-item.active .faq-answer-wrap {
+        .faq-item.active .faq-answer-grid {
           grid-template-rows: 1fr;
         }
 
@@ -153,32 +144,33 @@ function FaqAccordion({ sectionId }) {
 
         @media (max-width: 900px) {
           .faq-wrapper {
-            scroll-margin-top: 100px;
+            scroll-margin-top: 90px;
           }
 
           .faq-heading {
-            font-size: clamp(34px, 10vw, 46px);
-            line-height: 1.05;
             margin-bottom: 28px;
-            letter-spacing: -0.5px;
+            font-size: clamp(38px, 11vw, 52px);
+            line-height: 0.98;
+            letter-spacing: -1.5px;
           }
 
           .faq-question {
+            padding: 20px 0;
+            gap: 16px;
             font-size: 17px;
             line-height: 1.4;
-            padding: 22px 0;
-            gap: 15px;
           }
 
           .faq-icon {
             width: 18px;
             height: 18px;
+            flex-basis: 18px;
           }
 
           .faq-answer {
-            font-size: 15px;
+            padding-right: 2px;
+            font-size: 14px;
             line-height: 1.6;
-            padding-right: 5px;
           }
 
           .faq-item.active .faq-answer {
@@ -186,7 +178,7 @@ function FaqAccordion({ sectionId }) {
           }
         }
       `}</style>
-    </div>
+    </section>
   );
 }
 
@@ -197,70 +189,17 @@ export default function Home() {
   const row2Ref = useRef(null);
   const featuresWrapRef = useRef(null);
 
-  useEffect(() => {
-    function onScroll() {
-      const wrap = featuresWrapRef.current;
-      const row1 = row1Ref.current;
-      const row2 = row2Ref.current;
+  const scrollToSection = (desktopId, mobileId) => {
+    if (typeof window === 'undefined') return;
 
-      if (!wrap || !row1 || !row2) return;
-
-      const rect = wrap.getBoundingClientRect();
-      const vh = window.innerHeight;
-
-      const total = rect.height + vh;
-      const scrolled = vh - rect.top;
-
-      const progress = Math.max(
-        0,
-        Math.min(1, scrolled / total)
-      );
-
-      const moveAmount = progress * 400;
-
-      row1.style.transform =
-        `translateX(${moveAmount}px)`;
-
-      row2.style.transform =
-        `translateX(-${moveAmount}px)`;
-    }
-
-    window.addEventListener(
-      'scroll',
-      onScroll,
-      { passive: true }
-    );
-
-    onScroll();
-
-    return () => {
-      window.removeEventListener(
-        'scroll',
-        onScroll
-      );
-    };
-  }, []);
-
-  const goToFaq = () => {
-    const isMobile =
-      typeof window !== 'undefined' &&
-      window.innerWidth <= 900;
-
-    const targetId = isMobile
-      ? 'faq-section-mobile'
-      : 'faq-section';
-
-    const target =
-      document.getElementById(targetId);
+    const isMobile = window.innerWidth <= 900;
+    const targetId = isMobile ? mobileId : desktopId;
+    const target = document.getElementById(targetId);
 
     if (!target) return;
 
-    const offset = isMobile ? 85 : 110;
-
-    const top =
-      target.getBoundingClientRect().top +
-      window.scrollY -
-      offset;
+    const offset = isMobile ? 84 : 105;
+    const top = target.getBoundingClientRect().top + window.scrollY - offset;
 
     window.scrollTo({
       top,
@@ -268,37 +207,83 @@ export default function Home() {
     });
   };
 
+  useEffect(() => {
+    const onScroll = () => {
+      const wrap = featuresWrapRef.current;
+      const row1 = row1Ref.current;
+      const row2 = row2Ref.current;
+
+      if (!wrap || !row1 || !row2) return;
+
+      const rect = wrap.getBoundingClientRect();
+      const viewport = window.innerHeight;
+      const progress = Math.max(
+        0,
+        Math.min(1, (viewport - rect.top) / (rect.height + viewport))
+      );
+
+      const moveAmount = progress * 360;
+
+      row1.style.transform = `translate3d(${moveAmount}px, 0, 0)`;
+      row2.style.transform = `translate3d(-${moveAmount}px, 0, 0)`;
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    onScroll();
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Works even when NavPill doesn't expose a custom FAQ callback prop.
+    const nav = document.querySelector('.nav-fixed');
+    if (!nav) return;
+
+    const onNavClick = (event) => {
+      const item = event.target.closest('a, button');
+      if (!item || !nav.contains(item)) return;
+
+      const label = (item.textContent || '').trim().toLowerCase();
+      const href = item.getAttribute('href') || '';
+
+      if (label === 'faq' || href.includes('#faq-section')) {
+        event.preventDefault();
+        event.stopPropagation();
+        scrollToSection('faq-section', 'faq-section-mobile');
+      }
+    };
+
+    nav.addEventListener('click', onNavClick, true);
+
+    return () => nav.removeEventListener('click', onNavClick, true);
+  }, []);
+
   return (
     <>
       <Head>
         <title>Prompt AI</title>
-
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"
         />
-
-        <link
-          rel="icon"
-          href="/favicon.ico"
-        />
+        <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      {/* FIXED NAVIGATION */}
-
-      <Logo
-        onClick={() => router.push('/')}
-      />
+      <Logo onClick={() => router.push('/')} />
 
       <div className="nav-fixed">
-        <NavPill
-          onFaqClick={goToFaq}
-        />
+        <NavPill />
       </div>
 
       <div
         className="btn-top"
         onClick={() => router.push('/chat')}
+        role="button"
+        tabIndex={0}
       >
         GET STARTED
       </div>
@@ -307,382 +292,158 @@ export default function Home() {
 
       <div className="desktop-only">
         <ScaleFit baseWidth={1920}>
-          <div className="container">
-
+          <main className="desktop-page">
             <div className="hero-bg" />
 
-            <h1 className="main-heading">
-              Get AI-generated
-            </h1>
+            <section className="hero-section">
+              <h1 className="main-heading">Get AI-generated</h1>
+              <p className="sub-heading">production-ready prompts in seconds</p>
 
-            <p className="sub-heading">
-              production-ready prompts in seconds
-            </p>
+              <div className="btn-big" onClick={() => router.push('/chat')}>
+                <span>GET STARTED</span>
+                <img src="/assets/arrow.png" alt="Arrow" />
+              </div>
+            </section>
 
-            <div
-              className="btn-big"
-              onClick={() => router.push('/chat')}
-            >
-              <span>GET STARTED</span>
+            <section className="experience-section">
+              <h2 className="section-title experience-title">
+                A Seamless User Experience
+              </h2>
 
-              <img
-                src="/assets/arrow.png"
-                alt="Arrow"
-                className="arrow-img"
-              />
-            </div>
-
-            {/* FEATURE INTRO */}
-
-            <h2 className="section-title title1">
-              A Seamless User Experience
-            </h2>
-
-            {/* FEATURE CARDS */}
-
-            <div
-              className="features-container"
-              ref={featuresWrapRef}
-            >
-              <div
-                className="feature-row"
-                ref={row1Ref}
-              >
-                <div className="feature-card">
-                  <div className="card-bg-number">
-                    01
-                  </div>
-
-                  <div className="card-header">
-                    FEATURE 1
-                  </div>
-
-                  <div className="card-body white">
-                    Ready-to-use prompts.
-                  </div>
+              <div className="features-container" ref={featuresWrapRef}>
+                <div className="feature-row" ref={row1Ref}>
+                  <FeatureCard number="01" header="FEATURE 1" body="Ready-to-use prompts." light />
+                  <FeatureCard number="02" header="FEATURE 2" body="Your ideas stay private." />
+                  <FeatureCard number="03" header="FEATURE 3" body="Instant, quality results." light />
                 </div>
 
-                <div className="feature-card">
-                  <div className="card-bg-number">
-                    02
-                  </div>
-
-                  <div className="card-header">
-                    FEATURE 2
-                  </div>
-
-                  <div className="card-body dark">
-                    Your ideas stay private.
-                  </div>
-                </div>
-
-                <div className="feature-card">
-                  <div className="card-bg-number">
-                    03
-                  </div>
-
-                  <div className="card-header">
-                    FEATURE 3
-                  </div>
-
-                  <div className="card-body white">
-                    Instant, quality results.
-                  </div>
+                <div className="feature-row row-two" ref={row2Ref}>
+                  <FeatureCard number="04" header="FEATURE 4" body="Keep and reuse your best ones." />
+                  <FeatureCard number="05" header="FEATURE 5" body="Think ideas, not words." light />
+                  <FeatureCard number="06" header="FEATURE 6" body="Copy & use anywhere fast." />
                 </div>
               </div>
+            </section>
 
-              <div
-                className="feature-row row-two"
-                ref={row2Ref}
-              >
-                <div className="feature-card">
-                  <div className="card-bg-number">
-                    04
-                  </div>
+            <section className="professional-section">
+              <h2 className="section-title professional-title">
+                Built by Professionals, for Professionals
+              </h2>
 
-                  <div className="card-header">
-                    FEATURE 4
-                  </div>
-
-                  <div className="card-body dark">
-                    Keep and reuse your best ones.
-                  </div>
-                </div>
-
-                <div className="feature-card">
-                  <div className="card-bg-number">
-                    05
-                  </div>
-
-                  <div className="card-header">
-                    FEATURE 5
-                  </div>
-
-                  <div className="card-body white">
-                    Think ideas, not words.
-                  </div>
-                </div>
-
-                <div className="feature-card">
-                  <div className="card-bg-number">
-                    06
-                  </div>
-
-                  <div className="card-header">
-                    FEATURE 6
-                  </div>
-
-                  <div className="card-body dark">
-                    Copy & use anywhere fast.
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* PROFESSIONAL SECTION */}
-
-            <h2 className="section-title title2">
-              Built by Professionals, for Professionals
-            </h2>
-
-            <p className="description">
-              This is the place where you simply write your imagination,
-              and AI transforms it into a fully AI-ready prompt.
-
-              <br />
-              <br />
-
-              Whether you're writing blogs, creating social media posts,
-              or working on any creative project — AI helps you express
-              your thoughts clearly and professionally.
-
-              <br />
-              <br />
-
-              See how your simple ideas become "AI-ready prompts" —
-              ready to use instantly with Gemini or any other model.
-              Your words, our intelligence — together, we craft the
-              perfect prompt.
-            </p>
-
-            {/* MAIN PURPLE GLOW */}
+              <p className="description">
+                This is the place where you simply write your imagination,
+                and AI transforms it into a fully AI-ready prompt.
+                <br /><br />
+                Whether you're writing blogs, creating social media posts,
+                or working on any creative project — AI helps you express
+                your thoughts clearly and professionally.
+                <br /><br />
+                See how your simple ideas become "AI-ready prompts" —
+                ready to use instantly with Gemini or any other model.
+                Your words, our intelligence — together, we craft the
+                perfect prompt.
+              </p>
+            </section>
 
             <div className="main-img" />
 
-            {/* SECOND HERO */}
+            <section className="showcase-section">
+              <div className="second-hero" />
 
-            <div
-              className="second-hero"
-              id="about-section"
-            />
+              <h1 className="second-heading">
+                Get All the Type of prompt You Need
+                <br />
+                In a Single Platform
+              </h1>
 
-            <h1 className="second-heading">
-              Get All the Type of prompt You Need
-              <br />
-              In a Single Platform
-            </h1>
+              <div
+                className="second-btn"
+                onClick={() => router.push('/chat')}
+              >
+                <span>GET STARTED</span>
+                <img src="/assets/arrow.png" alt="Arrow" />
+              </div>
+            </section>
 
-            <div
-              className="second-btn"
-              onClick={() => router.push('/chat')}
-            >
-              GET STARTED
-
-              <img
-                src="/assets/arrow.png"
-                alt="Arrow"
-                className="arrow-img small-arrow"
-              />
-            </div>
-
-            {/* FAQ */}
-
-            <div
-              className="desktop-faq-wrapper"
-            >
-              <FaqAccordion
-                sectionId="faq-section"
-              />
-            </div>
-          </div>
+            <section className="desktop-faq-wrapper">
+              <FaqAccordion sectionId="faq-section" />
+            </section>
+          </main>
         </ScaleFit>
       </div>
 
       {/* ================= MOBILE ================= */}
 
-      <div className="mobile-only">
-
+      <main className="mobile-only">
         <div className="m-hero-bg" />
 
-        <div className="m-hero">
+        <section className="m-hero">
           <h1 className="m-heading">
-            Get AI-generated production-ready
-            prompts in seconds
+            Get AI-generated production-ready prompts in seconds
           </h1>
 
-          <div
-            className="m-btn-big"
-            onClick={() => router.push('/chat')}
-          >
+          <div className="m-btn-big" onClick={() => router.push('/chat')}>
             <span>GET STARTED</span>
-
-            <img
-              src="/assets/arrow.png"
-              alt="Arrow"
-            />
+            <img src="/assets/arrow.png" alt="Arrow" />
           </div>
-        </div>
+        </section>
 
-        <h2 className="m-section-title">
-          A Seamless User Experience
-        </h2>
+        <section className="m-content-section">
+          <h2 className="m-section-title">
+            A Seamless User Experience
+          </h2>
 
-        <p className="m-description">
-          This is the place where you simply write
-          your imagination, and AI transforms it into
-          a fully AI-ready prompt. Whether you're
-          writing blogs, social posts, or any creative
-          project — AI helps you express your thoughts
-          clearly and professionally.
-        </p>
+          <p className="m-description">
+            This is the place where you simply write your imagination,
+            and AI transforms it into a fully AI-ready prompt.
+            Whether you're writing blogs, social posts, or any creative
+            project — AI helps you express your thoughts clearly and
+            professionally.
+          </p>
 
-        {/* MOBILE FEATURES */}
-
-        <div className="m-feature-grid">
-
-          <div className="feature-card">
-            <div className="card-bg-number">
-              01
-            </div>
-            <div className="card-header">
-              FEATURE 1
-            </div>
-            <div className="card-body white">
-              Ready-to-use prompts.
-            </div>
+          <div className="m-feature-grid">
+            <FeatureCard number="01" header="FEATURE 1" body="Ready-to-use prompts." light />
+            <FeatureCard number="02" header="FEATURE 2" body="Your ideas stay private." />
+            <FeatureCard number="03" header="FEATURE 3" body="Instant, quality results." light />
+            <FeatureCard number="04" header="FEATURE 4" body="Keep and reuse your best ones." />
+            <FeatureCard number="05" header="FEATURE 5" body="Think ideas, not words." light />
+            <FeatureCard number="06" header="FEATURE 6" body="Copy & use anywhere fast." />
           </div>
-
-          <div className="feature-card">
-            <div className="card-bg-number">
-              02
-            </div>
-            <div className="card-header">
-              FEATURE 2
-            </div>
-            <div className="card-body dark">
-              Your ideas stay private.
-            </div>
-          </div>
-
-          <div className="feature-card">
-            <div className="card-bg-number">
-              03
-            </div>
-            <div className="card-header">
-              FEATURE 3
-            </div>
-            <div className="card-body white">
-              Instant, quality results.
-            </div>
-          </div>
-
-          <div className="feature-card">
-            <div className="card-bg-number">
-              04
-            </div>
-            <div className="card-header">
-              FEATURE 4
-            </div>
-            <div className="card-body dark">
-              Keep and reuse your best ones.
-            </div>
-          </div>
-
-          <div className="feature-card">
-            <div className="card-bg-number">
-              05
-            </div>
-            <div className="card-header">
-              FEATURE 5
-            </div>
-            <div className="card-body white">
-              Think ideas, not words.
-            </div>
-          </div>
-
-          <div className="feature-card">
-            <div className="card-bg-number">
-              06
-            </div>
-            <div className="card-header">
-              FEATURE 6
-            </div>
-            <div className="card-body dark">
-              Copy & use anywhere fast.
-            </div>
-          </div>
-
-        </div>
+        </section>
 
         <div className="m-ambient-glow" />
 
-        {/* MOBILE ABOUT */}
+        <section className="m-content-section m-professional">
+          <h2 className="m-section-title">
+            Built by Professionals, for Professionals
+          </h2>
 
-        <h2
-          className="m-section-title m-about-title"
-          id="about-section-mobile"
-        >
-          Built by Professionals, for Professionals
-        </h2>
+          <p className="m-description">
+            This is the place where you simply write your imagination,
+            and AI transforms it into a fully AI-ready prompt.
+            <br /><br />
+            Whether you're writing blogs, creating social media posts,
+            or working on any creative project — AI helps you express
+            your thoughts clearly and professionally.
+            <br /><br />
+            See how your simple ideas become "AI-ready prompts" —
+            ready to use instantly with Gemini or any other model.
+          </p>
 
-        <p className="m-description m-about-description">
-          This is the place where you simply write
-          your imagination, and AI transforms it into
-          a fully AI-ready prompt.
+          <h1 className="m-second-heading">
+            Get All the Type of prompt You Need In a Single Platform
+          </h1>
 
-          <br />
-          <br />
+          <div className="m-btn-big" onClick={() => router.push('/chat')}>
+            <span>GET STARTED</span>
+            <img src="/assets/arrow.png" alt="Arrow" />
+          </div>
+        </section>
 
-          Whether you're writing blogs, creating
-          social media posts, or working on any
-          creative project — AI helps you express
-          your thoughts clearly and professionally.
-
-          <br />
-          <br />
-
-          See how your simple ideas become
-          "AI-ready prompts" — ready to use instantly
-          with Gemini or any other model.
-        </p>
-
-        <h1 className="m-second-heading">
-          Get All the Type of prompt You Need
-          In a Single Platform
-        </h1>
-
-        <div
-          className="m-btn-big"
-          onClick={() => router.push('/chat')}
-        >
-          <span>GET STARTED</span>
-
-          <img
-            src="/assets/arrow.png"
-            alt="Arrow"
-          />
-        </div>
-
-        {/* MOBILE FAQ */}
-
-        <div className="m-faq">
-          <FaqAccordion
-            sectionId="faq-section-mobile"
-          />
-        </div>
-      </div>
-
-      {/* ================= GLOBAL ================= */}
+        <section className="m-faq">
+          <FaqAccordion sectionId="faq-section-mobile" />
+        </section>
+      </main>
 
       <style jsx global>{`
         html,
@@ -690,7 +451,7 @@ export default function Home() {
           margin: 0;
           padding: 0;
           background: #020202;
-          color: white;
+          color: #fff;
           scroll-behavior: smooth;
           overflow-x: hidden;
         }
@@ -701,21 +462,15 @@ export default function Home() {
           box-sizing: border-box;
         }
 
-        body {
-          font-family: Arial, Helvetica, sans-serif;
-        }
-
         .nav-fixed svg,
-        .nav-fixed img[alt*="user" i],
-        .nav-fixed img[alt*="login" i],
+        .nav-fixed img[alt*='user' i],
+        .nav-fixed img[alt*='login' i],
         .nav-fixed a:last-of-type svg {
           display: none !important;
         }
       `}</style>
 
       <style jsx>{`
-        /* ================= NAV ================= */
-
         .nav-fixed {
           position: fixed;
           top: 31px;
@@ -729,25 +484,24 @@ export default function Home() {
           right: 55px;
           width: 144px;
           height: 37px;
-          background: #000;
-          border: 1px solid #fff;
-          border-radius: 50px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-weight: bold;
+          border: 1px solid #fff;
+          border-radius: 50px;
+          background: #000;
+          color: #fff;
           font-size: 15px;
+          font-weight: 700;
           cursor: pointer;
-          transition: 0.3s ease;
           z-index: 9999;
+          transition: background 0.25s ease, color 0.25s ease;
         }
 
         .btn-top:hover {
           background: #fff;
           color: #000;
         }
-
-        /* ================= DESKTOP ================= */
 
         .desktop-only {
           display: block;
@@ -757,45 +511,41 @@ export default function Home() {
           display: none;
         }
 
-        .container {
-          width: 1920px;
+        /* ---------------- DESKTOP PAGE ---------------- */
 
-          /*
-            IMPORTANT FIX:
-            Old value 3100px was cutting the FAQ section.
-          */
-          height: 3700px;
-
+        .desktop-page {
           position: relative;
-          background: #020202;
+          width: 1920px;
+          min-height: 3520px;
           overflow: hidden;
+          background: #020202;
         }
 
         .hero-bg {
           position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 906px;
-
-          background:
-            url('/assets/video.gif')
-            center / cover
-            no-repeat;
-
+          inset: 0 0 auto;
+          height: 900px;
+          background: url('/assets/video.gif') center / cover no-repeat;
           filter: blur(35px);
+          opacity: 0.92;
           z-index: 0;
+        }
+
+        .hero-section {
+          position: relative;
+          height: 900px;
+          z-index: 1;
         }
 
         .main-heading {
           position: absolute;
           top: 328px;
           left: 369px;
+          margin: 0;
+          color: #fff;
           font-size: 130px;
           font-weight: 900;
-          color: #fff;
-          z-index: 2;
-          margin: 0;
+          line-height: 0.95;
           letter-spacing: -4px;
         }
 
@@ -803,11 +553,10 @@ export default function Home() {
           position: absolute;
           top: 827px;
           left: 1184px;
-          font-size: 22px;
-          font-weight: bold;
-          color: #fff;
-          z-index: 2;
           margin: 0;
+          color: #fff;
+          font-size: 22px;
+          font-weight: 700;
         }
 
         .btn-big {
@@ -816,97 +565,70 @@ export default function Home() {
           left: 1630px;
           width: 204px;
           height: 53px;
-          background: #fff;
-          border-radius: 50px;
-
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 12px;
-
-          font-weight: bold;
-          font-size: 18px;
+          border-radius: 50px;
+          background: #fff;
           color: #000;
-
+          font-size: 18px;
+          font-weight: 800;
           cursor: pointer;
-          transition: 0.3s ease;
           z-index: 2;
+          transition: transform 0.25s ease, background 0.25s ease;
         }
 
         .btn-big:hover,
-        .second-btn:hover {
-          background: #e0e0e0;
+        .second-btn:hover,
+        .m-btn-big:hover {
+          transform: translateY(-2px);
         }
 
-        .arrow-img {
-          width: 24px;
-          height: 24px;
-          transition: 0.3s ease;
+        .btn-big img,
+        .second-btn img,
+        .m-btn-big img {
+          width: 20px;
+          height: 20px;
           object-fit: contain;
         }
 
-        .small-arrow {
-          width: 18px;
-          height: 18px;
+        .experience-section {
+          position: relative;
+          height: 720px;
+          z-index: 2;
         }
 
         .section-title {
-          position: absolute;
           margin: 0;
-          font-weight: 900;
+          color: #fff;
           font-size: 50px;
-          line-height: 1.1;
-          color: #fff;
-          z-index: 2;
+          line-height: 1.08;
+          font-weight: 900;
+          letter-spacing: -1.5px;
         }
 
-        .title1 {
-          top: 1049px;
-          left: 107px;
-        }
-
-        /*
-          Professional section moved slightly upward,
-          but second hero moved downward enough so
-          description and second heading never overlap.
-        */
-
-        .title2 {
-          top: 1680px;
-          left: 107px;
-        }
-
-        .description {
+        .experience-title {
           position: absolute;
-          top: 1785px;
+          top: 145px;
           left: 107px;
-          width: 755px;
-
-          margin: 0;
-
-          font-size: 25px;
-          font-weight: bold;
-          line-height: 1.75;
-          color: #fff;
-          z-index: 2;
         }
 
         .features-container {
           position: absolute;
-          top: 1229px;
+          top: 325px;
           left: 107px;
-          width: 1650px;
-          z-index: 2;
+          width: 1700px;
         }
 
         .feature-row {
           display: flex;
           gap: 35px;
-          transition: transform 0.1s ease-out;
           will-change: transform;
+          transition: transform 0.12s linear;
         }
 
-        .feature-row.row-two {
+        .row-two {
           margin-top: 52px;
         }
 
@@ -914,32 +636,32 @@ export default function Home() {
           position: relative;
           width: 502px;
           height: 176px;
-          border-radius: 25px;
+          flex: 0 0 502px;
           overflow: hidden;
-          flex-shrink: 0;
+          border-radius: 25px;
         }
 
         .card-bg-number {
           position: absolute;
           right: -15px;
-          bottom: -40px;
-          font-size: 160px;
-          font-weight: 900;
+          bottom: -42px;
           color: rgba(128, 128, 128, 0.15);
-          z-index: 0;
+          font-size: 160px;
+          line-height: 1;
+          font-weight: 900;
           pointer-events: none;
-          user-select: none;
         }
 
         .card-header {
           position: relative;
           z-index: 1;
           height: 66px;
-          background: #1e1e1e;
           padding: 21px 32px;
+          background: #1e1e1e;
+          color: #fff;
           font-size: 20px;
-          font-weight: bold;
-          color: white;
+          line-height: 1;
+          font-weight: 700;
         }
 
         .card-body {
@@ -948,7 +670,8 @@ export default function Home() {
           height: 110px;
           padding: 32px;
           font-size: 25px;
-          font-weight: bold;
+          line-height: 1.1;
+          font-weight: 800;
         }
 
         .white {
@@ -961,108 +684,110 @@ export default function Home() {
           color: #fff;
         }
 
-        /* PURPLE GLOW */
+        /* ---------------- PROFESSIONAL SECTION ---------------- */
+
+        .professional-section {
+          position: relative;
+          height: 610px;
+          z-index: 2;
+        }
+
+        .professional-title {
+          position: absolute;
+          top: 42px;
+          left: 107px;
+        }
+
+        .description {
+          position: absolute;
+          top: 145px;
+          left: 107px;
+          width: 755px;
+          margin: 0;
+          color: #fff;
+          font-size: 25px;
+          line-height: 1.7;
+          font-weight: 600;
+        }
 
         .main-img {
           position: absolute;
-          top: 1500px;
-          left: 750px;
-          width: 1300px;
-          height: 1300px;
-
-          background:
-            url('/assets/main12.gif')
-            center / cover
-            no-repeat;
-
+          top: 1430px;
+          left: 760px;
+          width: 1250px;
+          height: 1250px;
           border-radius: 50%;
-          z-index: 0;
-
+          background: url('/assets/main12.gif') center / cover no-repeat;
           filter: blur(45px);
-          opacity: 0.7;
+          opacity: 0.72;
           pointer-events: none;
+          z-index: 0;
         }
 
-        /*
-          IMPORTANT:
-          Moved the second section lower so the
-          professional description has enough room.
-        */
+        /* ---------------- SECOND SHOWCASE ---------------- */
+
+        .showcase-section {
+          position: relative;
+          height: 655px;
+          z-index: 2;
+        }
 
         .second-hero {
           position: absolute;
-          top: 2380px;
+          top: 0;
           left: 0;
           width: 100%;
-          height: 906px;
-
-          background:
-            url('/assets/video.gif')
-            center / cover
-            no-repeat;
-
+          height: 655px;
+          background: url('/assets/video.gif') center / cover no-repeat;
           filter: blur(35px);
+          opacity: 0.88;
           z-index: 0;
         }
 
         .second-heading {
           position: absolute;
-          top: 2480px;
+          top: 95px;
           left: 130px;
-
-          margin: 0;
-
-          font-size: 60px;
-          font-weight: 900;
           width: 1650px;
-          line-height: 1.4;
+          margin: 0;
           color: #fff;
-          z-index: 2;
+          font-size: 60px;
+          line-height: 1.15;
+          font-weight: 900;
+          letter-spacing: -1.5px;
+          z-index: 1;
         }
 
         .second-btn {
           position: absolute;
-          top: 2715px;
+          top: 315px;
           left: 130px;
-
           width: 170px;
           height: 50px;
-
-          background: #fff;
-          border-radius: 50px;
-
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
-
-          font-weight: bold;
+          border-radius: 50px;
+          background: #fff;
           color: #000;
-
+          font-size: 14px;
+          font-weight: 800;
           cursor: pointer;
-          z-index: 2;
-          transition: 0.3s ease;
+          z-index: 1;
+          transition: transform 0.25s ease;
         }
 
-        /*
-          IMPORTANT:
-          FAQ moved below second CTA,
-          so all 3 FAQ rows have room.
-        */
+        /* ---------------- FAQ ---------------- */
 
         .desktop-faq-wrapper {
-          position: absolute;
-          top: 2910px;
-          left: 130px;
-
+          position: relative;
+          z-index: 4;
           width: 1650px;
-
-          z-index: 3;
-
-          padding-bottom: 120px;
+          margin-left: 130px;
+          padding-top: 105px;
+          padding-bottom: 90px;
         }
-
-        /* ================= MOBILE ================= */
 
         @media (max-width: 900px) {
           .desktop-only {
@@ -1072,18 +797,15 @@ export default function Home() {
           .mobile-only {
             display: block;
             position: relative;
-
             width: 100%;
             min-height: 100vh;
-
-            padding: 100px 20px 80px;
-
+            padding: 94px 20px 80px;
             overflow: hidden;
           }
 
           .nav-fixed {
-            top: 20px;
-            right: 20px;
+            top: 18px;
+            right: 16px;
             transform: scale(0.82);
             transform-origin: top right;
           }
@@ -1092,264 +814,148 @@ export default function Home() {
             display: none;
           }
 
-          /* MOBILE HERO */
-
           .m-hero-bg {
             position: absolute;
             top: 0;
-            left: 0;
-
-            width: 100%;
+            left: -15%;
+            width: 130%;
             height: 450px;
-
-            background:
-              url('/assets/video.gif')
-              center / cover
-              no-repeat;
-
+            background: url('/assets/video.gif') center / cover no-repeat;
             filter: blur(25px);
-            opacity: 0.7;
+            opacity: 0.72;
             z-index: 0;
           }
 
           .m-hero {
             position: relative;
             z-index: 1;
-
+            padding: 28px 0 38px;
             text-align: center;
-
-            padding: 20px 0 40px;
           }
 
           .m-heading {
-            margin: 0 0 24px;
-
-            font-size: clamp(
-              28px,
-              8vw,
-              42px
-            );
-
-            font-weight: 900;
+            margin: 0 auto 24px;
+            max-width: 620px;
             color: #fff;
-
-            line-height: 1.15;
-            letter-spacing: -0.5px;
+            font-size: clamp(30px, 8vw, 44px);
+            line-height: 1.12;
+            font-weight: 900;
+            letter-spacing: -0.8px;
           }
 
           .m-btn-big {
             width: fit-content;
-
-            display: inline-flex;
+            min-height: 46px;
+            display: flex;
             align-items: center;
             justify-content: center;
-
-            gap: 10px;
-
+            gap: 9px;
+            margin: 0 auto;
+            padding: 13px 23px;
+            border-radius: 50px;
             background: #fff;
             color: #000;
-
-            font-weight: bold;
-            font-size: 16px;
-
-            border-radius: 50px;
-
-            padding: 14px 26px;
-
+            font-size: 14px;
+            font-weight: 800;
             cursor: pointer;
-
-            margin: 0 auto;
+            transition: transform 0.25s ease;
           }
 
-          .m-btn-big img {
-            width: 18px;
-            height: 18px;
-            object-fit: contain;
+          .m-content-section {
+            position: relative;
+            z-index: 2;
           }
-
-          /* SECTION HEADINGS */
 
           .m-section-title {
-            position: relative;
-            z-index: 1;
-
-            margin: 50px 0 16px;
-
-            font-size: clamp(
-              24px,
-              7vw,
-              32px
-            );
-
-            font-weight: 900;
-            line-height: 1.15;
-
+            margin: 52px 0 16px;
             color: #fff;
+            font-size: clamp(26px, 7vw, 34px);
+            line-height: 1.12;
+            font-weight: 900;
+            letter-spacing: -0.6px;
           }
 
           .m-description {
-            position: relative;
-            z-index: 1;
-
             margin: 0;
-
-            font-size: 16px;
-            font-weight: 500;
-            line-height: 1.7;
-
             color: #d8d8d8;
+            font-size: 15px;
+            line-height: 1.7;
+            font-weight: 500;
           }
-
-          /* MOBILE FEATURE CARDS */
 
           .m-feature-grid {
             position: relative;
-            z-index: 1;
-
+            z-index: 2;
             display: grid;
-
             grid-template-columns: 1fr;
-
-            gap: 16px;
-
-            margin-top: 30px;
+            gap: 14px;
+            margin-top: 28px;
           }
 
-          .m-feature-grid .feature-card {
+          .m-feature-grid :global(.feature-card) {
             width: 100%;
             height: auto;
-            min-height: 120px;
-
+            min-height: 116px;
+            flex: none;
             border-radius: 18px;
-            overflow: hidden;
-
-            position: relative;
           }
 
-          .m-feature-grid .card-header {
+          .m-feature-grid :global(.card-header) {
             height: auto;
-
-            padding: 14px 20px;
-
-            font-size: 15px;
-            line-height: 1.2;
+            padding: 13px 18px;
+            font-size: 14px;
           }
 
-          .m-feature-grid .card-body {
+          .m-feature-grid :global(.card-body) {
             height: auto;
             min-height: 70px;
-
-            padding: 22px 20px;
-
+            padding: 21px 18px;
             font-size: 18px;
-            line-height: 1.25;
+            line-height: 1.18;
           }
 
-          .m-feature-grid .card-bg-number {
+          .m-feature-grid :global(.card-bg-number) {
+            right: -8px;
+            bottom: -28px;
             font-size: 100px;
-            right: -10px;
-            bottom: -30px;
           }
-
-          /* GLOW */
 
           .m-ambient-glow {
             position: absolute;
-
-            top: 38%;
-            left: -20%;
-
-            width: 140%;
-            height: 500px;
-
-            background:
-              url('/assets/main12.gif')
-              center / cover
-              no-repeat;
-
-            filter: blur(40px);
+            top: 39%;
+            left: -25%;
+            width: 150%;
+            height: 520px;
+            background: url('/assets/main12.gif') center / cover no-repeat;
+            filter: blur(42px);
+            opacity: 0.58;
             z-index: 0;
-            opacity: 0.6;
-
             pointer-events: none;
           }
 
-          /* MOBILE ABOUT */
-
-          .m-about-title {
-            margin-top: 60px;
-          }
-
-          .m-about-description {
-            margin-top: 0;
+          .m-professional {
+            margin-top: 62px;
           }
 
           .m-second-heading {
             position: relative;
-            z-index: 1;
-
-            margin: 45px 0 24px;
-
-            font-size: clamp(
-              26px,
-              7vw,
-              36px
-            );
-
-            font-weight: 900;
-
+            z-index: 2;
+            margin: 42px 0 22px;
             color: #fff;
-
-            line-height: 1.3;
-            letter-spacing: -0.5px;
+            font-size: clamp(28px, 7.5vw, 40px);
+            line-height: 1.22;
+            font-weight: 900;
+            letter-spacing: -0.7px;
           }
-
-          /* MOBILE FAQ */
 
           .m-faq {
             position: relative;
-            z-index: 2;
-
+            z-index: 3;
             width: 100%;
-
-            margin-top: 75px;
-
-            padding-bottom: 30px;
-          }
-
-          .m-faq :global(.faq-wrapper) {
-            width: 100%;
-          }
-
-          .m-faq :global(.faq-heading) {
-            font-size: clamp(
-              34px,
-              10vw,
-              46px
-            ) !important;
-
-            line-height: 1.05 !important;
-
-            margin-bottom: 25px !important;
-          }
-
-          .m-faq :global(.faq-question) {
-            font-size: 17px !important;
-            padding: 21px 0 !important;
-          }
-
-          .m-faq :global(.faq-answer) {
-            font-size: 15px !important;
-            line-height: 1.6 !important;
-            padding-right: 4px !important;
-          }
-
-          .m-faq :global(.faq-item.active .faq-answer) {
-            padding-bottom: 20px !important;
+            margin-top: 72px;
+            padding-bottom: 20px;
           }
         }
-
-        /* SMALL PHONES */
 
         @media (max-width: 480px) {
           .mobile-only {
@@ -1366,7 +972,7 @@ export default function Home() {
           }
 
           .m-description {
-            font-size: 15px;
+            font-size: 14px;
           }
 
           .m-second-heading {
@@ -1376,16 +982,18 @@ export default function Home() {
           .m-faq {
             margin-top: 60px;
           }
-
-          .m-faq :global(.faq-question) {
-            font-size: 16px !important;
-          }
-
-          .m-faq :global(.faq-answer) {
-            font-size: 14px !important;
-          }
         }
       `}</style>
     </>
+  );
+}
+
+function FeatureCard({ number, header, body, light = false }) {
+  return (
+    <div className="feature-card">
+      <div className="card-bg-number">{number}</div>
+      <div className="card-header">{header}</div>
+      <div className={`card-body ${light ? 'white' : 'dark'}`}>{body}</div>
+    </div>
   );
 }

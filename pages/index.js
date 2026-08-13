@@ -352,7 +352,7 @@ export default function Home() {
         /* ---------- DESKTOP CONTAINER ---------- */
         .container {
           width: 1920px;
-          height: 3100px; /* FIXED: Height drastically reduced to eliminate empty bottom space */
+          height: 3500px; /* FIXED: Height badhai hai 3100 se 3500 taki FAQ cut na ho! */
           position: relative;
           background: #020202;
           overflow: hidden;

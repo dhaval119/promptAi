@@ -20,18 +20,24 @@ export default function Details() {
   const [errorMsg, setErrorMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // No account -> send to login, same as the old PHP session check.
   useEffect(() => {
     if (!loading && !user) router.replace('/login');
   }, [loading, user, router]);
 
-  // Fill the form from the logged-in user's Firestore profile.
   useEffect(() => {
-    if (user) {
-      setFirstName(profile?.firstName || '');
-      setLastName(profile?.lastName || '');
-      setEmail(profile?.email || user.email || '');
-    }
+    if (!user) return;
+    const fn =
+      (profile && (profile.firstName || profile.first_name)) ||
+      (user.displayName ? user.displayName.split(' ')[0] : '') ||
+      '';
+    const ln =
+      (profile && (profile.lastName || profile.last_name)) ||
+      (user.displayName ? user.displayName.split(' ').slice(1).join(' ') : '') ||
+      '';
+    const em = (profile && profile.email) || user.email || '';
+    setFirstName(fn);
+    setLastName(ln);
+    setEmail(em);
   }, [user, profile]);
 
   async function handleSubmit(e) {
@@ -40,16 +46,28 @@ export default function Details() {
     setErrorMsg('');
     setBusy(true);
     try {
+      if (!db || !user) {
+        setErrorMsg('Not signed in or Firebase not configured.');
+        return;
+      }
+
+      // Save both camelCase (current docs) and keep compatible
       await setDoc(
         doc(db, 'users', user.uid),
-        { firstName, lastName, email },
+        {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          email: email.trim(),
+        },
         { merge: true }
       );
 
-      if (email && email !== user.email) {
-        await updateEmail(auth.currentUser, email);
+      if (email && email !== user.email && auth?.currentUser) {
+        await updateEmail(auth.currentUser, email.trim());
       }
-      if (password) {
+      if (password && auth?.currentUser) {
         await updatePassword(auth.currentUser, password);
       }
 
@@ -69,7 +87,6 @@ export default function Details() {
   }
 
   async function handleLogout() {
-    // Local chat cache was the guest/offline fallback - clear it on logout too.
     window.localStorage.removeItem('promptai_conversations');
     await logout();
     router.push('/login');

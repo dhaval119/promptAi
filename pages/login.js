@@ -7,7 +7,6 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { useAuth } from '../lib/AuthContext';
 
-// Same error copy your PHP login.php used, mapped from Firebase's error codes.
 function friendlyError(code) {
   switch (code) {
     case 'auth/invalid-email':
@@ -33,14 +32,10 @@ export default function Login() {
   const [errorMsg, setErrorMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // Already logged in? Behave like the PHP session check did - bounce to main.php (now '/').
   useEffect(() => {
     if (!loading && user) router.replace('/');
   }, [loading, user, router]);
 
-  // Google sign-in creates the Firebase user automatically if it doesn't exist yet -
-  // this mirrors the old signup.php/login.php firebase_uid branch that inserted a
-  // users_new row on first Google login.
   async function ensureUserDoc(fbUser) {
     if (!db) return;
     const ref = doc(db, 'users', fbUser.uid);
@@ -48,12 +43,17 @@ export default function Login() {
     if (!snap.exists()) {
       const names = (fbUser.displayName || 'User').trim().split(' ');
       await setDoc(ref, {
-        firstName: names[0] || 'User',
-        lastName: names.slice(1).join(' ') || '',
+        first_name: names[0] || 'User',
+        last_name: names.slice(1).join(' ') || '',
         email: fbUser.email || '',
-        signupMethod: 'google',
-        createdAt: serverTimestamp(),
+        signup_method: 'google',
+        usage_count: 0,
+        last_reset: serverTimestamp(),
+        last_login_at: serverTimestamp(),
+        created_at: serverTimestamp(),
       });
+    } else {
+      await setDoc(ref, { last_login_at: serverTimestamp() }, { merge: true });
     }
   }
 
@@ -70,7 +70,14 @@ export default function Login() {
         setErrorMsg('Firebase is not configured. Add NEXT_PUBLIC_FIREBASE_* keys in .env.local');
         return;
       }
-      await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      if (db && cred.user) {
+        await setDoc(
+          doc(db, 'users', cred.user.uid),
+          { last_login_at: serverTimestamp() },
+          { merge: true }
+        );
+      }
       router.push('/');
     } catch (err) {
       setErrorMsg(friendlyError(err.code));

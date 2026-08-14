@@ -41,11 +41,14 @@ export default function Signup() {
     if (!snap.exists()) {
       const names = (fbUser.displayName || 'User').trim().split(' ');
       await setDoc(ref, {
-        firstName: names[0] || 'User',
-        lastName: names.slice(1).join(' ') || '',
+        first_name: names[0] || 'User',
+        last_name: names.slice(1).join(' ') || '',
         email: fbUser.email || '',
-        signupMethod: 'google',
-        createdAt: serverTimestamp(),
+        signup_method: 'google',
+        usage_count: 0,
+        last_reset: serverTimestamp(),
+        last_login_at: serverTimestamp(),
+        created_at: serverTimestamp(),
       });
     }
   }
@@ -70,13 +73,19 @@ export default function Signup() {
         return;
       }
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      await updateProfile(cred.user, { displayName: `${firstName.trim()} ${lastName.trim()}` });
+      await updateProfile(cred.user, {
+        displayName: `${firstName.trim()} ${lastName.trim()}`,
+      });
+      // Matches old MySQL users table (password stays only in Firebase Auth)
       await setDoc(doc(db, 'users', cred.user.uid), {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
         email: email.trim(),
-        signupMethod: 'manual',
-        createdAt: serverTimestamp(),
+        signup_method: 'manual',
+        usage_count: 0,
+        last_reset: serverTimestamp(),
+        last_login_at: serverTimestamp(),
+        created_at: serverTimestamp(),
       });
       router.push('/');
     } catch (err) {

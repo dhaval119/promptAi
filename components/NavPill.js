@@ -14,10 +14,9 @@ export default function NavPill() {
       <div
         className="user-icon"
         onClick={() => router.push(user ? '/details' : '/login')}
+        title={user ? 'My Account' : 'Login'}
       >
-        <svg viewBox="0 0 24 24">
-          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-        </svg>
+        <img src="/assets/ailogo.png" alt="Account" />
       </div>
       <style jsx>{`
         .nav-pill {
@@ -48,11 +47,11 @@ export default function NavPill() {
           margin-left: 5px;
           cursor: pointer;
         }
-        .user-icon svg {
+        .user-icon img {
           width: 24px;
           height: 24px;
-          fill: #fff;
-          stroke: none;
+          object-fit: contain;
+          display: block;
         }
       `}</style>
     </nav>

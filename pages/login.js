@@ -42,6 +42,7 @@ export default function Login() {
   // this mirrors the old signup.php/login.php firebase_uid branch that inserted a
   // users_new row on first Google login.
   async function ensureUserDoc(fbUser) {
+    if (!db) return;
     const ref = doc(db, 'users', fbUser.uid);
     const snap = await getDoc(ref);
     if (!snap.exists()) {
@@ -65,6 +66,10 @@ export default function Login() {
     }
     setBusy(true);
     try {
+      if (!auth) {
+        setErrorMsg('Firebase is not configured. Add NEXT_PUBLIC_FIREBASE_* keys in .env.local');
+        return;
+      }
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/');
     } catch (err) {
@@ -78,6 +83,10 @@ export default function Login() {
     setErrorMsg('');
     setBusy(true);
     try {
+      if (!auth || !googleProvider) {
+        setErrorMsg('Firebase is not configured. Add NEXT_PUBLIC_FIREBASE_* keys in .env.local');
+        return;
+      }
       const result = await signInWithPopup(auth, googleProvider);
       await ensureUserDoc(result.user);
       router.push('/');

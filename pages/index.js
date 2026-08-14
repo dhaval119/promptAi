@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import ScaleFit from '../components/ScaleFit';
 import NavPill from '../components/NavPill';
 import Logo from '../components/Logo';
+import { useAuth } from '../lib/AuthContext';
 
 const FAQS = [
   {
@@ -104,6 +105,13 @@ function FaqAccordion({ idPrefix = '' }) {
 
 export default function Home() {
   const router = useRouter();
+    const { user, loading: authLoading } = useAuth();
+
+  function goChat() {
+    if (authLoading) return;
+    if (user) router.push('/chat');
+    else router.push('/login');
+  }
   const row1Ref = useRef(null);
   const row2Ref = useRef(null);
   const featuresWrapRef = useRef(null);
@@ -144,7 +152,7 @@ export default function Home() {
       <div className="nav-fixed">
         <NavPill />
       </div>
-      <div className="btn-top" onClick={() => router.push('/chat')}>
+      <div className="btn-top" onClick={goChat}>
         GET STARTED
       </div>
 
@@ -156,7 +164,7 @@ export default function Home() {
             <h1 className="main-heading">Get AI-generated</h1>
             <p className="sub-heading">production-ready prompts in seconds</p>
 
-            <div className="btn-big" onClick={() => router.push('/chat')}>
+            <div className="btn-big" onClick={goChat}>
               <span>GET STARTED</span>
               <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" />
             </div>
@@ -221,7 +229,7 @@ export default function Home() {
               Get All the Type of prompt You Need <br />
               In a Single Platform
             </h1>
-            <div className="second-btn" onClick={() => router.push('/chat')}>
+            <div className="second-btn" onClick={goChat}>
               GET STARTED
               <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" style={{ width: 18, height: 18 }} />
             </div>
@@ -239,7 +247,7 @@ export default function Home() {
         <div className="m-hero-bg" />
         <div className="m-hero">
           <h1 className="m-heading">Get AI-generated production-ready prompts in seconds</h1>
-          <div className="m-btn-big" onClick={() => router.push('/chat')}>
+          <div className="m-btn-big" onClick={goChat}>
             <span>GET STARTED</span>
             <img src="/assets/arrow.png" alt="Arrow" />
           </div>
@@ -290,7 +298,7 @@ export default function Home() {
           Built by Professionals, for Professionals
         </h2>
         <h1 className="m-second-heading">Get All the Type of prompt You Need In a Single Platform</h1>
-        <div className="m-btn-big" onClick={() => router.push('/chat')}>
+        <div className="m-btn-big" onClick={goChat}>
           <span>GET STARTED</span>
           <img src="/assets/arrow.png" alt="Arrow" />
         </div>
@@ -309,13 +317,6 @@ export default function Home() {
           scroll-behavior: smooth;
         }
 
-        /* Hack to hide the login/profile icon from the NavPill component */
-        .nav-fixed svg, 
-        .nav-fixed img[alt*="user" i], 
-        .nav-fixed img[alt*="login" i],
-        .nav-fixed a:last-of-type svg {
-          display: none !important;
-        }
       `}</style>
 
       <style jsx>{`

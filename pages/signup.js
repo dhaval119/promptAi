@@ -35,6 +35,7 @@ export default function Signup() {
   }, [loading, user, router]);
 
   async function ensureUserDoc(fbUser) {
+    if (!db) return;
     const ref = doc(db, 'users', fbUser.uid);
     const snap = await getDoc(ref);
     if (!snap.exists()) {
@@ -64,6 +65,10 @@ export default function Signup() {
 
     setBusy(true);
     try {
+      if (!auth || !db) {
+        setErrorMsg('Firebase is not configured. Add NEXT_PUBLIC_FIREBASE_* keys in .env.local');
+        return;
+      }
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
       await updateProfile(cred.user, { displayName: `${firstName.trim()} ${lastName.trim()}` });
       await setDoc(doc(db, 'users', cred.user.uid), {
@@ -85,6 +90,10 @@ export default function Signup() {
     setErrorMsg('');
     setBusy(true);
     try {
+      if (!auth || !googleProvider) {
+        setErrorMsg('Firebase is not configured. Add NEXT_PUBLIC_FIREBASE_* keys in .env.local');
+        return;
+      }
       const result = await signInWithPopup(auth, googleProvider);
       await ensureUserDoc(result.user);
       router.push('/');

@@ -25,7 +25,6 @@ export default function Chat() {
   const threadRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Load sidebar list (async)
   const refreshChats = useCallback(async () => {
     try {
       const list = await listConversations(uid);
@@ -38,7 +37,6 @@ export default function Chat() {
     }
   }, [uid]);
 
-  // Initial load + collapse sidebar on small screens
   useEffect(() => {
     if (authLoading) return;
     refreshChats();
@@ -48,7 +46,6 @@ export default function Chat() {
     inputRef.current?.focus();
   }, [authLoading, refreshChats]);
 
-  // Load a chat if ?chat_id= is present
   useEffect(() => {
     if (!router.isReady || authLoading) return;
 

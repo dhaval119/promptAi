@@ -1,51 +1,81 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { updateEmail, updatePassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import NavPill from '../components/NavPill';
 import Logo from '../components/Logo';
-
-const PROFILE_KEY = 'promptai_profile';
+import { auth, db } from '../lib/firebase';
+import { useAuth } from '../lib/AuthContext';
 
 export default function Details() {
+  const router = useRouter();
+  const { user, profile, loading, logout, refreshProfile } = useAuth();
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [busy, setBusy] = useState(false);
 
+  // No account -> send to login, same as the old PHP session check.
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(PROFILE_KEY);
-      if (raw) {
-        const p = JSON.parse(raw);
-        setFirstName(p.firstName || '');
-        setLastName(p.lastName || '');
-        setEmail(p.email || '');
-      }
-    } catch {}
-  }, []);
+    if (!loading && !user) router.replace('/login');
+  }, [loading, user, router]);
 
-  function handleSubmit(e) {
+  // Fill the form from the logged-in user's Firestore profile.
+  useEffect(() => {
+    if (user) {
+      setFirstName(profile?.firstName || '');
+      setLastName(profile?.lastName || '');
+      setEmail(profile?.email || user.email || '');
+    }
+  }, [user, profile]);
+
+  async function handleSubmit(e) {
     e.preventDefault();
-    window.localStorage.setItem(
-      PROFILE_KEY,
-      JSON.stringify({ firstName, lastName, email })
-    );
-    // Note: there's no backend/auth anymore, so password is not stored anywhere.
-    setPassword('');
-    setMessage('Profile updated successfully!');
-    setTimeout(() => setMessage(''), 3000);
+    setMessage('');
+    setErrorMsg('');
+    setBusy(true);
+    try {
+      await setDoc(
+        doc(db, 'users', user.uid),
+        { firstName, lastName, email },
+        { merge: true }
+      );
+
+      if (email && email !== user.email) {
+        await updateEmail(auth.currentUser, email);
+      }
+      if (password) {
+        await updatePassword(auth.currentUser, password);
+      }
+
+      await refreshProfile();
+      setPassword('');
+      setMessage('Profile updated successfully!');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      if (err.code === 'auth/requires-recent-login') {
+        setErrorMsg('Please log out and log back in before changing your email or password.');
+      } else {
+        setErrorMsg(err.message || 'Something went wrong.');
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function handleReset() {
-    window.localStorage.removeItem(PROFILE_KEY);
+  async function handleLogout() {
+    // Local chat cache was the guest/offline fallback - clear it on logout too.
     window.localStorage.removeItem('promptai_conversations');
-    setFirstName('');
-    setLastName('');
-    setEmail('');
-    setPassword('');
-    setMessage('Local data cleared.');
-    setTimeout(() => setMessage(''), 3000);
+    await logout();
+    router.push('/login');
   }
+
+  if (loading || !user) return null;
 
   return (
     <>
@@ -59,6 +89,7 @@ export default function Details() {
         </div>
         <main>
           {message ? <div className="success-msg">{message}</div> : null}
+          {errorMsg ? <div className="success-msg error-variant">{errorMsg}</div> : null}
           <h1 className="page-title">My Account</h1>
           <div className="section-divider" />
           <section className="section-block">
@@ -68,9 +99,7 @@ export default function Details() {
           <div className="section-divider" />
           <section className="section-block">
             <h2 className="section-title">Personal info</h2>
-            <p className="section-subtitle">
-              Saved locally in your browser - this build has no login/database.
-            </p>
+            <p className="section-subtitle">Signed in with Firebase - changes are saved to your account.</p>
             <form onSubmit={handleSubmit}>
               <div className="form-grid">
                 <div className="form-group">
@@ -115,11 +144,11 @@ export default function Details() {
                 </div>
               </div>
               <div className="submit-container">
-                <button type="button" onClick={handleReset} className="logout-btn">
-                  Reset
+                <button type="button" onClick={handleLogout} className="logout-btn">
+                  Logout
                 </button>
-                <button type="submit" className="submit-btn">
-                  Submit
+                <button type="submit" className="submit-btn" disabled={busy}>
+                  {busy ? 'Saving...' : 'Submit'}
                 </button>
               </div>
             </form>
@@ -236,6 +265,10 @@ export default function Details() {
           background-color: #fff;
           color: #000;
         }
+        button.submit-btn:disabled {
+          opacity: 0.7;
+          cursor: default;
+        }
         button.logout-btn {
           background-color: #000;
           color: #fff;
@@ -258,6 +291,9 @@ export default function Details() {
           color: #4caf50;
           margin-bottom: 20px;
           font-weight: bold;
+        }
+        .success-msg.error-variant {
+          color: #ff4d4d;
         }
 
         @media (max-width: 780px) {

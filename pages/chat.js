@@ -1,10 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { listConversations, getConversation, upsertConversation } from '../lib/chatStorage';
+import {
+  listConversations,
+  getConversation,
+  upsertConversation,
+} from '../lib/chatStorage';
+import { useAuth } from '../lib/AuthContext';
 
 export default function Chat() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const uid = user?.uid ?? null;
+
   const [chats, setChats] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(0);
   const [messages, setMessages] = useState([]); // {sender:'user'|'ai', text}
@@ -12,40 +20,60 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState(-1);
+  const [chatsReady, setChatsReady] = useState(false);
 
   const threadRef = useRef(null);
   const inputRef = useRef(null);
 
-  // load sidebar + collapse sidebar by default on small screens
+  // Load sidebar list (async)
+  const refreshChats = useCallback(async () => {
+    try {
+      const list = await listConversations(uid);
+      setChats(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error('[chat] listConversations failed', err);
+      setChats([]);
+    } finally {
+      setChatsReady(true);
+    }
+  }, [uid]);
+
+  // Initial load + collapse sidebar on small screens
   useEffect(() => {
-    setChats(listConversations());
+    if (authLoading) return;
+    refreshChats();
     if (typeof window !== 'undefined' && window.innerWidth <= 900) {
       setSidebarHidden(true);
     }
     inputRef.current?.focus();
-  }, []);
+  }, [authLoading, refreshChats]);
 
-  // load a chat if ?chat_id= is present
+  // Load a chat if ?chat_id= is present
   useEffect(() => {
-    if (!router.isReady) return;
+    if (!router.isReady || authLoading) return;
 
     const idParam = router.query.chat_id;
+    if (!idParam) return;
 
-    if (idParam) {
-      const id = Number(idParam);
-      const conv = getConversation(id);
-
-      if (conv) {
-        setCurrentChatId(id);
+    let cancelled = false;
+    (async () => {
+      try {
+        const conv = await getConversation(uid, idParam);
+        if (cancelled || !conv) return;
+        setCurrentChatId(conv.id);
         setMessages([
           { sender: 'user', text: conv.request },
           ...(conv.response ? [{ sender: 'ai', text: conv.response }] : []),
         ]);
+      } catch (err) {
+        console.error('[chat] getConversation failed', err);
       }
-    }
+    })();
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.isReady, router.query.chat_id]);
+    return () => {
+      cancelled = true;
+    };
+  }, [router.isReady, router.query.chat_id, uid, authLoading]);
 
   useEffect(() => {
     if (threadRef.current) {
@@ -60,23 +88,24 @@ export default function Chat() {
     inputRef.current?.focus();
   }
 
-  function openChat(id) {
-    const conv = getConversation(id);
+  async function openChat(id) {
+    try {
+      const conv = await getConversation(uid, id);
+      if (!conv) return;
 
-    if (!conv) return;
-
-    setCurrentChatId(id);
-    setMessages([
-      { sender: 'user', text: conv.request },
-      ...(conv.response ? [{ sender: 'ai', text: conv.response }] : []),
-    ]);
-
-    router.replace(`/chat?chat_id=${id}`, undefined, { shallow: true });
+      setCurrentChatId(conv.id);
+      setMessages([
+        { sender: 'user', text: conv.request },
+        ...(conv.response ? [{ sender: 'ai', text: conv.response }] : []),
+      ]);
+      router.replace(`/chat?chat_id=${conv.id}`, undefined, { shallow: true });
+    } catch (err) {
+      console.error('[chat] openChat failed', err);
+    }
   }
 
   async function sendMessage(overrideText) {
     const text = (overrideText ?? input).trim();
-
     if (!text || loading) return;
 
     setMessages((prev) => [...prev, { sender: 'user', text }]);
@@ -95,7 +124,7 @@ export default function Chat() {
 
       setMessages((prev) => [...prev, { sender: 'ai', text: aiText }]);
 
-      const saved = upsertConversation({
+      const saved = await upsertConversation(uid, {
         id: currentChatId || null,
         title: data.title || text.slice(0, 45),
         request: text,
@@ -103,9 +132,10 @@ export default function Chat() {
       });
 
       setCurrentChatId(saved.id);
-      setChats(listConversations());
+      await refreshChats();
       router.replace(`/chat?chat_id=${saved.id}`, undefined, { shallow: true });
     } catch (err) {
+      console.error('[chat] sendMessage failed', err);
       setMessages((prev) => [
         ...prev,
         { sender: 'ai', text: 'Network error. Please try again.' },
@@ -135,8 +165,8 @@ export default function Chat() {
         <nav className="nav-pill">
           <a href="/">Home</a>
           <a href="/features">Features</a>
-          <a href="/#page-3">About Us</a>
-          <a href="/#page-4">FAQ</a>
+          <a href="/#about-section">About Us</a>
+          <a href="/#faq-section">FAQ</a>
         </nav>
 
         <img
@@ -155,14 +185,16 @@ export default function Chat() {
             <h2 className="chats-heading">Recent</h2>
 
             <ul className="sidebar-list">
-              {chats.length === 0 ? (
+              {!chatsReady ? (
+                <li className="sidebar-item empty">Loading...</li>
+              ) : chats.length === 0 ? (
                 <li className="sidebar-item empty">No recent chats</li>
               ) : (
                 chats.map((c) => (
                   <li className="sidebar-item" key={c.id}>
                     <a
                       className={`sidebar-link ${
-                        currentChatId === c.id ? 'active' : ''
+                        String(currentChatId) === String(c.id) ? 'active' : ''
                       }`}
                       onClick={(e) => {
                         e.preventDefault();
@@ -261,11 +293,7 @@ export default function Chat() {
                       {copiedIdx === i ? 'Copied!' : 'copy'}
                     </span>
 
-                    <img
-                      src="/assets/copy.png"
-                      className="copy-icon"
-                      alt=""
-                    />
+                    <img src="/assets/copy.png" className="copy-icon" alt="" />
                   </div>
                 </section>
               )
@@ -321,9 +349,6 @@ export default function Chat() {
       `}</style>
 
       <style jsx>{`
-        :root {
-        }
-
         .desktop {
           position: relative;
           width: 100%;

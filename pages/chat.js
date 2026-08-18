@@ -8,7 +8,7 @@ import {
   deleteConversation,
 } from '../lib/chatStorage';
 import { useAuth } from '../lib/AuthContext';
-import NavPill from '../components/navphil'; 
+import NavPill from '../components/NavPill'; 
 
 export default function Chat() {
   const router = useRouter();

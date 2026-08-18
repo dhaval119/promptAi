@@ -8,6 +8,8 @@ import {
   deleteConversation,
 } from '../lib/chatStorage';
 import { useAuth } from '../lib/AuthContext';
+// Import NavPill (Agar path alag hai toh change kar lena, e.g., './navphil')
+import NavPill from '../components/navphil'; 
 
 export default function Chat() {
   const router = useRouter();
@@ -53,7 +55,6 @@ export default function Chat() {
 
     const idParam = router.query.chat_id;
     if (!idParam) {
-      // No chat selected → show landing (clear any previous messages)
       setCurrentChatId(0);
       setMessages([]);
       return;
@@ -172,20 +173,8 @@ export default function Chat() {
       </Head>
 
       <div className="desktop">
-                        <nav className="nav-pill">
-          <a href="/">Home</a>
-          <a href="/features">Features</a>
-          <a href="/#about-section">About Us</a>
-          <a href="/#faq-section">FAQ</a>
-          <div
-            className="user-icon"
-            onClick={() => router.push(user ? '/details' : '/login')}
-            title={user ? 'My Account' : 'Login'}
-          >
-            <img src="/assets/login.png" alt="Account" />
-          </div>
-        </nav>
-        
+        <NavPill />
+
         <img
           src="/assets/ailogo.png"
           alt="AI Logo"
@@ -328,7 +317,6 @@ export default function Chat() {
                       className="open-ai-btn gemini"
                       title="Open in Gemini"
                       onClick={() => {
-                        // Gemini does not support query param prefill reliably; copy + open
                         navigator.clipboard.writeText(m.text).then(() => {
                           window.open('https://gemini.google.com/app', '_blank', 'noopener,noreferrer');
                         });
@@ -397,33 +385,6 @@ export default function Chat() {
           height: 100vh;
           background: #000;
           overflow: hidden;
-        }
-
-        .nav-pill {
-          position: fixed;
-          top: 31px;
-          right: 86px;
-          display: flex;
-          align-items: center;
-          gap: 25px;
-          background-color: #000;
-          border: 1px solid #fff;
-          border-radius: 50px;
-          padding: 6px 25px;
-          z-index: 20;
-        }
-
-        .nav-pill a {
-          color: #fff;
-          text-decoration: none;
-          font-weight: 500;
-          font-size: 16px;
-          transition: color 0.3s, text-shadow 0.3s;
-        }
-
-        .nav-pill a:hover {
-          color: #f0f0f0;
-          text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
         }
 
         .logo-main {
@@ -838,15 +799,6 @@ export default function Chat() {
         }
 
         @media (max-width: 900px) {
-          .nav-pill {
-            top: 18px;
-            right: 16px;
-            gap: 14px;
-            padding: 6px 16px;
-            transform: scale(0.85);
-            transform-origin: top right;
-          }
-
           .logo-main {
             left: 16px;
             top: 18px;

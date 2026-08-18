@@ -8,8 +8,7 @@ import {
   deleteConversation,
 } from '../lib/chatStorage';
 import { useAuth } from '../lib/AuthContext';
-// Import NavPill (Agar path alag hai toh change kar lena, e.g., './navphil')
-import NavPill from '../components/NavPill'; 
+import NavPill from '../components/navphil'; 
 
 export default function Chat() {
   const router = useRouter();
@@ -19,7 +18,7 @@ export default function Chat() {
 
   const [chats, setChats] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(0);
-  const [messages, setMessages] = useState([]); // {sender:'user'|'ai', text}
+  const [messages, setMessages] = useState([]); 
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
@@ -295,34 +294,43 @@ export default function Chat() {
                     <div
                       className="copy-container"
                       onClick={() => copyPrompt(m.text, i)}
+                      title="Copy Prompt"
                     >
                       <span className="copy-text">
                         {copiedIdx === i ? 'Copied!' : 'copy'}
                       </span>
                       <img src="/assets/copy.png" className="copy-icon" alt="" />
                     </div>
+                    
                     <button
                       type="button"
                       className="open-ai-btn"
-                      title="Open in ChatGPT"
+                      title="Paste in ChatGPT"
                       onClick={() => {
-                        const url = 'https://chatgpt.com/?q=' + encodeURIComponent(m.text);
-                        window.open(url, '_blank', 'noopener,noreferrer');
+                        navigator.clipboard.writeText(m.text).then(() => {
+                          const url = 'https://chatgpt.com/?q=' + encodeURIComponent(m.text);
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                        });
                       }}
                     >
-                      ChatGPT
+                      <span className="copy-text">Paste in</span>
+                      <img src="/assets/chatgpt.png" className="copy-icon ai-logo-icon" alt="ChatGPT" />
                     </button>
+                    
                     <button
                       type="button"
-                      className="open-ai-btn gemini"
-                      title="Open in Gemini"
+                      className="open-ai-btn"
+                      title="Paste in Gemini"
                       onClick={() => {
                         navigator.clipboard.writeText(m.text).then(() => {
                           window.open('https://gemini.google.com/app', '_blank', 'noopener,noreferrer');
                         });
                       }}
                     >
-                      Gemini
+                      <span className="copy-text">Paste in</span>
+                      <svg className="copy-icon ai-logo-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path fill="currentColor" d="M12 0C11.5 6.5 6.5 11.5 0 12C6.5 12.5 11.5 17.5 12 24C12.5 17.5 17.5 12.5 24 12C17.5 11.5 12.5 6.5 12 0Z"/>
+                      </svg>
                     </button>
                   </div>
                 </section>
@@ -694,13 +702,25 @@ export default function Chat() {
           white-space: pre-wrap;
         }
 
-        .copy-container {
+        .action-row {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          flex-wrap: wrap;
+          margin-top: 6px;
+        }
+
+        .copy-container,
+        .open-ai-btn {
           display: flex;
           align-items: center;
           gap: 6px;
           cursor: pointer;
           user-select: none;
-          width: fit-content;
+          background: transparent;
+          border: none;
+          padding: 0;
+          outline: none;
         }
 
         .copy-text {
@@ -708,43 +728,28 @@ export default function Chat() {
           font-size: 12px;
           font-weight: 700;
           opacity: 0.8;
+          transition: opacity 0.2s ease;
         }
 
         .copy-icon {
           width: 14px;
           height: 14px;
-          cursor: pointer;
           opacity: 0.8;
+          transition: opacity 0.2s ease;
+          object-fit: contain;
         }
 
-        .action-row {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-          margin-top: 4px;
+        .ai-logo-icon {
+          width: 16px;
+          height: 16px;
+          border-radius: 3px;
         }
 
-        .open-ai-btn {
-          background: #1a1a1a;
-          border: 1px solid #333;
-          color: #fff;
-          font-size: 12px;
-          font-weight: 600;
-          padding: 6px 12px;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: background 0.15s, border-color 0.15s;
-        }
-        .open-ai-btn:hover {
-          background: #2a2a2a;
-          border-color: #555;
-        }
-        .open-ai-btn.gemini {
-          border-color: #4285f4;
-        }
-        .open-ai-btn.gemini:hover {
-          background: #1a2a4a;
+        .copy-container:hover .copy-text,
+        .copy-container:hover .copy-icon,
+        .open-ai-btn:hover .copy-text,
+        .open-ai-btn:hover .copy-icon {
+          opacity: 1;
         }
 
         .chat-input-form {

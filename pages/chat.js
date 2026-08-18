@@ -171,7 +171,7 @@ export default function Chat() {
             onClick={() => router.push(user ? '/details' : '/login')}
             title={user ? 'My Account' : 'Login'}
           >
-            <img src="/assets/ailogo.png" alt="Account" />
+            <img src="/assets/login.png" alt="Account" />
           </div>
         </nav>
         

@@ -16,7 +16,7 @@ export default function NavPill() {
         onClick={() => router.push(user ? '/details' : '/login')}
         title={user ? 'My Account' : 'Login'}
       >
-        <img src="/assets/ailogo.png" alt="Account" />
+        <img src="/assets/login.png" alt="Account" />
       </div>
       <style jsx>{`
         .nav-pill {
@@ -48,10 +48,11 @@ export default function NavPill() {
           cursor: pointer;
         }
         .user-icon img {
-          width: 24px;
-          height: 24px;
+          width: 28px;
+          height: 28px;
           object-fit: contain;
           display: block;
+          border-radius: 50%;
         }
       `}</style>
     </nav>

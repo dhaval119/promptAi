@@ -291,20 +291,21 @@ export default function Chat() {
                   <p className="ai-prompt">{m.text}</p>
 
                   <div className="action-row">
-                    <div
-                      className="copy-container"
+                    {/* COPY BUTTON */}
+                    <button
+                      className="action-btn"
                       onClick={() => copyPrompt(m.text, i)}
                       title="Copy Prompt"
                     >
-                      <span className="copy-text">
+                      <span className="action-text">
                         {copiedIdx === i ? 'Copied!' : 'copy'}
                       </span>
-                      <img src="/assets/copy.png" className="copy-icon" alt="" />
-                    </div>
+                      <img src="/assets/copy.png" className="action-icon" alt="copy" />
+                    </button>
                     
+                    {/* CHATGPT BUTTON */}
                     <button
-                      type="button"
-                      className="open-ai-btn"
+                      className="action-btn"
                       title="Paste in ChatGPT"
                       onClick={() => {
                         navigator.clipboard.writeText(m.text).then(() => {
@@ -313,13 +314,13 @@ export default function Chat() {
                         });
                       }}
                     >
-                      <span className="copy-text">Paste in</span>
-                      <img src="/assets/chatgpt.png" className="copy-icon ai-logo-icon" alt="ChatGPT" />
+                      <span className="action-text">Paste in</span>
+                      <img src="/assets/chatgpt.png" className="action-icon" alt="ChatGPT" />
                     </button>
                     
+                    {/* GEMINI BUTTON */}
                     <button
-                      type="button"
-                      className="open-ai-btn"
+                      className="action-btn"
                       title="Paste in Gemini"
                       onClick={() => {
                         navigator.clipboard.writeText(m.text).then(() => {
@@ -327,8 +328,8 @@ export default function Chat() {
                         });
                       }}
                     >
-                      <span className="copy-text">Paste in</span>
-                      <svg className="copy-icon ai-logo-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <span className="action-text">Paste in</span>
+                      <svg className="action-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path fill="currentColor" d="M12 0C11.5 6.5 6.5 11.5 0 12C6.5 12.5 11.5 17.5 12 24C12.5 17.5 17.5 12.5 24 12C17.5 11.5 12.5 6.5 12 0Z"/>
                       </svg>
                     </button>
@@ -651,7 +652,8 @@ export default function Chat() {
         .conversation-thread {
           flex: 1;
           width: 100%;
-          padding: 120px 40px 120px 40px;
+          /* Padding top badha di hai taaki text NavPill ke peeche na chhupe */
+          padding: 120px 40px 140px 40px;
           overflow-y: auto;
           overflow-x: hidden;
           display: flex;
@@ -702,16 +704,16 @@ export default function Chat() {
           white-space: pre-wrap;
         }
 
+        /* ACTIONS BUTTONS CSS (ALL 3 EXACT SAME DESIGN) */
         .action-row {
           display: flex;
           align-items: center;
-          gap: 20px;
+          gap: 25px; /* Copy, ChatGPT, aur Gemini ke beech gap */
           flex-wrap: wrap;
-          margin-top: 6px;
+          margin-top: 10px;
         }
 
-        .copy-container,
-        .open-ai-btn {
+        .action-btn {
           display: flex;
           align-items: center;
           gap: 6px;
@@ -723,32 +725,25 @@ export default function Chat() {
           outline: none;
         }
 
-        .copy-text {
+        .action-text {
           color: #fff;
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
-          opacity: 0.8;
+          opacity: 0.7;
           transition: opacity 0.2s ease;
+          font-family: inherit;
         }
 
-        .copy-icon {
-          width: 14px;
-          height: 14px;
-          opacity: 0.8;
+        .action-icon {
+          width: 15px;
+          height: 15px;
+          opacity: 0.7;
           transition: opacity 0.2s ease;
           object-fit: contain;
         }
 
-        .ai-logo-icon {
-          width: 16px;
-          height: 16px;
-          border-radius: 3px;
-        }
-
-        .copy-container:hover .copy-text,
-        .copy-container:hover .copy-icon,
-        .open-ai-btn:hover .copy-text,
-        .open-ai-btn:hover .copy-icon {
+        .action-btn:hover .action-text,
+        .action-btn:hover .action-icon {
           opacity: 1;
         }
 

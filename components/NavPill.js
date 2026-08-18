@@ -16,7 +16,7 @@ export default function NavPill() {
         onClick={() => router.push(user ? '/details' : '/login')}
         title={user ? 'My Account' : 'Login'}
       >
-        <img src="public/assets/login.png" alt="Account" />
+        <img src="/assets/login.png" alt="Account" />
       </div>
 
       <style jsx>{`
@@ -31,7 +31,7 @@ export default function NavPill() {
           border: 1px solid #fff;
           border-radius: 50px;
           padding: 6px 25px;
-          z-index: 20;
+          z-index: 100; /* Z-index badha diya hai */
           white-space: nowrap;
         }
 

@@ -23,7 +23,7 @@ export default function NavPill() {
         .nav-pill {
           position: fixed;
           top: 31px;
-          right: 300px;
+          right: 250px;
           height: 37px;
           display: flex;
           align-items: center;

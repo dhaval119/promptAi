@@ -538,11 +538,12 @@ export default function Chat() {
 
         .view-landing .chat-input-form {
           position: absolute;
-          top: 50%;
+          top: calc(50% + 80px);
           left: 50%;
-          transform: translate(-50%, -50%);
+          transform: translateX(-50%);
           width: 700px;
           max-width: 90%;
+          z-index: 10;
         }
 
         .view-landing .landing-content {
@@ -582,7 +583,9 @@ export default function Chat() {
           left: 50%;
           transform: translateX(-50%);
           width: 700px;
+          max-width: 90%;
           text-align: center;
+          z-index: 5;
         }
 
         .main-heading {

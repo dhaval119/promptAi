@@ -16,7 +16,7 @@ export default function NavPill() {
         onClick={() => router.push(user ? '/details' : '/login')}
         title={user ? 'My Account' : 'Login'}
       >
-        <img src="/assets/login.png" alt="Account" />
+        <img src="public/assets/login.png" alt="Account" />
       </div>
 
       <style jsx>{`

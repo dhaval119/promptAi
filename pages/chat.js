@@ -9,7 +9,7 @@ import {
 } from '../lib/chatStorage';
 import { useAuth } from '../lib/AuthContext';
 // Import NavPill (Agar path alag hai toh change kar lena, e.g., './navphil')
-import NavPill from '../components/navphil'; 
+import NavPill from '../components/NavPill'; 
 
 export default function Chat() {
   const router = useRouter();

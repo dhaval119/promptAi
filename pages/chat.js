@@ -5,6 +5,7 @@ import {
   listConversations,
   getConversation,
   upsertConversation,
+  deleteConversation,
 } from '../lib/chatStorage';
 import { useAuth } from '../lib/AuthContext';
 
@@ -12,6 +13,7 @@ export default function Chat() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const uid = user?.uid ?? null;
+  const email = user?.email ?? null;
 
   const [chats, setChats] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(0);
@@ -27,7 +29,7 @@ export default function Chat() {
 
   const refreshChats = useCallback(async () => {
     try {
-      const list = await listConversations(uid);
+      const list = await listConversations(uid, email);
       setChats(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error('[chat] listConversations failed', err);
@@ -35,7 +37,7 @@ export default function Chat() {
     } finally {
       setChatsReady(true);
     }
-  }, [uid]);
+  }, [uid, email]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -55,7 +57,7 @@ export default function Chat() {
     let cancelled = false;
     (async () => {
       try {
-        const conv = await getConversation(uid, idParam);
+        const conv = await getConversation(uid, idParam, email);
         if (cancelled || !conv) return;
         setCurrentChatId(conv.id);
         setMessages([
@@ -87,7 +89,7 @@ export default function Chat() {
 
   async function openChat(id) {
     try {
-      const conv = await getConversation(uid, id);
+      const conv = await getConversation(uid, id, email);
       if (!conv) return;
 
       setCurrentChatId(conv.id);
@@ -126,7 +128,7 @@ export default function Chat() {
         title: data.title || text.slice(0, 45),
         request: text,
         response: aiText,
-      });
+      }, email);
 
       setCurrentChatId(saved.id);
       await refreshChats();
@@ -289,15 +291,40 @@ export default function Chat() {
 
                   <p className="ai-prompt">{m.text}</p>
 
-                  <div
-                    className="copy-container"
-                    onClick={() => copyPrompt(m.text, i)}
-                  >
-                    <span className="copy-text">
-                      {copiedIdx === i ? 'Copied!' : 'copy'}
-                    </span>
-
-                    <img src="/assets/copy.png" className="copy-icon" alt="" />
+                  <div className="action-row">
+                    <div
+                      className="copy-container"
+                      onClick={() => copyPrompt(m.text, i)}
+                    >
+                      <span className="copy-text">
+                        {copiedIdx === i ? 'Copied!' : 'copy'}
+                      </span>
+                      <img src="/assets/copy.png" className="copy-icon" alt="" />
+                    </div>
+                    <button
+                      type="button"
+                      className="open-ai-btn"
+                      title="Open in ChatGPT"
+                      onClick={() => {
+                        const url = 'https://chatgpt.com/?q=' + encodeURIComponent(m.text);
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      }}
+                    >
+                      ChatGPT
+                    </button>
+                    <button
+                      type="button"
+                      className="open-ai-btn gemini"
+                      title="Open in Gemini"
+                      onClick={() => {
+                        // Gemini does not support query param prefill reliably; copy + open
+                        navigator.clipboard.writeText(m.text).then(() => {
+                          window.open('https://gemini.google.com/app', '_blank', 'noopener,noreferrer');
+                        });
+                      }}
+                    >
+                      Gemini
+                    </button>
                   </div>
                 </section>
               )
@@ -708,6 +735,36 @@ export default function Chat() {
           height: 14px;
           cursor: pointer;
           opacity: 0.8;
+        }
+
+        .action-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin-top: 4px;
+        }
+
+        .open-ai-btn {
+          background: #1a1a1a;
+          border: 1px solid #333;
+          color: #fff;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 6px 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: background 0.15s, border-color 0.15s;
+        }
+        .open-ai-btn:hover {
+          background: #2a2a2a;
+          border-color: #555;
+        }
+        .open-ai-btn.gemini {
+          border-color: #4285f4;
+        }
+        .open-ai-btn.gemini:hover {
+          background: #1a2a4a;
         }
 
         .chat-input-form {

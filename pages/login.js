@@ -12,13 +12,15 @@ function friendlyError(code) {
     case 'auth/invalid-email':
       return 'Invalid email format.';
     case 'auth/user-not-found':
-      return 'No account found with this email.';
+      return 'No account found with this email. Try Google login if you signed up with Google.';
     case 'auth/wrong-password':
       return 'Incorrect password. Please try again.';
     case 'auth/invalid-credential':
-      return 'Incorrect email or password.';
+      return 'Incorrect email or password. If you signed up with Google, please use the Google button instead.';
     case 'auth/too-many-requests':
       return 'Too many attempts. Please try again later.';
+    case 'auth/account-exists-with-different-credential':
+      return 'An account already exists with this email using a different sign-in method. Try Google login.';
     default:
       return 'Something went wrong. Please try again.';
   }

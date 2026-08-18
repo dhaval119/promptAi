@@ -52,13 +52,23 @@ export default function Chat() {
     if (!router.isReady || authLoading) return;
 
     const idParam = router.query.chat_id;
-    if (!idParam) return;
+    if (!idParam) {
+      // No chat selected → show landing (clear any previous messages)
+      setCurrentChatId(0);
+      setMessages([]);
+      return;
+    }
 
     let cancelled = false;
     (async () => {
       try {
         const conv = await getConversation(uid, idParam, email);
-        if (cancelled || !conv) return;
+        if (cancelled) return;
+        if (!conv) {
+          setCurrentChatId(0);
+          setMessages([]);
+          return;
+        }
         setCurrentChatId(conv.id);
         setMessages([
           { sender: 'user', text: conv.request },
@@ -66,13 +76,14 @@ export default function Chat() {
         ]);
       } catch (err) {
         console.error('[chat] getConversation failed', err);
+        setMessages([]);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [router.isReady, router.query.chat_id, uid, authLoading]);
+  }, [router.isReady, router.query.chat_id, uid, email, authLoading]);
 
   useEffect(() => {
     if (threadRef.current) {
@@ -525,6 +536,9 @@ export default function Chat() {
           flex-direction: column;
           transition: transform 0.4s ease, width 0.4s ease;
           transform: translateX(250px);
+          background: #000;
+          overflow: hidden;
+          z-index: 1;
         }
 
         .main-content.no-sidebar {
@@ -538,12 +552,13 @@ export default function Chat() {
 
         .view-landing .chat-input-form {
           position: absolute;
-          top: calc(50% + 80px);
+          top: 58%;
           left: 50%;
           transform: translateX(-50%);
           width: 700px;
           max-width: 90%;
-          z-index: 10;
+          z-index: 30;
+          pointer-events: auto;
         }
 
         .view-landing .landing-content {
@@ -579,13 +594,14 @@ export default function Chat() {
 
         .landing-content {
           position: absolute;
-          top: calc(50% - 150px);
+          top: 42%;
           left: 50%;
-          transform: translateX(-50%);
+          transform: translate(-50%, -50%);
           width: 700px;
           max-width: 90%;
           text-align: center;
-          z-index: 5;
+          z-index: 20;
+          pointer-events: auto;
         }
 
         .main-heading {

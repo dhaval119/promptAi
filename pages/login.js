@@ -293,7 +293,7 @@ export default function Login() {
   width: 145%;
   height: 145%;
   background: url('/assets/video.gif') center/cover no-repeat;
-  filter: blur(10px);
+  filter: blur(100px);
   transform: translate(-50%, -50%) rotate(45deg) scale(1.45);
   transform-origin: center center;
 }

@@ -276,26 +276,27 @@ export default function Login() {
           display: block;
         }
 
-        .v545_33 {
-          width: 703px;
-          height: 719px;
-          border-radius: 30px;
-          flex-shrink: 0;
-          box-shadow: 0 0 50px rgba(255, 255, 255, 0.05);
-          position: relative;
-          overflow: hidden;
-        }
+       .v545_33 {
+  width: 703px;
+  height: 719px;
+  border-radius: 30px;
+  flex-shrink: 0;
+  box-shadow: 0 0 50px rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+}
 
         .video-background {
-          position: absolute;
-          top: -12px;
-          left: -12px;
-          width: calc(100% + 24px);
-          height: calc(100% + 24px);
-          background: url('/assets/video.gif') center/cover no-repeat;
-          filter: blur(8px);
-          transform: scale(1.02);
-        }
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 145%;
+  height: 145%;
+  background: url('/assets/video.gif') center/cover no-repeat;
+  filter: blur(10px);
+  transform: translate(-50%, -50%) rotate(45deg) scale(1.45);
+  transform-origin: center center;
+}
 
         .v494_25 {
           width: 489px;

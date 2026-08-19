@@ -42,8 +42,10 @@ export default function Login() {
     if (!db) return;
     const ref = doc(db, 'users', fbUser.uid);
     const snap = await getDoc(ref);
+
     if (!snap.exists()) {
       const names = (fbUser.displayName || 'User').trim().split(' ');
+
       await setDoc(ref, {
         first_name: names[0] || 'User',
         last_name: names.slice(1).join(' ') || '',
@@ -55,24 +57,35 @@ export default function Login() {
         created_at: serverTimestamp(),
       });
     } else {
-      await setDoc(ref, { last_login_at: serverTimestamp() }, { merge: true });
+      await setDoc(
+        ref,
+        { last_login_at: serverTimestamp() },
+        { merge: true }
+      );
     }
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setErrorMsg('');
+
     if (!email || !password) {
       setErrorMsg('Please fill in all fields.');
       return;
     }
+
     setBusy(true);
+
     try {
       if (!auth) {
-        setErrorMsg('Firebase is not configured. Add NEXT_PUBLIC_FIREBASE_* keys in .env.local');
+        setErrorMsg(
+          'Firebase is not configured. Add NEXT_PUBLIC_FIREBASE_* keys in .env.local'
+        );
         return;
       }
+
       const cred = await signInWithEmailAndPassword(auth, email, password);
+
       if (db && cred.user) {
         await setDoc(
           doc(db, 'users', cred.user.uid),
@@ -80,6 +93,7 @@ export default function Login() {
           { merge: true }
         );
       }
+
       router.push('/');
     } catch (err) {
       setErrorMsg(friendlyError(err.code));
@@ -91,16 +105,22 @@ export default function Login() {
   async function handleGoogleLogin() {
     setErrorMsg('');
     setBusy(true);
+
     try {
       if (!auth || !googleProvider) {
-        setErrorMsg('Firebase is not configured. Add NEXT_PUBLIC_FIREBASE_* keys in .env.local');
+        setErrorMsg(
+          'Firebase is not configured. Add NEXT_PUBLIC_FIREBASE_* keys in .env.local'
+        );
         return;
       }
+
       const result = await signInWithPopup(auth, googleProvider);
       await ensureUserDoc(result.user);
       router.push('/');
     } catch (err) {
-      setErrorMsg('Google Error: ' + (err.message || 'Something went wrong.'));
+      setErrorMsg(
+        'Google Error: ' + (err.message || 'Something went wrong.')
+      );
     } finally {
       setBusy(false);
     }
@@ -111,12 +131,18 @@ export default function Login() {
       <Head>
         <title>Login</title>
       </Head>
+
       <div className="v492_121">
         <div className="custom-logo">
           <img src="/assets/ailogo.png" alt="AI Logo" />
         </div>
+
         <div className="zoom-wrapper">
-          <div className="v545_33" />
+
+          <div className="v545_33">
+            <div className="video-background" />
+          </div>
+
           <div className="v494_25">
             <form onSubmit={handleSubmit}>
               <span className="v492_148">
@@ -124,7 +150,9 @@ export default function Login() {
                 <br />
                 welcome back
               </span>
+
               <span className="v494_15">Email</span>
+
               <div className="v494_16">
                 <input
                   type="email"
@@ -135,7 +163,9 @@ export default function Login() {
                   required
                 />
               </div>
+
               <span className="v494_18">Password</span>
+
               <div className="v494_19">
                 <input
                   type="password"
@@ -146,25 +176,47 @@ export default function Login() {
                   required
                 />
               </div>
-              <span className="v494_21">Must be at least 8 characters</span>
-              <button type="submit" name="login_submit" className="v494_22" disabled={busy}>
+
+              <span className="v494_21">
+                Must be at least 8 characters
+              </span>
+
+              <button
+                type="submit"
+                name="login_submit"
+                className="v494_22"
+                disabled={busy}
+              >
                 {busy ? 'Please wait...' : 'Sign In'}
               </button>
 
-              {errorMsg ? <div className="error-message">{errorMsg}</div> : null}
+              {errorMsg ? (
+                <div className="error-message">{errorMsg}</div>
+              ) : null}
             </form>
 
             <div className="firebase-divider">— OR —</div>
 
             <div className="firebase-options">
-              <button type="button" className="firebase-btn" onClick={handleGoogleLogin} disabled={busy}>
-                <img src="/assets/google.png" style={{ width: 22, height: 22 }} alt="Google" />
+              <button
+                type="button"
+                className="firebase-btn"
+                onClick={handleGoogleLogin}
+                disabled={busy}
+              >
+                <img
+                  src="/assets/google.png"
+                  style={{ width: 22, height: 22 }}
+                  alt="Google"
+                />
                 Continue with Google
               </button>
             </div>
 
             <div className="v494_24">
-              <Link href="/signup">Don&apos;t have an account? Sign up</Link>
+              <Link href="/signup">
+                Don&apos;t have an account? Sign up
+              </Link>
             </div>
           </div>
         </div>
@@ -180,6 +232,7 @@ export default function Login() {
           height: 100vh;
           width: 100vw;
         }
+
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
         input:-webkit-autofill:focus,
@@ -199,6 +252,7 @@ export default function Login() {
           justify-content: center;
           align-items: center;
         }
+
         .zoom-wrapper {
           display: flex;
           justify-content: center;
@@ -208,31 +262,48 @@ export default function Login() {
           transform-origin: center center;
           width: 100%;
         }
+
         .custom-logo {
           position: absolute;
           left: 26px;
           top: 23px;
           z-index: 100;
         }
+
         .custom-logo img {
           height: 50px;
           width: 50px;
           display: block;
         }
+
         .v545_33 {
           width: 703px;
           height: 719px;
-          background: url('/assets/signup.png') center/cover no-repeat;
           border-radius: 30px;
           flex-shrink: 0;
           box-shadow: 0 0 50px rgba(255, 255, 255, 0.05);
+          position: relative;
+          overflow: hidden;
         }
+
+        .video-background {
+          position: absolute;
+          top: -12px;
+          left: -12px;
+          width: calc(100% + 24px);
+          height: calc(100% + 24px);
+          background: url('/assets/video.gif') center/cover no-repeat;
+          filter: blur(8px);
+          transform: scale(1.02);
+        }
+
         .v494_25 {
           width: 489px;
           height: 620px;
           position: relative;
           flex-shrink: 0;
         }
+
         .v492_148 {
           position: absolute;
           top: 0;
@@ -244,6 +315,7 @@ export default function Login() {
           text-align: left;
           line-height: 1.2;
         }
+
         .v494_15 {
           position: absolute;
           top: 150px;
@@ -252,6 +324,7 @@ export default function Login() {
           font-size: 16px;
           color: white;
         }
+
         .v494_16 {
           width: 484px;
           top: 180px;
@@ -264,6 +337,7 @@ export default function Login() {
           align-items: center;
           height: 52px;
         }
+
         .v494_16 :global(input) {
           width: 100%;
           height: 100%;
@@ -275,6 +349,7 @@ export default function Login() {
           font-size: 15px;
           font-family: 'Inter', sans-serif;
         }
+
         .v494_18 {
           position: absolute;
           top: 255px;
@@ -283,6 +358,7 @@ export default function Login() {
           font-size: 16px;
           color: white;
         }
+
         .v494_19 {
           width: 484px;
           top: 289px;
@@ -295,6 +371,7 @@ export default function Login() {
           align-items: center;
           height: 52px;
         }
+
         .v494_19 :global(input) {
           width: 100%;
           height: 100%;
@@ -306,6 +383,7 @@ export default function Login() {
           font-size: 15px;
           font-family: 'Inter', sans-serif;
         }
+
         .v494_21 {
           position: absolute;
           top: 350px;
@@ -314,6 +392,7 @@ export default function Login() {
           font-size: 13px;
           color: rgba(255, 255, 255, 0.75);
         }
+
         .v494_22 {
           width: 484px;
           height: 53px;
@@ -334,14 +413,17 @@ export default function Login() {
           outline: none;
           font-family: 'Inter', sans-serif;
         }
+
         .v494_22:hover {
           background: white;
           color: black;
         }
+
         .v494_22:disabled {
           opacity: 0.7;
           cursor: default;
         }
+
         .v494_24 {
           position: absolute;
           top: 580px;
@@ -351,10 +433,12 @@ export default function Login() {
           font-size: 13px;
           color: white;
         }
+
         .v494_24 :global(a) {
           color: white;
           text-decoration: none;
         }
+
         .error-message {
           position: absolute;
           top: 370px;
@@ -369,6 +453,7 @@ export default function Login() {
           border-radius: 8px;
           z-index: 10;
         }
+
         .firebase-divider {
           position: absolute;
           top: 470px;
@@ -378,12 +463,14 @@ export default function Login() {
           color: #666;
           font-size: 13px;
         }
+
         .firebase-options {
           position: absolute;
           top: 500px;
           left: 0;
           width: 100%;
         }
+
         .firebase-btn {
           width: 484px;
           height: 53px;
@@ -402,10 +489,12 @@ export default function Login() {
           gap: 10px;
           font-family: 'Inter', sans-serif;
         }
+
         .firebase-btn:hover {
           background: white;
           color: black;
         }
+
         .firebase-btn:disabled {
           opacity: 0.7;
           cursor: default;

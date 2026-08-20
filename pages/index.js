@@ -137,6 +137,29 @@ export default function Home() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Fix hash links (#about-section / #faq-section) after ScaleFit lays out
+  useEffect(() => {
+    function scrollToHash() {
+      if (typeof window === 'undefined') return;
+      const hash = window.location.hash;
+      if (!hash) return;
+      const id = hash.replace('#', '');
+      // allow ScaleFit height to settle
+      const tryScroll = (attempts) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return;
+        }
+        if (attempts > 0) setTimeout(() => tryScroll(attempts - 1), 80);
+      };
+      setTimeout(() => tryScroll(15), 120);
+    }
+    scrollToHash();
+    window.addEventListener('hashchange', scrollToHash);
+    return () => window.removeEventListener('hashchange', scrollToHash);
+  }, []);
+
   return (
     <>
       <Head>
@@ -234,8 +257,8 @@ export default function Home() {
               <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" style={{ width: 18, height: 18 }} />
             </div>
 
-            {/* Desktop FAQ Wrapper */}
-            <div className="desktop-faq-wrapper">
+            {/* Desktop FAQ Wrapper - id matches NavPill #faq-section */}
+            <div className="desktop-faq-wrapper" id="faq-section">
               <FaqAccordion idPrefix="desktop" />
             </div>
           </div>
@@ -303,7 +326,7 @@ export default function Home() {
           <img src="/assets/arrow.png" alt="Arrow" />
         </div>
 
-        <div className="m-faq">
+        <div className="m-faq" id="faq-section-mobile">
           <FaqAccordion idPrefix="mobile" />
         </div>
       </div>
@@ -315,8 +338,11 @@ export default function Home() {
           margin: 0;
           padding: 0;
           scroll-behavior: smooth;
+          overflow-x: hidden;
+          overflow-y: auto !important;
+          height: auto !important;
+          min-height: 100%;
         }
-
       `}</style>
 
       <style jsx>{`
@@ -352,7 +378,7 @@ export default function Home() {
         /* ---------- DESKTOP CONTAINER ---------- */
         .container {
           width: 1920px;
-          height: 3900px; /* FIXED: Height exactly optimized to remove bottom space */
+          height: 4600px; /* room for FAQ + expanded answers + bottom padding */
           position: relative;
           background: #020202;
           overflow: hidden;
@@ -516,6 +542,7 @@ export default function Home() {
           left: 0;
           width: 100%;
           height: 906px;
+          scroll-margin-top: 80px;
           background: url('/assets/video.gif') center/cover no-repeat;
           filter: blur(35px);
           z-index: 0;
@@ -558,7 +585,8 @@ export default function Home() {
           left: 130px;
           width: 1650px;
           z-index: 2;
-          padding-bottom: 50px;
+          padding-bottom: 120px;
+          scroll-margin-top: 100px;
         }
 
         .desktop-only {

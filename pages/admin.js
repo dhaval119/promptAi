@@ -28,6 +28,12 @@ function isAdminEmail(email) {
   return e.includes('dhaval');
 }
 
+/** Same key as lib/chatStorage.js – Firestore path safe email */
+function emailKey(email) {
+  if (!email || typeof email !== 'string') return null;
+  return email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+}
+
 function safeStr(v, fallback = '—') {
   if (v == null || v === '') return fallback;
   return String(v);
@@ -97,42 +103,82 @@ export default function AdminPage() {
       setUsers([]);
     }
 
-    // Conversations – soft fail (collectionGroup often needs extra rules/indexes)
-    try {
-      const cg = await getDocs(
-        query(collectionGroup(db, 'items'), orderBy('updatedAt', 'desc'), limit(200))
-      );
-      allChats = cg.docs.map((d) => ({
-        id: d.id,
-        path: d.ref.path,
-        ...d.data(),
-      }));
-    } catch (err) {
+    // Conversations: load per-user (no collectionGroup / no parent list needed)
+    // Paths used by chatStorage: conversations_by_email/{emailKey}/items and users/{uid}/conversations
+    const seen = new Set();
+    let chatErrors = 0;
+
+    async function pullCol(colRef, meta) {
+      if (!colRef) return;
       try {
-        const roots = await getDocs(collection(db, 'conversations_by_email'));
-        for (const root of roots.docs) {
-          try {
-            const items = await getDocs(
-              query(collection(db, 'conversations_by_email', root.id, 'items'), limit(50))
-            );
-            items.docs.forEach((d) => {
-              allChats.push({
-                id: d.id,
-                emailKey: root.id,
-                path: d.ref.path,
-                ...d.data(),
-              });
-            });
-          } catch (_) {}
+        let snap;
+        try {
+          snap = await getDocs(query(colRef, orderBy('updatedAt', 'desc'), limit(40)));
+        } catch {
+          snap = await getDocs(query(colRef, limit(40)));
         }
-      } catch (e2) {
-        console.warn('conversations load failed', e2);
-        warnings.push(
-          'Chats: cannot read conversations (rules/index). Dashboard still works for users if allowed.'
-        );
+        snap.docs.forEach((d) => {
+          const key = d.ref.path;
+          if (seen.has(key)) return;
+          seen.add(key);
+          allChats.push({
+            id: d.id,
+            path: key,
+            ...d.data(),
+            ...meta,
+          });
+        });
+      } catch (e) {
+        chatErrors += 1;
+        console.warn('chat col failed', meta, e?.message || e);
       }
     }
+
+    // From each known user
+    for (const u of list) {
+      const key = emailKey(u.email);
+      if (key) {
+        await pullCol(collection(db, 'conversations_by_email', key, 'items'), {
+          emailKey: key,
+          userEmail: u.email || '',
+        });
+      }
+      if (u.id) {
+        await pullCol(collection(db, 'users', u.id, 'conversations'), {
+          uid: u.id,
+          userEmail: u.email || '',
+        });
+      }
+    }
+
+    // Also try collectionGroup as optional boost (works only if rules allow)
+    if (allChats.length === 0) {
+      try {
+        const cg = await getDocs(
+          query(collectionGroup(db, 'items'), limit(100))
+        );
+        cg.docs.forEach((d) => {
+          const key = d.ref.path;
+          if (seen.has(key)) return;
+          // only conversation-like paths
+          if (!key.includes('conversations_by_email') && !key.includes('/conversations/')) return;
+          seen.add(key);
+          allChats.push({ id: d.id, path: key, ...d.data() });
+        });
+      } catch (e) {
+        console.warn('collectionGroup optional failed', e?.message || e);
+      }
+    }
+
+    // Sort newest first
+    allChats.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     setConversations(allChats);
+
+    if (list.length > 0 && allChats.length === 0 && chatErrors > 0) {
+      warnings.push(
+        'Chats: Firestore rules blocked conversation reads. Allow admin read on conversations_by_email/{email}/items and users/{uid}/conversations (see CHANGES_README).'
+      );
+    }
 
     const blocked = list.filter((u) => u.is_blocked || u.isBlocked).length;
     const premium = list.filter((u) => u.is_premium || u.isPremium).length;

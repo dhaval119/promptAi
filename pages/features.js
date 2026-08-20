@@ -186,53 +186,76 @@ export default function Features() {
 
         @media (max-width: 900px) {
           .nav-fixed {
-            right: 16px;
-            transform: scale(0.8);
+            right: 12px;
+            transform: scale(0.78);
             transform-origin: top right;
           }
           .container {
-            width: 92vw;
+            width: 100%;
             min-height: 0;
-            padding-bottom: 60px;
+            padding: 0 0 80px;
+            overflow-x: hidden;
           }
           .title {
-            width: 84vw;
-            left: 4vw;
-            top: 110px;
-            font-size: clamp(26px, 8vw, 34px);
+            width: 90%;
+            left: 5%;
+            top: 100px;
+            font-size: clamp(24px, 7vw, 32px);
+            line-height: 1.2;
           }
           .features-list-wrapper {
-            top: 190px;
+            top: 180px;
+            width: 100%;
           }
           .features-top-line,
           .row-line {
-            width: 92vw;
-            left: 4vw;
+            width: 92%;
+            left: 4%;
           }
           .feature-row {
-            min-height: 90px;
+            min-height: 88px;
+            padding-bottom: 8px;
           }
           .feature-row.active {
-            min-height: 230px;
+            min-height: auto;
+            padding-bottom: 24px;
           }
           .row-number {
-            font-size: 60px;
+            font-size: 48px;
             width: auto;
-            top: 14px;
-            left: 4vw;
+            top: 12px;
+            left: 4%;
           }
           .row-title {
-            width: 60vw;
-            top: 20px;
-            left: 30vw;
-            font-size: 16px;
+            width: 58%;
+            top: 18px;
+            left: 28%;
+            font-size: 15px;
+            line-height: 1.3;
           }
           .row-description {
-            width: 84vw;
-            top: 65px;
-            left: 4vw;
+            width: 90%;
+            top: 60px;
+            left: 5%;
             font-size: 13px;
-            line-height: 1.6;
+            line-height: 1.55;
+            position: relative;
+            margin-top: 8px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .title {
+            font-size: 22px;
+            top: 90px;
+          }
+          .row-number {
+            font-size: 40px;
+          }
+          .row-title {
+            font-size: 14px;
+            left: 26%;
+            width: 65%;
           }
         }
       `}</style>

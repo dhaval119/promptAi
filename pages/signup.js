@@ -116,6 +116,7 @@ export default function Signup() {
   return (
     <>
       <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <title>Sign Up Account</title>
       </Head>
       <div className="v492_121">
@@ -215,6 +216,14 @@ export default function Signup() {
           font-size: 14px;
           height: 100vh;
           width: 100vw;
+        }
+        @media (max-width: 900px) {
+          html, body {
+            overflow-x: hidden;
+            overflow-y: auto;
+            height: auto;
+            min-height: 100vh;
+          }
         }
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
@@ -465,6 +474,127 @@ export default function Signup() {
         .firebase-btn:disabled {
           opacity: 0.7;
           cursor: default;
+        }
+
+        /* ---------- MOBILE LAYOUT ---------- */
+        @media (max-width: 900px) {
+          .v492_121 {
+            align-items: flex-start;
+            min-height: 100vh;
+            height: auto;
+            padding: 80px 20px 40px;
+            box-sizing: border-box;
+          }
+          .custom-logo {
+            left: 16px;
+            top: 16px;
+          }
+          .custom-logo img {
+            height: 40px;
+            width: 40px;
+          }
+          .zoom-wrapper {
+            flex-direction: column;
+            gap: 0;
+            transform: none;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+          }
+          .v545_33 {
+            display: none;
+          }
+          .v494_25 {
+            width: 100%;
+            height: auto;
+            position: relative;
+            min-height: 0;
+          }
+          .v492_148 {
+            position: relative;
+            top: auto;
+            left: auto;
+            font-size: 30px;
+            margin-bottom: 24px;
+            display: block;
+          }
+          .v494_9,
+          .v494_10,
+          .v494_15,
+          .v494_18 {
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            display: block;
+            margin-bottom: 8px;
+          }
+          .v494_11,
+          .v494_12,
+          .v494_16,
+          .v494_19 {
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            width: 100% !important;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+          }
+          .v494_21 {
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            display: block;
+            margin-bottom: 16px;
+          }
+          .v494_22 {
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            width: 100% !important;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+          }
+          .error-message {
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            width: 100% !important;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+          }
+          .firebase-divider {
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            width: 100% !important;
+            margin: 16px 0 12px;
+          }
+          .firebase-options {
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            width: 100%;
+          }
+          .firebase-btn {
+            width: 100% !important;
+            box-sizing: border-box;
+          }
+          .v494_24 {
+            position: relative !important;
+            top: auto !important;
+            width: 100%;
+            margin-top: 24px;
+            padding-bottom: 20px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .v492_148 {
+            font-size: 26px;
+          }
+          .v492_121 {
+            padding: 70px 16px 32px;
+          }
         }
       `}</style>
     </>

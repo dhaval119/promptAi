@@ -129,6 +129,7 @@ export default function Login() {
   return (
     <>
       <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <title>Login</title>
       </Head>
 
@@ -231,6 +232,14 @@ export default function Login() {
           overflow: hidden;
           height: 100vh;
           width: 100vw;
+        }
+        @media (max-width: 900px) {
+          html, body {
+            overflow-x: hidden;
+            overflow-y: auto;
+            height: auto;
+            min-height: 100vh;
+          }
         }
 
         input:-webkit-autofill,
@@ -499,6 +508,136 @@ export default function Login() {
         .firebase-btn:disabled {
           opacity: 0.7;
           cursor: default;
+        }
+
+        /* ---------- MOBILE LAYOUT ---------- */
+        @media (max-width: 900px) {
+          .v492_121 {
+            align-items: flex-start;
+            min-height: 100vh;
+            height: auto;
+            padding: 80px 20px 40px;
+            box-sizing: border-box;
+          }
+          .custom-logo {
+            left: 16px;
+            top: 16px;
+          }
+          .custom-logo img {
+            height: 40px;
+            width: 40px;
+          }
+          .zoom-wrapper {
+            flex-direction: column;
+            gap: 0;
+            transform: none;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+          }
+          .v545_33 {
+            display: none;
+          }
+          .v494_25 {
+            width: 100%;
+            height: auto;
+            position: relative;
+            min-height: 0;
+          }
+          .v492_148 {
+            position: relative;
+            top: auto;
+            left: auto;
+            font-size: 32px;
+            margin-bottom: 28px;
+            display: block;
+          }
+          .v494_15 {
+            position: relative;
+            top: auto;
+            left: auto;
+            display: block;
+            margin-bottom: 8px;
+          }
+          .v494_16 {
+            position: relative;
+            top: auto;
+            left: auto;
+            width: 100%;
+            margin-bottom: 18px;
+            box-sizing: border-box;
+          }
+          .v494_18 {
+            position: relative;
+            top: auto;
+            left: auto;
+            display: block;
+            margin-bottom: 8px;
+          }
+          .v494_19 {
+            position: relative;
+            top: auto;
+            left: auto;
+            width: 100%;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+          }
+          .v494_21 {
+            position: relative;
+            top: auto;
+            left: auto;
+            display: block;
+            margin-bottom: 18px;
+          }
+          .v494_22 {
+            position: relative;
+            top: auto;
+            left: auto;
+            width: 100%;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+          }
+          .error-message {
+            position: relative;
+            top: auto;
+            left: auto;
+            width: 100%;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+          }
+          .firebase-divider {
+            position: relative;
+            top: auto;
+            left: auto;
+            width: 100%;
+            margin: 16px 0 12px;
+          }
+          .firebase-options {
+            position: relative;
+            top: auto;
+            left: auto;
+            width: 100%;
+          }
+          .firebase-btn {
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .v494_24 {
+            position: relative;
+            top: auto;
+            width: 100%;
+            margin-top: 24px;
+            padding-bottom: 20px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .v492_148 {
+            font-size: 28px;
+          }
+          .v492_121 {
+            padding: 70px 16px 32px;
+          }
         }
       `}</style>
     </>

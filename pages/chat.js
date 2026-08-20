@@ -306,7 +306,7 @@ export default function Chat() {
                     {/* CHATGPT BUTTON */}
                     <button
                       className="action-btn"
-                      title="Paste in ChatGPT"
+                      title="Open in ChatGPT"
                       onClick={() => {
                         navigator.clipboard.writeText(m.text).then(() => {
                           const url = 'https://chatgpt.com/?q=' + encodeURIComponent(m.text);
@@ -314,24 +314,22 @@ export default function Chat() {
                         });
                       }}
                     >
-                      <span className="action-text">Paste in</span>
+                      <span className="action-text">Open in</span>
                       <img src="/assets/chatgpt.png" className="action-icon" alt="ChatGPT" />
                     </button>
                     
-                    {/* GEMINI BUTTON */}
+                    {/* GROK BUTTON */}
                     <button
                       className="action-btn"
-                      title="Paste in Gemini"
+                      title="Open in Grok"
                       onClick={() => {
                         navigator.clipboard.writeText(m.text).then(() => {
-                          window.open('https://gemini.google.com/app', '_blank', 'noopener,noreferrer');
+                          window.open('https://grok.com/', '_blank', 'noopener,noreferrer');
                         });
                       }}
                     >
-                      <span className="action-text">Paste in</span>
-                      <svg className="action-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path fill="currentColor" d="M12 0C11.5 6.5 6.5 11.5 0 12C6.5 12.5 11.5 17.5 12 24C12.5 17.5 17.5 12.5 24 12C17.5 11.5 12.5 6.5 12 0Z"/>
-                      </svg>
+                      <span className="action-text">Open in</span>
+                      <img src="/assets/grok.png" className="action-icon" alt="Grok" />
                     </button>
                   </div>
                 </section>
@@ -735,11 +733,10 @@ export default function Chat() {
         }
 
         .action-icon {
-          width: 15px;
-          height: 15px;
-          opacity: 0.7;
-          transition: opacity 0.2s ease;
+          width: 22px;
+          height: 22px;
           object-fit: contain;
+          border-radius: 4px;
         }
 
         .action-btn:hover .action-text,
@@ -800,23 +797,27 @@ export default function Chat() {
 
         @media (max-width: 900px) {
           .logo-main {
-            left: 16px;
-            top: 18px;
+            left: 12px;
+            top: 14px;
+            width: 40px;
+            height: 40px;
           }
 
           .sidebar {
-            width: 78vw;
-            max-width: 280px;
+            width: 82vw;
+            max-width: 300px;
             box-shadow: 4px 0 30px rgba(0, 0, 0, 0.6);
+            z-index: 90;
           }
 
           .sidebar.hide {
-            transform: translateX(-100%);
+            transform: translateX(-105%);
           }
 
           .main-content {
             width: 100% !important;
             transform: translateX(0) !important;
+            left: 0 !important;
           }
 
           .main-content:not(.no-sidebar) .view-chat .chat-input-form {
@@ -824,36 +825,104 @@ export default function Chat() {
           }
 
           .main-heading {
-            font-size: 26px;
+            font-size: 24px;
             white-space: normal;
+            padding: 0 8px;
+            line-height: 1.25;
           }
 
           .landing-content {
-            width: 90%;
-            top: 45%;
+            width: 92%;
+            top: 42%;
+            padding: 0 4px;
           }
 
           .suggestion-buttons {
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
+            width: 100%;
           }
 
           .suggestion-button {
             width: 100%;
             max-width: none;
+            font-size: 14px;
+            padding: 12px 14px;
           }
 
           .conversation-thread {
-            padding: 90px 16px 140px;
+            padding: 88px 12px 150px;
+          }
+
+          .user-message {
+            max-width: 88%;
+            font-size: 14px;
+          }
+
+          .ai-group {
+            max-width: 100%;
+          }
+
+          .ai-heading {
+            font-size: 16px;
+          }
+
+          .ai-prompt {
+            font-size: 14px;
+            line-height: 1.55;
+          }
+
+          .action-row {
+            flex-wrap: wrap;
+            gap: 10px;
+          }
+
+          .action-btn {
+            padding: 6px 10px;
+            font-size: 12px;
+          }
+
+          .action-icon {
+            width: 18px;
+            height: 18px;
           }
 
           .view-chat .chat-input-form {
-            bottom: 16px;
-            width: 92%;
+            bottom: 12px;
+            width: 94%;
+            left: 50%;
+            transform: translateX(-50%);
           }
 
           .view-landing .chat-input-form {
-            width: 90%;
+            width: 92%;
+            left: 50%;
+            transform: translateX(-50%);
+          }
+
+          .chat-input-wrapper {
+            padding: 8px 12px;
+          }
+
+          .chat-input {
+            font-size: 15px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .main-heading {
+            font-size: 20px;
+          }
+          .action-text {
+            display: none;
+          }
+          .action-btn {
+            padding: 8px;
+            min-width: 40px;
+            justify-content: center;
+          }
+          .conversation-thread {
+            padding: 80px 10px 140px;
           }
         }
       `}</style>

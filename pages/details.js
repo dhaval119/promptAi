@@ -315,25 +315,46 @@ export default function Details() {
 
         @media (max-width: 780px) {
           .container {
-            padding: 0 20px;
+            padding: 0 16px;
+            max-width: 100%;
+            overflow-x: hidden;
           }
           .nav-fixed {
-            right: 16px;
-            transform: scale(0.8);
+            right: 12px;
+            transform: scale(0.78);
             transform-origin: top right;
           }
           main {
-            padding-top: 100px;
+            padding-top: 90px;
+            padding-bottom: 40px;
+          }
+          h1, .page-title, .heading {
+            font-size: 26px !important;
           }
           .form-grid {
             grid-template-columns: 1fr;
+            gap: 16px;
           }
           .submit-container {
             flex-direction: column-reverse;
+            gap: 12px;
           }
           button.submit-btn,
           button.logout-btn {
             width: 100%;
+            box-sizing: border-box;
+          }
+          input, select, textarea {
+            font-size: 16px !important; /* prevents iOS zoom */
+          }
+        }
+
+        @media (max-width: 480px) {
+          main {
+            padding-top: 80px;
+          }
+          .container {
+            padding: 0 12px;
           }
         }
       `}</style>

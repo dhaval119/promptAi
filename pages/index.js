@@ -720,6 +720,36 @@ export default function Home() {
             padding-right: 10px !important;
           }
         }
+
+        @media (max-width: 480px) {
+          .mobile-only {
+            padding: 88px 14px 60px;
+          }
+          .m-heading {
+            font-size: 26px;
+          }
+          .m-btn-big {
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 15px;
+            padding: 14px 18px;
+          }
+          .m-section-title {
+            font-size: 22px;
+          }
+          .m-description {
+            font-size: 14px;
+          }
+          .m-second-heading {
+            font-size: 22px;
+          }
+          .m-faq :global(.faq-heading) {
+            font-size: 28px !important;
+          }
+          .m-faq :global(.faq-question) {
+            font-size: 15px !important;
+          }
+        }
       `}</style>
     </>
   );

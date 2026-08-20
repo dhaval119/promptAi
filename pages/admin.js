@@ -17,6 +17,8 @@ import { db } from '../lib/firebase';
 // Strict admin allow-list (case-insensitive). Never rely only on client-side checks in production.
 const ADMIN_EMAILS = [
   'sonidhaval2468@gmail.com',
+  'dhaval@gmai.com',
+  'dhaval123@gmai.com',
 ];
 
 function isAdminEmail(email) {
@@ -77,31 +79,39 @@ export default function AdminPage() {
   const loadData = useCallback(async () => {
     if (!user || !isAdminEmail(user.email) || !db) return;
     setLoadError('');
+    let list = [];
+    let allChats = [];
+    const warnings = [];
+
+    // Users – independent try so one failure does not kill the whole dashboard
     try {
-      // Users
       const snap = await getDocs(collection(db, 'users'));
-      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       setUsers(list);
+    } catch (err) {
+      console.warn('admin users load', err);
+      const msg = err?.code === 'permission-denied' || /permission|insufficient/i.test(err?.message || '')
+        ? 'Users: Firestore rules block read on "users". Allow admin read in Firebase Console → Firestore → Rules.'
+        : (err?.message || 'Failed to load users');
+      warnings.push(msg);
+      setUsers([]);
+    }
 
-      const blocked = list.filter((u) => u.is_blocked || u.isBlocked).length;
-      const premium = list.filter((u) => u.is_premium || u.isPremium).length;
-
-      // Conversations – try collectionGroup first, then email-based roots
-      let allChats = [];
+    // Conversations – soft fail (collectionGroup often needs extra rules/indexes)
+    try {
+      const cg = await getDocs(
+        query(collectionGroup(db, 'items'), orderBy('updatedAt', 'desc'), limit(200))
+      );
+      allChats = cg.docs.map((d) => ({
+        id: d.id,
+        path: d.ref.path,
+        ...d.data(),
+      }));
+    } catch (err) {
       try {
-        const cg = await getDocs(
-          query(collectionGroup(db, 'items'), orderBy('updatedAt', 'desc'), limit(200))
-        );
-        allChats = cg.docs.map((d) => ({
-          id: d.id,
-          path: d.ref.path,
-          ...d.data(),
-        }));
-      } catch (err) {
-        // Fallback: scan conversations_by_email
-        try {
-          const roots = await getDocs(collection(db, 'conversations_by_email'));
-          for (const root of roots.docs) {
+        const roots = await getDocs(collection(db, 'conversations_by_email'));
+        for (const root of roots.docs) {
+          try {
             const items = await getDocs(
               query(collection(db, 'conversations_by_email', root.id, 'items'), limit(50))
             );
@@ -113,24 +123,28 @@ export default function AdminPage() {
                 ...d.data(),
               });
             });
-          }
-        } catch (e2) {
-          console.warn('conversations fallback failed', e2);
+          } catch (_) {}
         }
+      } catch (e2) {
+        console.warn('conversations load failed', e2);
+        warnings.push(
+          'Chats: cannot read conversations (rules/index). Dashboard still works for users if allowed.'
+        );
       }
-      setConversations(allChats);
-
-      setStats({
-        active: Math.max(0, list.length - blocked),
-        totalUsers: list.length,
-        blocked,
-        chats: allChats.length,
-        revenue: premium * 9.99,
-      });
-    } catch (err) {
-      console.warn('admin load', err);
-      setLoadError(err?.message || 'Failed to load data');
     }
+    setConversations(allChats);
+
+    const blocked = list.filter((u) => u.is_blocked || u.isBlocked).length;
+    const premium = list.filter((u) => u.is_premium || u.isPremium).length;
+    setStats({
+      active: Math.max(0, list.length - blocked),
+      totalUsers: list.length,
+      blocked,
+      chats: allChats.length,
+      revenue: premium * 9.99,
+    });
+
+    if (warnings.length) setLoadError(warnings.join(' '));
   }, [user]);
 
   useEffect(() => {
@@ -539,10 +553,10 @@ export default function AdminPage() {
           min-height: 100vh;
         }
         .sidebar-logo {
-          width: 100px;
-          height: 100px;
+          width: 48px;
+          height: 48px;
           object-fit: contain;
-          margin: 0 auto 8px;
+          margin: 8px auto 12px;
           display: block;
         }
         .sidebar-title {

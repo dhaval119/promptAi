@@ -123,7 +123,9 @@ export default function Signup() {
           <img src="/assets/ailogo.png" alt="AI Logo" />
         </div>
         <div className="zoom-wrapper">
-          <div className="v545_33" />
+          <div className="v545_33">
+            <div className="video-background" />
+          </div>
           <div className="v494_25">
             <form onSubmit={handleSubmit}>
               <span className="v492_148">
@@ -256,10 +258,22 @@ export default function Signup() {
         .v545_33 {
           width: 703px;
           height: 719px;
-          background: url('/assets/signup.png') center/cover no-repeat;
           border-radius: 30px;
           flex-shrink: 0;
           box-shadow: 0 0 50px rgba(255, 255, 255, 0.05);
+          position: relative;
+          overflow: hidden;
+        }
+        .video-background {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 145%;
+          height: 145%;
+          background: url('/assets/video.gif') center/cover no-repeat;
+          filter: blur(35px);
+          transform: translate(-50%, -50%) rotate(45deg) scale(1.45);
+          transform-origin: center center;
         }
         .v494_25 {
           width: 489px;

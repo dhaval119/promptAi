@@ -43,8 +43,7 @@ function FaqAccordion({ idPrefix = '' }) {
       ))}
       <style jsx>{`
         .faq-wrapper {
-          /* Adds spacing at the top when navigated via anchor link */
-          scroll-margin-top: 150px; 
+          scroll-margin-top: 150px;
         }
         .faq-heading {
           font-size: 70px;
@@ -105,13 +104,14 @@ function FaqAccordion({ idPrefix = '' }) {
 
 export default function Home() {
   const router = useRouter();
-    const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   function goChat() {
     if (authLoading) return;
     if (user) router.push('/chat');
     else router.push('/login');
   }
+
   const row1Ref = useRef(null);
   const row2Ref = useRef(null);
   const featuresWrapRef = useRef(null);
@@ -137,24 +137,36 @@ export default function Home() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Fix hash links (#about-section / #faq-section) after ScaleFit lays out
+  // Reliable hash scrolling that works with ScaleFit
   useEffect(() => {
     function scrollToHash() {
       if (typeof window === 'undefined') return;
       const hash = window.location.hash;
       if (!hash) return;
+
       const id = hash.replace('#', '');
-      // allow ScaleFit height to settle
       const tryScroll = (attempts) => {
         const el = document.getElementById(id);
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Use getBoundingClientRect so ScaleFit transform is respected
+          const rect = el.getBoundingClientRect();
+          const absoluteTop = window.pageYOffset + rect.top;
+          // Leave room for the fixed nav
+          const offset = 100;
+          window.scrollTo({
+            top: absoluteTop - offset,
+            behavior: 'smooth',
+          });
           return;
         }
-        if (attempts > 0) setTimeout(() => tryScroll(attempts - 1), 80);
+        if (attempts > 0) {
+          setTimeout(() => tryScroll(attempts - 1), 80);
+        }
       };
-      setTimeout(() => tryScroll(15), 120);
+      // Wait for ScaleFit to finish layout
+      setTimeout(() => tryScroll(20), 150);
     }
+
     scrollToHash();
     window.addEventListener('hashchange', scrollToHash);
     return () => window.removeEventListener('hashchange', scrollToHash);
@@ -164,9 +176,7 @@ export default function Home() {
     <>
       <Head>
         <title>Prompt AI</title>
-        {/* Viewport tag exactly for mobile layout fixing */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-        {/* Favicon tag for the logo in the browser tab */}
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -314,7 +324,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile Showcase Glow (Replaces sharp image with ambient blur) */}
+        {/* Mobile Showcase Glow */}
         <div className="m-ambient-glow" />
 
         <h2 className="m-section-title" id="about-section-mobile">
@@ -378,7 +388,8 @@ export default function Home() {
         /* ---------- DESKTOP CONTAINER ---------- */
         .container {
           width: 1920px;
-          height: 4600px; /* room for FAQ + expanded answers + bottom padding */
+          /* Reduced from 4600px so page ends right after FAQ – no huge black gap */
+          height: 4200px;
           position: relative;
           background: #020202;
           overflow: hidden;
@@ -522,7 +533,6 @@ export default function Home() {
           color: white;
         }
 
-        /* FIXED MAIN IMAGE VISIBILITY & BLUR */
         .main-img {
           position: absolute;
           top: 1700px;
@@ -531,8 +541,8 @@ export default function Home() {
           height: 1300px;
           background: url('/assets/main12.gif') center/cover no-repeat;
           border-radius: 50%;
-          z-index: 0; 
-          filter: blur(45px); 
+          z-index: 0;
+          filter: blur(45px);
           opacity: 0.7;
         }
 
@@ -585,7 +595,8 @@ export default function Home() {
           left: 130px;
           width: 1650px;
           z-index: 2;
-          padding-bottom: 120px;
+          /* Enough bottom space so FAQ never feels cut off, but no huge empty gap */
+          padding-bottom: 180px;
           scroll-margin-top: 100px;
         }
 
@@ -707,7 +718,6 @@ export default function Home() {
             z-index: 1;
           }
 
-          /* MOBILE MAIN IMAGE SHOWCASE */
           .m-ambient-glow {
             position: absolute;
             top: 40%;

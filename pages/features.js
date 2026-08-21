@@ -38,6 +38,7 @@ export default function Features() {
     <>
       <Head>
         <title>Why Prompt AI Stands Out</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
       <div className="desktop">
         <Logo />

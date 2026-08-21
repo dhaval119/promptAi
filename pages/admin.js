@@ -380,6 +380,7 @@ export default function AdminPage() {
 
           {tab === 'users' && (
             <div className="table-wrap">
+              <p className="scroll-hint">Swipe to see more →</p>
               <table>
                 <thead>
                   <tr>
@@ -450,6 +451,7 @@ export default function AdminPage() {
 
           {(tab === 'chats' || tab === 'conversation') && (
             <div className="table-wrap">
+              <p className="scroll-hint">Swipe to see more →</p>
               <table>
                 <thead>
                   <tr>
@@ -491,6 +493,7 @@ export default function AdminPage() {
                 Payments are derived from premium flags on user documents. Connect a
                 real payments collection when available.
               </p>
+              <p className="scroll-hint">Swipe to see more →</p>
               <table>
                 <thead>
                   <tr>
@@ -532,6 +535,7 @@ export default function AdminPage() {
 
           {tab === 'logs' && (
             <div className="table-wrap">
+              <p className="scroll-hint">Swipe to see more →</p>
               <table>
                 <thead>
                   <tr>
@@ -757,7 +761,15 @@ export default function AdminPage() {
           background: #141414;
           border-radius: 24px;
           overflow: auto;
+          -webkit-overflow-scrolling: touch;
           padding: 8px;
+        }
+        .scroll-hint {
+          display: none;
+          color: #888;
+          font-size: 12px;
+          font-weight: 600;
+          margin: -6px 4px 10px;
         }
         table {
           width: 100%;
@@ -887,6 +899,27 @@ export default function AdminPage() {
           }
           .section-title {
             font-size: 22px;
+          }
+          .scroll-hint {
+            display: block;
+          }
+          table {
+            font-size: 12px;
+            min-width: 560px;
+          }
+          th,
+          td {
+            padding: 10px 8px;
+          }
+          .actions {
+            flex-direction: column;
+            gap: 6px;
+          }
+          .btn {
+            width: 100%;
+            padding: 9px 12px;
+            min-height: 34px;
+            font-size: 12px;
           }
         }
       `}</style>

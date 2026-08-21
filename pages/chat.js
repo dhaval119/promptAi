@@ -114,8 +114,10 @@ export default function Chat() {
     }
   }
 
+  const MAX_MESSAGE_LENGTH = 2000;
+
   async function sendMessage(overrideText) {
-    const text = (overrideText ?? input).trim();
+    const text = (overrideText ?? input).trim().slice(0, MAX_MESSAGE_LENGTH);
     if (!text || loading) return;
 
     setMessages((prev) => [...prev, { sender: 'user', text }]);
@@ -169,6 +171,7 @@ export default function Chat() {
     <>
       <Head>
         <title>AI Chat Interface</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
       </Head>
 
       <div className="desktop">
@@ -318,18 +321,21 @@ export default function Chat() {
                       <img src="/assets/chatgpt.png" className="action-icon" alt="ChatGPT" />
                     </button>
                     
-                    {/* GROK BUTTON */}
+                    {/* CLAUDE BUTTON (replaces Grok - grok.com does not accept a prefilled
+                        prompt via URL, so the text never reached it. Claude.ai also has no
+                        public prefill parameter, so we use the same copy+open pattern as
+                        the Gemini flow: copy to clipboard, open claude.ai, user pastes.) */}
                     <button
                       className="action-btn"
-                      title="Open in Grok"
+                      title="Open in Claude"
                       onClick={() => {
                         navigator.clipboard.writeText(m.text).then(() => {
-                          window.open('https://grok.com/', '_blank', 'noopener,noreferrer');
+                          window.open('https://claude.ai/new', '_blank', 'noopener,noreferrer');
                         });
                       }}
                     >
                       <span className="action-text">Open in</span>
-                      <img src="/assets/grok.png" className="action-icon" alt="Grok" />
+                      <img src="/assets/claude.svg" className="action-icon" alt="Claude" />
                     </button>
                   </div>
                 </section>
@@ -352,6 +358,7 @@ export default function Chat() {
                 autoComplete="off"
                 ref={inputRef}
                 value={input}
+                maxLength={MAX_MESSAGE_LENGTH}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -390,6 +397,7 @@ export default function Chat() {
           position: relative;
           width: 100%;
           height: 100vh;
+          height: 100dvh; /* real visible height on mobile browsers (address bar aware) */
           background: #000;
           overflow: hidden;
         }
@@ -427,6 +435,7 @@ export default function Chat() {
           right: 10px;
           bottom: 20px;
           overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
         }
 
         .new-chat {
@@ -654,6 +663,7 @@ export default function Chat() {
           padding: 120px 40px 140px 40px;
           overflow-y: auto;
           overflow-x: hidden;
+          -webkit-overflow-scrolling: touch;
           display: flex;
           flex-direction: column;
           gap: 50px;
@@ -888,7 +898,7 @@ export default function Chat() {
           }
 
           .view-chat .chat-input-form {
-            bottom: 12px;
+            bottom: calc(12px + env(safe-area-inset-bottom));
             width: 94%;
             left: 50%;
             transform: translateX(-50%);
@@ -905,7 +915,8 @@ export default function Chat() {
           }
 
           .chat-input {
-            font-size: 15px;
+            /* 16px minimum stops iOS Safari from auto-zooming the whole page on focus */
+            font-size: 16px;
           }
         }
 

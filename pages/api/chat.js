@@ -50,12 +50,64 @@ async function callGroq(prompt, key, model) {
   return text ? text.trim() : false;
 }
 
+// --- Basic in-memory rate limiting -----------------------------------
+// Best-effort only: serverless instances can be recycled at any time, so
+// this is not a substitute for real rate limiting (e.g. Vercel Edge Config,
+// Upstash Redis) in front of the route, but it stops naive rapid-fire abuse
+// from a single warm instance without adding any new dependency.
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 20;
+const rateLimitHits = new Map();
+
+function getClientIp(req) {
+  const fwd = req.headers['x-forwarded-for'];
+  if (typeof fwd === 'string' && fwd.length > 0) return fwd.split(',')[0].trim();
+  return req.socket?.remoteAddress || 'unknown';
+}
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const entry = rateLimitHits.get(ip);
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    rateLimitHits.set(ip, { windowStart: now, count: 1 });
+    return false;
+  }
+  entry.count += 1;
+  if (entry.count > RATE_LIMIT_MAX_REQUESTS) return true;
+  return false;
+}
+
+const MAX_MESSAGE_LENGTH = 2000;
+
 export default async function handler(req, res) {
+  // Security headers for this endpoint
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'no-store');
+
   if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'method_not_allowed' });
   }
 
-  const userText = (req.body?.msg || '').toString().trim();
+  const ip = getClientIp(req);
+  if (isRateLimited(ip)) {
+    return res.status(429).json({
+      error: 'rate_limited',
+      text: 'Too many requests. Please wait a moment and try again.',
+    });
+  }
+
+  const rawText = req.body?.msg;
+  if (typeof rawText !== 'string') {
+    return res.status(400).json({ error: 'invalid_message' });
+  }
+
+  // Strip control characters (except newline/tab) so nothing odd reaches the AI APIs
+  const userText = rawText
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+    .trim()
+    .slice(0, MAX_MESSAGE_LENGTH);
+
   if (!userText) {
     return res.status(400).json({ error: 'empty_message' });
   }

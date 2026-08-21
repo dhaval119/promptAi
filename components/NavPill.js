@@ -6,12 +6,39 @@ export default function NavPill() {
   const { user } = useAuth();
   const isChat = router.pathname === '/chat';
 
+  function goToSection(hash) {
+    // Agar already home pe ho to direct scroll, warna pehle home pe jao
+    if (router.pathname === '/') {
+      window.location.hash = hash;
+      // force re-trigger
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    } else {
+      router.push('/' + hash);
+    }
+  }
+
   return (
     <nav className={`nav-pill ${isChat ? 'on-chat' : 'on-other'}`}>
       <a href="/">Home</a>
       <a href="/features">Features</a>
-      <a href="/#about-section">About Us</a>
-      <a href="/#faq-section">FAQ</a>
+      <a
+        href="/#about-section"
+        onClick={(e) => {
+          e.preventDefault();
+          goToSection('#about-section');
+        }}
+      >
+        About Us
+      </a>
+      <a
+        href="/#faq-section"
+        onClick={(e) => {
+          e.preventDefault();
+          goToSection('#faq-section');
+        }}
+      >
+        FAQ
+      </a>
       <div
         className="user-icon"
         onClick={() => router.push(user ? '/details' : '/login')}
@@ -36,12 +63,10 @@ export default function NavPill() {
           white-space: nowrap;
         }
 
-        /* Index / other pages: leave space for Get Started button on the right */
         .nav-pill.on-other {
           right: 250px;
         }
 
-        /* Chat page: stick navigation close to the right edge */
         .nav-pill.on-chat {
           right: 28px;
         }
@@ -52,6 +77,7 @@ export default function NavPill() {
           font-weight: 500;
           font-size: 16px;
           transition: color 0.3s, text-shadow 0.3s;
+          cursor: pointer;
         }
 
         .nav-pill a:hover {

@@ -1,50 +1,43 @@
 import { useEffect, useRef, useState } from 'react';
 
-/**
- * Wraps a fixed-pixel-width design (the original 1920px PHP mockup) and
- * scales it to fit whatever width is available - same pixels, just zoomed
- * up/down, so the design itself never changes, only its on-screen size.
- *
- * This is the same trick the original PHP files used (transform: scale(0.8))
- * except the factor is calculated live from the real container width, so it
- * looks correct on any monitor/laptop/tablet instead of only one fixed size.
- */
-export default function ScaleFit({ baseWidth, children }) {
-  const outerRef = useRef(null);
-  const innerRef = useRef(null);
+export default function ScaleFit({ baseWidth = 1920, children }) {
   const [scale, setScale] = useState(1);
-  const [naturalHeight, setNaturalHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(4200); // default = container height
+  const innerRef = useRef(null);
 
   useEffect(() => {
-    const outer = outerRef.current;
-    const inner = innerRef.current;
-    if (!outer || !inner) return;
+    function update() {
+      const s = Math.min(1, window.innerWidth / baseWidth);
+      setScale(s);
 
-    function recalc() {
-      const parentWidth = outer.parentElement ? outer.parentElement.clientWidth : window.innerWidth;
-      setScale(parentWidth / baseWidth);
-      // offsetHeight is unaffected by CSS transform, so this is always the
-      // true, un-scaled content height.
-      setNaturalHeight(inner.offsetHeight);
+      // Measure actual content height after scale settles
+      if (innerRef.current) {
+        const h = innerRef.current.scrollHeight || innerRef.current.offsetHeight || 4200;
+        setContentHeight(h);
+      }
     }
 
-    recalc();
-    const ro = new ResizeObserver(recalc);
-    if (outer.parentElement) ro.observe(outer.parentElement);
-    ro.observe(inner);
-    window.addEventListener('resize', recalc);
+    update();
+    window.addEventListener('resize', update);
+
+    // Re-measure after a short delay (ScaleFit + images load)
+    const t1 = setTimeout(update, 100);
+    const t2 = setTimeout(update, 400);
+    const t3 = setTimeout(update, 800);
+
     return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', recalc);
+      window.removeEventListener('resize', update);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
     };
   }, [baseWidth]);
 
   return (
     <div
-      ref={outerRef}
       style={{
         width: '100%',
-        height: naturalHeight ? naturalHeight * scale : 'auto',
+        height: contentHeight * scale, // ← yeh critical hai – extra black space khatam
         overflow: 'hidden',
         position: 'relative',
       }}
@@ -55,6 +48,9 @@ export default function ScaleFit({ baseWidth, children }) {
           width: baseWidth,
           transform: `scale(${scale})`,
           transformOrigin: 'top left',
+          position: 'absolute',
+          top: 0,
+          left: 0,
         }}
       >
         {children}

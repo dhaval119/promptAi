@@ -43,7 +43,7 @@ function FaqAccordion({ idPrefix = '' }) {
       ))}
       <style jsx>{`
         .faq-wrapper {
-          scroll-margin-top: 150px;
+          scroll-margin-top: 120px;
         }
         .faq-heading {
           font-size: 70px;
@@ -137,7 +137,7 @@ export default function Home() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Reliable hash scrolling that works with ScaleFit
+  // Reliable hash scroll that works with ScaleFit
   useEffect(() => {
     function scrollToHash() {
       if (typeof window === 'undefined') return;
@@ -145,26 +145,26 @@ export default function Home() {
       if (!hash) return;
 
       const id = hash.replace('#', '');
+
       const tryScroll = (attempts) => {
         const el = document.getElementById(id);
         if (el) {
-          // Use getBoundingClientRect so ScaleFit transform is respected
           const rect = el.getBoundingClientRect();
           const absoluteTop = window.pageYOffset + rect.top;
-          // Leave room for the fixed nav
-          const offset = 100;
+          const offset = 90; // space for fixed nav
           window.scrollTo({
-            top: absoluteTop - offset,
+            top: Math.max(0, absoluteTop - offset),
             behavior: 'smooth',
           });
           return;
         }
         if (attempts > 0) {
-          setTimeout(() => tryScroll(attempts - 1), 80);
+          setTimeout(() => tryScroll(attempts - 1), 60);
         }
       };
-      // Wait for ScaleFit to finish layout
-      setTimeout(() => tryScroll(20), 150);
+
+      // ScaleFit layout settle hone do
+      setTimeout(() => tryScroll(25), 200);
     }
 
     scrollToHash();
@@ -180,7 +180,6 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      {/* FIXED NAVBAR & BUTTONS */}
       <Logo onClick={() => router.push('/')} />
       <div className="nav-fixed">
         <NavPill />
@@ -189,7 +188,7 @@ export default function Home() {
         GET STARTED
       </div>
 
-      {/* DESKTOP LAYOUT (>=901px) */}
+      {/* DESKTOP */}
       <div className="desktop-only">
         <ScaleFit baseWidth={1920}>
           <div className="container">
@@ -252,10 +251,8 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Main Showcase Image GIF (Blurred into a background glow) */}
             <div className="main-img" />
 
-            {/* Second Hero Background */}
             <div className="second-hero" id="about-section" />
 
             <h1 className="second-heading">
@@ -267,7 +264,6 @@ export default function Home() {
               <img src="/assets/arrow.png" alt="Arrow" className="arrow-img" style={{ width: 18, height: 18 }} />
             </div>
 
-            {/* Desktop FAQ Wrapper - id matches NavPill #faq-section */}
             <div className="desktop-faq-wrapper" id="faq-section">
               <FaqAccordion idPrefix="desktop" />
             </div>
@@ -275,7 +271,7 @@ export default function Home() {
         </ScaleFit>
       </div>
 
-      {/* MOBILE LAYOUT (<901px) */}
+      {/* MOBILE */}
       <div className="mobile-only">
         <div className="m-hero-bg" />
         <div className="m-hero">
@@ -324,7 +320,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile Showcase Glow */}
         <div className="m-ambient-glow" />
 
         <h2 className="m-section-title" id="about-section-mobile">
@@ -385,10 +380,8 @@ export default function Home() {
           color: black;
         }
 
-        /* ---------- DESKTOP CONTAINER ---------- */
         .container {
           width: 1920px;
-          /* Reduced from 4600px so page ends right after FAQ – no huge black gap */
           height: 4200px;
           position: relative;
           background: #020202;
@@ -595,8 +588,7 @@ export default function Home() {
           left: 130px;
           width: 1650px;
           z-index: 2;
-          /* Enough bottom space so FAQ never feels cut off, but no huge empty gap */
-          padding-bottom: 180px;
+          padding-bottom: 160px;
           scroll-margin-top: 100px;
         }
 
@@ -607,7 +599,6 @@ export default function Home() {
           display: none;
         }
 
-        /* ---------- MOBILE RESPONSIVE LAYOUT (<901px) ---------- */
         @media (max-width: 900px) {
           .desktop-only {
             display: none;

@@ -34,8 +34,16 @@ export default function Login() {
   const [errorMsg, setErrorMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // Mobile → /chat | Desktop → /
+  const getTargetRoute = () => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+      return '/chat';
+    }
+    return '/';
+  };
+
   useEffect(() => {
-    if (!loading && user) router.replace('/');
+    if (!loading && user) router.replace(getTargetRoute());
   }, [loading, user, router]);
 
   async function ensureUserDoc(fbUser) {
@@ -94,7 +102,7 @@ export default function Login() {
         );
       }
 
-      router.push('/');
+      router.push(getTargetRoute());
     } catch (err) {
       setErrorMsg(friendlyError(err.code));
     } finally {
@@ -116,7 +124,7 @@ export default function Login() {
 
       const result = await signInWithPopup(auth, googleProvider);
       await ensureUserDoc(result.user);
-      router.push('/');
+      router.push(getTargetRoute());
     } catch (err) {
       setErrorMsg(
         'Google Error: ' + (err.message || 'Something went wrong.')
@@ -133,13 +141,13 @@ export default function Login() {
         <title>Login</title>
       </Head>
 
-      <div className="v492_121">
+      {/* ===================== DESKTOP LAYOUT ===================== */}
+      <div className="desktop-layout v492_121">
         <div className="custom-logo">
           <img src="/assets/ailogo.png" alt="AI Logo" />
         </div>
 
         <div className="zoom-wrapper">
-
           <div className="v545_33">
             <div className="video-background" />
           </div>
@@ -223,15 +231,85 @@ export default function Login() {
         </div>
       </div>
 
+      {/* ===================== MOBILE LAYOUT ===================== */}
+      <div className="mobile-layout">
+        <div className="mobile-bg-wrapper">
+          <div className="mobile-video-background" />
+        </div>
+        <div className="mobile-container">
+          <img src="/assets/ailogo.png" alt="AI Logo" className="mobile-logo" />
+
+          <h1 className="mobile-title">
+            Hello there,
+            <br />
+            welcome back
+          </h1>
+
+          <form onSubmit={handleSubmit} className="mobile-form">
+            <div className="mobile-field">
+              <label>Email</label>
+              <input
+                type="email"
+                placeholder="eg.soni@gmail.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="mobile-field mobile-password-field">
+              <label>Password</label>
+              <input
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <span className="mobile-hint">Must be at least 8 characters</span>
+            </div>
+
+            {errorMsg && <div className="mobile-error">{errorMsg}</div>}
+
+            <button type="submit" className="mobile-btn-signin" disabled={busy}>
+              {busy ? 'Please wait...' : 'Sign In'}
+            </button>
+          </form>
+
+          <div className="mobile-divider">
+            <span></span>
+            <p>OR</p>
+            <span></span>
+          </div>
+
+          <button
+            type="button"
+            className="mobile-btn-google"
+            onClick={handleGoogleLogin}
+            disabled={busy}
+          >
+            <img src="/assets/google.png" alt="Google Logo" />
+            Continue with Google
+          </button>
+
+          <div className="mobile-footer">
+            Don&apos;t have an account? <Link href="/signup">Sign up</Link>
+          </div>
+        </div>
+      </div>
+
       <style jsx global>{`
         html,
         body {
-          font-family: 'Inter', sans-serif;
-          background: #020202;
+          font-family: 'Inter', system-ui, sans-serif;
+          background: #000000ff;
           color: white;
           overflow: hidden;
+          font-size: 14px;
           height: 100vh;
           width: 100vw;
+          margin: 0;
+          padding: 0;
         }
         @media (max-width: 900px) {
           html, body {
@@ -241,7 +319,6 @@ export default function Login() {
             min-height: 100vh;
           }
         }
-
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
         input:-webkit-autofill:focus,
@@ -252,16 +329,21 @@ export default function Login() {
       `}</style>
 
       <style jsx>{`
-        .v492_121 {
+        /* ================= DISPLAY TOGGLE ================= */
+        .desktop-layout {
+          display: flex;
           width: 100%;
           height: 100%;
           background: #020202;
           position: relative;
-          display: flex;
           justify-content: center;
           align-items: center;
         }
+        .mobile-layout {
+          display: none;
+        }
 
+        /* ================= DESKTOP CSS ================= */
         .zoom-wrapper {
           display: flex;
           justify-content: center;
@@ -271,49 +353,43 @@ export default function Login() {
           transform-origin: center center;
           width: 100%;
         }
-
         .custom-logo {
           position: absolute;
           left: 26px;
           top: 23px;
           z-index: 100;
         }
-
         .custom-logo img {
           height: 50px;
           width: 50px;
           display: block;
         }
-
-       .v545_33 {
-  width: 703px;
-  height: 719px;
-  border-radius: 30px;
-  flex-shrink: 0;
-  box-shadow: 0 0 50px rgba(255, 255, 255, 0.05);
-  position: relative;
-  overflow: hidden;
-}
-
+        .v545_33 {
+          width: 703px;
+          height: 719px;
+          border-radius: 30px;
+          flex-shrink: 0;
+          box-shadow: 0 0 50px rgba(255, 255, 255, 0.05);
+          position: relative;
+          overflow: hidden;
+        }
         .video-background {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 145%;
-  height: 145%;
-  background: url('/assets/video.gif') center/cover no-repeat;
-  filter: blur(35px);
-  transform: translate(-50%, -50%) rotate(45deg) scale(1.45);
-  transform-origin: center center;
-}
-
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 145%;
+          height: 145%;
+          background: url('/assets/video.gif') center/cover no-repeat;
+          filter: blur(35px);
+          transform: translate(-50%, -50%) rotate(45deg) scale(1.45);
+          transform-origin: center center;
+        }
         .v494_25 {
           width: 489px;
           height: 620px;
           position: relative;
           flex-shrink: 0;
         }
-
         .v492_148 {
           position: absolute;
           top: 0;
@@ -325,7 +401,6 @@ export default function Login() {
           text-align: left;
           line-height: 1.2;
         }
-
         .v494_15 {
           position: absolute;
           top: 150px;
@@ -334,7 +409,6 @@ export default function Login() {
           font-size: 16px;
           color: white;
         }
-
         .v494_16 {
           width: 484px;
           top: 180px;
@@ -347,7 +421,6 @@ export default function Login() {
           align-items: center;
           height: 52px;
         }
-
         .v494_16 :global(input) {
           width: 100%;
           height: 100%;
@@ -359,7 +432,6 @@ export default function Login() {
           font-size: 15px;
           font-family: 'Inter', sans-serif;
         }
-
         .v494_18 {
           position: absolute;
           top: 255px;
@@ -368,7 +440,6 @@ export default function Login() {
           font-size: 16px;
           color: white;
         }
-
         .v494_19 {
           width: 484px;
           top: 289px;
@@ -381,7 +452,6 @@ export default function Login() {
           align-items: center;
           height: 52px;
         }
-
         .v494_19 :global(input) {
           width: 100%;
           height: 100%;
@@ -393,7 +463,6 @@ export default function Login() {
           font-size: 15px;
           font-family: 'Inter', sans-serif;
         }
-
         .v494_21 {
           position: absolute;
           top: 350px;
@@ -402,7 +471,6 @@ export default function Login() {
           font-size: 13px;
           color: rgba(255, 255, 255, 0.75);
         }
-
         .v494_22 {
           width: 484px;
           height: 53px;
@@ -423,17 +491,14 @@ export default function Login() {
           outline: none;
           font-family: 'Inter', sans-serif;
         }
-
         .v494_22:hover {
           background: white;
           color: black;
         }
-
         .v494_22:disabled {
           opacity: 0.7;
           cursor: default;
         }
-
         .v494_24 {
           position: absolute;
           top: 580px;
@@ -443,12 +508,10 @@ export default function Login() {
           font-size: 13px;
           color: white;
         }
-
         .v494_24 :global(a) {
           color: white;
           text-decoration: none;
         }
-
         .error-message {
           position: absolute;
           top: 370px;
@@ -463,7 +526,6 @@ export default function Login() {
           border-radius: 8px;
           z-index: 10;
         }
-
         .firebase-divider {
           position: absolute;
           top: 470px;
@@ -473,14 +535,12 @@ export default function Login() {
           color: #666;
           font-size: 13px;
         }
-
         .firebase-options {
           position: absolute;
           top: 500px;
           left: 0;
           width: 100%;
         }
-
         .firebase-btn {
           width: 484px;
           height: 53px;
@@ -499,144 +559,233 @@ export default function Login() {
           gap: 10px;
           font-family: 'Inter', sans-serif;
         }
-
         .firebase-btn:hover {
           background: white;
           color: black;
         }
-
         .firebase-btn:disabled {
           opacity: 0.7;
           cursor: default;
         }
 
-        /* ---------- MOBILE LAYOUT ---------- */
+        /* ================= MOBILE CSS ================= */
         @media (max-width: 900px) {
-          .v492_121 {
-            align-items: flex-start;
-            min-height: 100vh;
-            height: auto;
-            padding: 80px 20px 40px;
-            box-sizing: border-box;
+          .desktop-layout {
+            display: none !important;
           }
-          .custom-logo {
-            left: 16px;
-            top: 16px;
-          }
-          .custom-logo img {
-            height: 40px;
-            width: 40px;
-          }
-          .zoom-wrapper {
-            flex-direction: column;
-            gap: 0;
-            transform: none;
+          .mobile-layout {
+            display: block !important;
             width: 100%;
-            max-width: 420px;
-            margin: 0 auto;
-          }
-          .v545_33 {
-            display: none;
-          }
-          .v494_25 {
-            width: 100%;
-            height: auto;
             position: relative;
-            min-height: 0;
+            background: #000000;
+            overflow: hidden;
           }
-          .v492_148 {
-            position: relative;
-            top: auto;
-            left: auto;
-            font-size: 32px;
-            margin-bottom: 28px;
-            display: block;
-          }
-          .v494_15 {
-            position: relative;
-            top: auto;
-            left: auto;
-            display: block;
-            margin-bottom: 8px;
-          }
-          .v494_16 {
-            position: relative;
-            top: auto;
-            left: auto;
-            width: 100%;
-            margin-bottom: 18px;
-            box-sizing: border-box;
-          }
-          .v494_18 {
-            position: relative;
-            top: auto;
-            left: auto;
-            display: block;
-            margin-bottom: 8px;
-          }
-          .v494_19 {
-            position: relative;
-            top: auto;
-            left: auto;
-            width: 100%;
-            margin-bottom: 10px;
-            box-sizing: border-box;
-          }
-          .v494_21 {
-            position: relative;
-            top: auto;
-            left: auto;
-            display: block;
-            margin-bottom: 18px;
-          }
-          .v494_22 {
-            position: relative;
-            top: auto;
-            left: auto;
-            width: 100%;
-            margin-bottom: 12px;
-            box-sizing: border-box;
-          }
-          .error-message {
-            position: relative;
-            top: auto;
-            left: auto;
-            width: 100%;
-            margin-bottom: 12px;
-            box-sizing: border-box;
-          }
-          .firebase-divider {
-            position: relative;
-            top: auto;
-            left: auto;
-            width: 100%;
-            margin: 16px 0 12px;
-          }
-          .firebase-options {
-            position: relative;
-            top: auto;
-            left: auto;
-            width: 100%;
-          }
-          .firebase-btn {
-            width: 100%;
-            box-sizing: border-box;
-          }
-          .v494_24 {
-            position: relative;
-            top: auto;
-            width: 100%;
-            margin-top: 24px;
-            padding-bottom: 20px;
-          }
-        }
 
-        @media (max-width: 480px) {
-          .v492_148 {
-            font-size: 28px;
+          .mobile-bg-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
           }
-          .v492_121 {
-            padding: 70px 16px 32px;
+
+          .mobile-video-background {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 180%;
+            height: 180%;
+            background: url('/assets/video.gif') center/cover no-repeat;
+            filter: blur(45px);
+            opacity: 0.85;
+            transform: translate(-50%, -50%) rotate(45deg) scale(1.5);
+            transform-origin: center center;
+          }
+
+          .mobile-container {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            width: 100%;
+            padding: 28px 22px 40px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            background: linear-gradient(
+              to bottom,
+              rgba(0, 0, 0, 0.25) 0%,
+              rgba(0, 0, 0, 0.55) 40%,
+              rgba(0, 0, 0, 0.85) 100%
+            );
+          }
+
+          .mobile-logo {
+            width: 42px;
+            height: auto;
+            margin-bottom: 42px;
+            object-fit: contain;
+          }
+
+          .mobile-title {
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1.15;
+            margin: 0 0 28px 0;
+            letter-spacing: -0.4px;
+          }
+
+          .mobile-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+          }
+
+          .mobile-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+          }
+
+          .mobile-field label {
+            font-size: 13px;
+            font-weight: 700;
+          }
+
+          .mobile-field input {
+            background: #1a1a1a;
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .mobile-field input::placeholder {
+            color: rgba(255, 255, 255, 0.42);
+            font-weight: 600;
+          }
+
+          .mobile-password-field {
+            margin-bottom: 10px;
+          }
+
+          .mobile-hint {
+            font-size: 11px;
+            font-weight: 700;
+            color: #dcdcdc;
+            margin-top: -2px;
+          }
+
+          .mobile-error {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff4d4d;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+          }
+
+          .mobile-btn-signin {
+            background: white;
+            color: black;
+            font-weight: 800;
+            font-size: 15px;
+            padding: 14px;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.2s;
+          }
+
+          .mobile-btn-signin:disabled {
+            opacity: 0.7;
+          }
+
+          .mobile-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 22px 0;
+            padding: 0 30px;
+          }
+
+          .mobile-divider span {
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.3);
+          }
+
+          .mobile-divider p {
+            margin: 0;
+            font-size: 12px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.8);
+          }
+
+          .mobile-btn-google {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: white;
+            padding: 13px;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            width: 100%;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+          }
+
+          .mobile-btn-google:hover,
+          .mobile-btn-google:active {
+            background: white;
+            color: black;
+            border-color: white;
+          }
+
+          .mobile-btn-google img {
+            width: 20px;
+            height: 20px;
+          }
+
+          .mobile-btn-google:disabled {
+            opacity: 0.7;
+          }
+
+          .mobile-footer {
+            text-align: center;
+            margin-top: 26px;
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 16px;
+          }
+
+          .mobile-footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: 800;
+            margin-left: 4px;
           }
         }
       `}</style>

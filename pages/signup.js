@@ -30,8 +30,16 @@ export default function Signup() {
   const [errorMsg, setErrorMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // Helper to check if current view is mobile or desktop based on window width
+  const getTargetRoute = () => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+      return '/chat';
+    }
+    return '/';
+  };
+
   useEffect(() => {
-    if (!loading && user) router.replace('/');
+    if (!loading && user) router.replace(getTargetRoute());
   }, [loading, user, router]);
 
   async function ensureUserDoc(fbUser) {
@@ -86,7 +94,7 @@ export default function Signup() {
         last_login_at: serverTimestamp(),
         created_at: serverTimestamp(),
       });
-      router.push('/');
+      router.push(getTargetRoute());
     } catch (err) {
       setErrorMsg(friendlyError(err.code));
     } finally {
@@ -105,7 +113,7 @@ export default function Signup() {
       }
       const result = await signInWithPopup(auth, googleProvider);
       await ensureUserDoc(result.user);
-      router.push('/');
+      router.push(getTargetRoute());
     } catch (err) {
       setErrorMsg('Google Error: ' + (err.message || 'Something went wrong.'));
     } finally {
@@ -120,7 +128,7 @@ export default function Signup() {
         <title>Sign Up Account</title>
       </Head>
 
-      {/* ===================== DESKTOP LAYOUT (Unchanged) ===================== */}
+      {/* ===================== DESKTOP LAYOUT (Unchanged Logic & UI) ===================== */}
       <div className="desktop-layout v492_121">
         <div className="custom-logo">
           <img src="/assets/ailogo.png" alt="AI Logo" />
@@ -208,8 +216,11 @@ export default function Signup() {
         </div>
       </div>
 
-      {/* ===================== NEW MOBILE LAYOUT (From your Image) ===================== */}
+      {/* ===================== MOBILE LAYOUT (With rotated & blurred video.gif background) ===================== */}
       <div className="mobile-layout">
+        <div className="mobile-bg-wrapper">
+          <div className="mobile-video-background" />
+        </div>
         <div className="mobile-container">
           <img src="/assets/ailogo.png" alt="AI Logo" className="mobile-logo" />
           
@@ -567,7 +578,7 @@ export default function Signup() {
           cursor: default;
         }
 
-        /* ================= MOBILE CSS (Based on Image) ================= */
+        /* ================= MOBILE CSS (Rotated & Blurred video.gif background) ================= */
         @media (max-width: 900px) {
           .desktop-layout {
             display: none !important;
@@ -575,11 +586,38 @@ export default function Signup() {
           .mobile-layout {
             display: block !important;
             width: 100%;
+            position: relative;
+            background: #000000;
+            overflow: hidden;
+          }
+
+          .mobile-bg-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
+          }
+
+          .mobile-video-background {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 180%;
+            height: 180%;
+            background: url('/assets/video.gif') center/cover no-repeat;
+            filter: blur(45px);
+            opacity: 0.85;
+            transform: translate(-50%, -50%) rotate(45deg) scale(1.5);
+            transform-origin: center center;
           }
 
           .mobile-container {
-            /* Beautiful purple radial gradient exact match for your image */
-            background: radial-gradient(130% 100% at 50% 0%, #511b96 0%, #000000 45%, #000000 100%);
+            position: relative;
+            z-index: 1;
             min-height: 100vh;
             width: 100%;
             padding: 30px 25px;
@@ -587,6 +625,7 @@ export default function Signup() {
             display: flex;
             flex-direction: column;
             color: white;
+            background: rgba(0, 0, 0, 0.4); /* Slight dark overlay for contrast */
           }
 
           .mobile-logo {
@@ -659,7 +698,7 @@ export default function Signup() {
           }
 
           .mobile-error {
-            background: rgba(255, 0, 0, 0.15);
+            background: rgba(255, 0, 0, 0.2);
             color: #ff4d4d;
             padding: 12px;
             border-radius: 8px;
@@ -674,7 +713,7 @@ export default function Signup() {
             font-weight: 800;
             font-size: 18px;
             padding: 16px;
-            border-radius: 50px; /* Pill shape from image */
+            border-radius: 50px;
             border: none;
             cursor: pointer;
             font-family: 'Inter', sans-serif;
@@ -715,7 +754,7 @@ export default function Signup() {
             border: 1px solid rgba(255, 255, 255, 0.4);
             color: white;
             padding: 14px;
-            border-radius: 50px; /* Pill shape from image */
+            border-radius: 50px;
             font-size: 17px;
             font-weight: 700;
             display: flex;
@@ -743,6 +782,7 @@ export default function Signup() {
             font-size: 14px;
             font-weight: 600;
             color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
           }
 
           .mobile-footer a {

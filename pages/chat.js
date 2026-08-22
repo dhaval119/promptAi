@@ -157,7 +157,6 @@ export default function Chat() {
     const text = (overrideText ?? input).trim().slice(0, MAX_MESSAGE_LENGTH);
     if (!text || loading) return;
 
-    // Daily free limit check
     const used = getTodayUsage(uid);
     if (used >= DAILY_FREE_LIMIT) {
       setTodayUsage(used);
@@ -450,27 +449,41 @@ export default function Chat() {
           </div>
         </main>
 
-        {/* ===================== FULL SCREEN LIMIT POPUP ===================== */}
+        {/* ===================== FULL SCREEN LIMIT POPUP (exact match) ===================== */}
         {showLimitModal && (
           <div className="limit-fullscreen">
-            <div className="limit-container">
-              {/* LEFT SIDE - Dog + Badge */}
-              <div className="limit-left">
-                <div className="limit-badge">
-                  <span className="limit-red-dot" />
-                  <span className="limit-badge-text">
-                    Free Limit Exhausted ({DAILY_FREE_LIMIT}/{DAILY_FREE_LIMIT})
-                  </span>
-                </div>
+            {/* Close button - top left */}
+            <button
+              className="limit-close-btn"
+              onClick={() => setShowLimitModal(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
 
+            {/* Top center badge */}
+            <div className="limit-badge">
+              <span className="limit-red-dot" />
+              <span className="limit-badge-text">
+                Free Limit Exhausted ({DAILY_FREE_LIMIT}/{DAILY_FREE_LIMIT})
+              </span>
+            </div>
+
+            <div className="limit-content">
+              {/* LEFT - Dog + OOPS */}
+              <div className="limit-left">
+                <div className="oops-text">
+                  OOPS!
+                  <span className="oops-quotes">’’</span>
+                </div>
                 <img
                   src="/assets/dog.png"
-                  alt="Limit reached"
+                  alt="Doge"
                   className="limit-dog"
                 />
               </div>
 
-              {/* RIGHT SIDE - Text Content */}
+              {/* RIGHT - Text */}
               <div className="limit-right">
                 <h1 className="limit-title">
                   Wow. Much Limit.
@@ -479,10 +492,11 @@ export default function Chat() {
                 </h1>
 
                 <p className="limit-desc">
-                  Limit Reached! Much sad. Ready to upgrade? Well, joke&apos;s
-                  on you! The developer spent all his time making this UI look
-                  pixel-perfect and completely forgot to build a payment
-                  gateway. The &apos;Premium&apos; version is still cooking.
+                  Limit Reached! Much sad. Ready to upgrade? Well,
+                  joke&apos;s on you! The developer spent all his time
+                  making this UI look pixel-perfect and completely
+                  forgot to build a payment gateway. The &apos;Premium&apos;
+                  version is still cooking.
                 </p>
 
                 <p className="limit-hint">
@@ -934,56 +948,62 @@ export default function Chat() {
           width: 100vw;
           height: 100vh;
           height: 100dvh;
-          background: #020202;
+          background: #000000;
           z-index: 99999;
           overflow: hidden;
           display: flex;
-          align-items: stretch;
+          flex-direction: column;
+          align-items: center;
           justify-content: center;
         }
 
-        .limit-container {
-          width: 100%;
-          height: 100%;
+        /* Close button - top left */
+        .limit-close-btn {
+          position: absolute;
+          top: 22px;
+          left: 28px;
+          background: transparent;
+          border: none;
+          color: #888;
+          font-size: 38px;
+          line-height: 1;
+          cursor: pointer;
+          z-index: 20;
+          padding: 0;
+          width: 44px;
+          height: 44px;
           display: flex;
-          align-items: stretch;
-          justify-content: space-between;
-          padding: 0 56px 0 40px;
-          box-sizing: border-box;
-        }
-
-        .limit-left {
-          flex: 0 0 48%;
-          display: flex;
-          flex-direction: column;
           align-items: center;
-          justify-content: flex-end;
-          position: relative;
-          height: 100%;
-          overflow: hidden;
+          justify-content: center;
+          transition: color 0.2s ease;
         }
 
+        .limit-close-btn:hover {
+          color: #ffffff;
+        }
+
+        /* Top center badge */
         .limit-badge {
           position: absolute;
-          top: 48px;
+          top: 28px;
           left: 50%;
           transform: translateX(-50%);
           display: flex;
           align-items: center;
-          gap: 14px;
-          border: 2px solid #ffffff;
+          gap: 10px;
+          border: 1.5px solid #ffffff;
           border-radius: 100px;
-          padding: 16px 28px 16px 22px;
-          background: rgba(2, 2, 2, 0.75);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
+          padding: 10px 22px 10px 16px;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
           white-space: nowrap;
-          z-index: 10;
+          z-index: 15;
         }
 
         .limit-red-dot {
-          width: 13px;
-          height: 13px;
+          width: 10px;
+          height: 10px;
           border-radius: 50%;
           background: #ff2d2d;
           flex-shrink: 0;
@@ -994,28 +1014,72 @@ export default function Chat() {
           0%,
           100% {
             opacity: 1;
-            box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.6);
+            box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.55);
           }
           50% {
             opacity: 0.25;
-            box-shadow: 0 0 0 10px rgba(255, 45, 45, 0);
+            box-shadow: 0 0 0 8px rgba(255, 45, 45, 0);
           }
         }
 
         .limit-badge-text {
           color: #ffffff;
-          font-size: 22px;
-          font-weight: 600;
-          letter-spacing: 0.3px;
+          font-size: 15px;
+          font-weight: 500;
+          letter-spacing: 0.2px;
+        }
+
+        .limit-content {
+          width: 100%;
+          max-width: 1200px;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 60px;
+          box-sizing: border-box;
+        }
+
+        .limit-left {
+          flex: 0 0 46%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          height: 100%;
+        }
+
+        .oops-text {
+          position: absolute;
+          top: 18%;
+          left: 8%;
+          color: #9b6dff;
+          font-size: 42px;
+          font-weight: 800;
+          font-style: italic;
+          letter-spacing: 1px;
+          z-index: 5;
+          transform: rotate(-8deg);
+          line-height: 1;
+          text-shadow: 0 0 20px rgba(155, 109, 255, 0.4);
+        }
+
+        .oops-quotes {
+          display: block;
+          font-size: 28px;
+          margin-top: -4px;
+          margin-left: 8px;
+          opacity: 0.9;
         }
 
         .limit-dog {
           width: 100%;
-          max-width: 680px;
+          max-width: 520px;
           height: auto;
-          max-height: 92%;
+          max-height: 75vh;
           object-fit: contain;
-          object-position: bottom center;
+          object-position: center bottom;
           display: block;
           user-select: none;
           pointer-events: none;
@@ -1026,51 +1090,49 @@ export default function Chat() {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          padding: 0 40px 0 60px;
-          max-width: 620px;
+          padding-left: 40px;
+          max-width: 520px;
         }
 
         .limit-title {
           color: #ffffff;
-          font-size: 48px;
+          font-size: 42px;
           font-weight: 700;
-          line-height: 1.18;
-          margin: 0 0 40px 0;
+          line-height: 1.2;
+          margin: 0 0 28px 0;
         }
 
         .limit-desc {
-          color: #ffffff;
-          font-size: 22px;
-          line-height: 1.5;
-          margin: 0 0 32px 0;
-          max-width: 540px;
+          color: #e8e8e8;
+          font-size: 17px;
+          line-height: 1.55;
+          margin: 0 0 22px 0;
         }
 
         .limit-hint {
-          color: #ffffff;
-          font-size: 20px;
+          color: #c8c8c8;
+          font-size: 16px;
           line-height: 1.5;
-          margin: 0 0 48px 0;
-          opacity: 0.95;
+          margin: 0 0 36px 0;
         }
 
         .limit-btn {
           align-self: flex-start;
-          background: #d9d9d9;
-          color: #000000;
+          background: #d0d0d0;
+          color: #111;
           border: none;
           border-radius: 100px;
-          padding: 20px 56px;
-          font-size: 22px;
-          font-weight: 700;
+          padding: 14px 36px;
+          font-size: 16px;
+          font-weight: 600;
           cursor: pointer;
-          transition: all 0.25s ease;
+          transition: all 0.22s ease;
         }
 
         .limit-btn:hover {
           background: #ffffff;
-          transform: translateY(-2px);
-          box-shadow: 0 10px 30px rgba(255, 255, 255, 0.18);
+          transform: translateY(-1px);
+          box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
         }
 
         .limit-btn:active {
@@ -1191,66 +1253,83 @@ export default function Chat() {
             font-size: 16px;
           }
 
-          /* Fullscreen limit popup - mobile */
-          .limit-container {
+          /* Limit popup mobile */
+          .limit-close-btn {
+            top: 16px;
+            left: 16px;
+            font-size: 32px;
+          }
+
+          .limit-badge {
+            top: 18px;
+            padding: 8px 16px 8px 12px;
+          }
+
+          .limit-badge-text {
+            font-size: 13px;
+          }
+
+          .limit-red-dot {
+            width: 9px;
+            height: 9px;
+          }
+
+          .limit-content {
             flex-direction: column;
-            padding: 0 16px;
+            padding: 80px 20px 40px;
+            justify-content: flex-start;
             overflow-y: auto;
           }
 
           .limit-left {
             flex: none;
             height: auto;
-            min-height: 38vh;
-            padding-top: 24px;
+            min-height: 280px;
+            margin-bottom: 10px;
           }
 
-          .limit-badge {
-            top: 20px;
-            padding: 12px 18px 12px 16px;
+          .oops-text {
+            top: 6%;
+            left: 5%;
+            font-size: 28px;
           }
 
-          .limit-badge-text {
-            font-size: 15px;
-          }
-
-          .limit-red-dot {
-            width: 11px;
-            height: 11px;
+          .oops-quotes {
+            font-size: 20px;
           }
 
           .limit-dog {
-            max-width: 300px;
-            max-height: 34vh;
+            max-width: 280px;
+            max-height: 260px;
           }
 
           .limit-right {
             flex: none;
-            padding: 20px 8px 40px;
+            padding-left: 0;
             max-width: 100%;
-            justify-content: flex-start;
+            text-align: left;
           }
 
           .limit-title {
-            font-size: 28px;
-            margin-bottom: 20px;
+            font-size: 26px;
+            margin-bottom: 16px;
           }
 
           .limit-desc {
-            font-size: 16px;
-            margin-bottom: 18px;
+            font-size: 15px;
+            margin-bottom: 14px;
           }
 
           .limit-hint {
-            font-size: 15px;
-            margin-bottom: 28px;
+            font-size: 14px;
+            margin-bottom: 24px;
           }
 
           .limit-btn {
             width: 100%;
             text-align: center;
-            padding: 16px 24px;
-            font-size: 17px;
+            padding: 14px 24px;
+            font-size: 15px;
           }
         }
 
@@ -1271,13 +1350,13 @@ export default function Chat() {
           }
 
           .limit-title {
-            font-size: 24px;
+            font-size: 22px;
           }
           .limit-desc {
-            font-size: 15px;
+            font-size: 14px;
           }
           .limit-hint {
-            font-size: 14px;
+            font-size: 13px;
           }
         }
       `}</style>

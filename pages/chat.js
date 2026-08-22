@@ -477,7 +477,7 @@ export default function Chat() {
                   <span className="oops-quotes">’’</span>
                 </div>
                 <img
-                  src="/assets/dog.png"
+                  src="/assets/dog1.png"
                   alt="Doge"
                   className="limit-dog"
                 />

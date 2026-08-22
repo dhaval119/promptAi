@@ -76,7 +76,6 @@ export default function Signup() {
       await updateProfile(cred.user, {
         displayName: `${firstName.trim()} ${lastName.trim()}`,
       });
-      // Matches old MySQL users table (password stays only in Firebase Auth)
       await setDoc(doc(db, 'users', cred.user.uid), {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -121,7 +120,7 @@ export default function Signup() {
         <title>Sign Up Account</title>
       </Head>
 
-      {/* ===================== DESKTOP LAYOUT ===================== */}
+      {/* ===================== DESKTOP LAYOUT (Unchanged) ===================== */}
       <div className="desktop-layout v492_121">
         <div className="custom-logo">
           <img src="/assets/ailogo.png" alt="AI Logo" />
@@ -209,132 +208,83 @@ export default function Signup() {
         </div>
       </div>
 
-      {/* ===================== NEW MOBILE LAYOUT ===================== */}
+      {/* ===================== NEW MOBILE LAYOUT (From your Image) ===================== */}
       <div className="mobile-layout">
-        <div style={{ display: 'flex', flexDirection: 'column', background: '#FFFFFF', minHeight: '100vh' }}>
-          <div style={{ overflow: 'hidden', alignSelf: 'stretch', display: 'flex', flexDirection: 'column', background: '#00000000' }}>
-            <div style={{ alignSelf: 'stretch' }}>
-              <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', background: '#D9D9D900', paddingBottom: '60px' }}>
-                <img
-                  src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/SdTkzsvVdg/fn8jki3s_expires_30_days.png"
-                  style={{ width: '104px', height: '104px', marginBottom: '157px', objectFit: 'fill' }}
-                  alt="Top Decor"
-                />
-                <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginLeft: '23px', marginRight: '23px' }}>
-                  
-                  <span style={{ color: '#FFFFFF', fontSize: '35px', fontWeight: 'bold', marginBottom: '31px', marginLeft: '1px', width: '268px' }}>
-                    Let&apos;s Begin <br />Something New
-                  </span>
-                  
-                  <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: '18px', gap: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', marginLeft: '1px' }}>
-                      <span style={{ color: '#FFFFFF', fontSize: '16px', fontWeight: 'bold', marginRight: '98px' }}>
-                        First Name
-                      </span>
-                      <span style={{ color: '#FFFFFF', fontSize: '16px', fontWeight: 'bold' }}>
-                        Last Name
-                      </span>
-                    </div>
-                    
-                    <div style={{ alignSelf: 'stretch', display: 'flex', alignItems: 'center', gap: '18px' }}>
-                      <input
-                        type="text"
-                        placeholder="eg.Dhaval"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', flex: 1, alignSelf: 'stretch', background: '#1A1A1A', borderRadius: '5px', border: 'none', padding: '12px' }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="eg.Soni"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', flex: 1, alignSelf: 'stretch', background: '#1A1A1A', borderRadius: '5px', border: 'none', padding: '12px 13px' }}
-                      />
-                    </div>
-                  </div>
-                  
-                  <span style={{ color: '#FFFFFF', fontSize: '16px', fontWeight: 'bold', marginBottom: '14px', marginLeft: '1px' }}>
-                    Email
-                  </span>
-                  <input
-                    type="email"
-                    placeholder="eg.soni@gmail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', marginBottom: '18px', alignSelf: 'stretch', background: '#1A1A1A', borderRadius: '5px', border: 'none', padding: '12px' }}
-                  />
-                  
-                  <span style={{ color: '#FFFFFF', fontSize: '16px', fontWeight: 'bold', marginBottom: '14px', marginLeft: '1px' }}>
-                    Password
-                  </span>
-                  <input
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', marginBottom: '24px', alignSelf: 'stretch', background: '#1A1A1A', borderRadius: '5px', border: 'none', padding: '12px' }}
-                  />
-                  
-                  <span style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', marginBottom: '23px' }}>
-                    Must be at least 8 characters
-                  </span>
-                  
-                  {errorMsg && (
-                    <div style={{ color: '#ff4d4d', fontWeight: 'bold', fontSize: '13px', marginBottom: '15px', background: 'rgba(0,0,0,0.5)', padding: '8px', borderRadius: '5px', width: '100%', textAlign: 'center' }}>
-                      {errorMsg}
-                    </div>
-                  )}
+        <div className="mobile-container">
+          <img src="/assets/ailogo.png" alt="AI Logo" className="mobile-logo" />
+          
+          <h1 className="mobile-title">
+            Let&apos;s Begin <br />
+            Something New
+          </h1>
 
-                  <button 
-                    onClick={handleSubmit}
-                    disabled={busy}
-                    style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#FFFFFF', borderRadius: '50px', border: 'none', paddingTop: '11px', paddingBottom: '11px', marginBottom: '22px', textAlign: 'left', cursor: 'pointer' }}
-                  >
-                    <span style={{ color: '#000000', fontSize: '18px', fontWeight: 'bold' }}>
-                      {busy ? 'Please wait...' : 'Sign Up'}
-                    </span>
-                  </button>
-                  
-                  <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '18px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <div style={{ width: '20px', height: '1px', background: '#FFFFFF80' }}></div>
-                      <span style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold' }}>OR</span>
-                      <div style={{ width: '20px', height: '1px', background: '#FFFFFF80' }}></div>
-                    </div>
-                  </div>
-                  
-                  <button 
-                    onClick={handleGoogleSignup}
-                    disabled={busy}
-                    style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#1A1A1A', borderRadius: '50px', border: '1px solid #FFFFFF80', paddingTop: '9px', paddingBottom: '9px', marginBottom: '17px', textAlign: 'left', cursor: 'pointer' }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
-                      <img
-                        src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/SdTkzsvVdg/egkej8s3_expires_30_days.png"
-                        style={{ width: '21px', height: '21px', objectFit: 'fill' }}
-                        alt="Google"
-                      />
-                      <span style={{ color: '#FFFFFF', fontSize: '18px', fontWeight: 'bold' }}>
-                        Continue with Google
-                      </span>
-                    </div>
-                  </button>
-                  
-                  <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <Link href="/login" style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none' }}>
-                      Already have an account? Log in
-                    </Link>
-                  </div>
-                </div>
+          <form onSubmit={handleSubmit} className="mobile-form">
+            <div className="mobile-row">
+              <div className="mobile-field">
+                <label>First Name</label>
+                <input
+                  type="text"
+                  placeholder="eg.Dhaval"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="mobile-field">
+                <label>Last Name</label>
+                <input
+                  type="text"
+                  placeholder="eg.Soni"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                />
               </div>
             </div>
-            
-            <img
-              src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/SdTkzsvVdg/kfcmlkpq_expires_30_days.png"
-              style={{ flex: 1, alignSelf: 'stretch', objectFit: 'fill', width: '100%' }}
-              alt="Bottom Decor"
-            />
+
+            <div className="mobile-field">
+              <label>Email</label>
+              <input
+                type="email"
+                placeholder="eg.soni@gmail.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="mobile-field mobile-password-field">
+              <label>Password</label>
+              <input
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <span className="mobile-hint">Must be at least 8 characters</span>
+            </div>
+
+            {errorMsg && <div className="mobile-error">{errorMsg}</div>}
+
+            <button type="submit" className="mobile-btn-signup" disabled={busy}>
+              {busy ? 'Please wait...' : 'Sign Up'}
+            </button>
+          </form>
+
+          <div className="mobile-divider">
+            <span></span>
+            <p>OR</p>
+            <span></span>
+          </div>
+
+          <button type="button" className="mobile-btn-google" onClick={handleGoogleSignup} disabled={busy}>
+            <img src="/assets/google.png" alt="Google Logo" />
+            Continue with Google
+          </button>
+
+          <div className="mobile-footer">
+            Already have an account? <Link href="/login">Log in</Link>
           </div>
         </div>
       </div>
@@ -370,7 +320,7 @@ export default function Signup() {
       `}</style>
 
       <style jsx>{`
-        /* DISPLAY TOGGLE LOGIC */
+        /* ================= DISPLAY TOGGLE ================= */
         .desktop-layout {
           display: flex;
           width: 100%;
@@ -380,12 +330,11 @@ export default function Signup() {
           justify-content: center;
           align-items: center;
         }
-        
         .mobile-layout {
           display: none;
         }
 
-        /* ------------------ ORIGINAL DESKTOP CSS ------------------ */
+        /* ================= DESKTOP CSS ================= */
         .zoom-wrapper {
           display: flex;
           justify-content: center;
@@ -618,7 +567,7 @@ export default function Signup() {
           cursor: default;
         }
 
-        /* ------------------ MOBILE MEDIA QUERY TOGGLE ------------------ */
+        /* ================= MOBILE CSS (Based on Image) ================= */
         @media (max-width: 900px) {
           .desktop-layout {
             display: none !important;
@@ -626,6 +575,181 @@ export default function Signup() {
           .mobile-layout {
             display: block !important;
             width: 100%;
+          }
+
+          .mobile-container {
+            /* Beautiful purple radial gradient exact match for your image */
+            background: radial-gradient(130% 100% at 50% 0%, #511b96 0%, #000000 45%, #000000 100%);
+            min-height: 100vh;
+            width: 100%;
+            padding: 30px 25px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            color: white;
+          }
+
+          .mobile-logo {
+            width: 45px;
+            height: auto;
+            margin-bottom: 50px;
+            object-fit: contain;
+          }
+
+          .mobile-title {
+            font-size: 34px;
+            font-weight: 800;
+            line-height: 1.15;
+            margin: 0 0 35px 0;
+            letter-spacing: -0.5px;
+          }
+
+          .mobile-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+          }
+
+          .mobile-row {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+          }
+
+          .mobile-field {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+          }
+
+          .mobile-field label {
+            font-size: 15px;
+            font-weight: 700;
+          }
+
+          .mobile-field input {
+            background: #1a1a1a;
+            border: none;
+            border-radius: 8px;
+            padding: 16px;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .mobile-field input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 600;
+          }
+
+          .mobile-password-field {
+            margin-bottom: 15px;
+          }
+
+          .mobile-hint {
+            font-size: 12px;
+            font-weight: 700;
+            color: #dcdcdc;
+            margin-top: -2px;
+          }
+
+          .mobile-error {
+            background: rgba(255, 0, 0, 0.15);
+            color: #ff4d4d;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            text-align: center;
+          }
+
+          .mobile-btn-signup {
+            background: white;
+            color: black;
+            font-weight: 800;
+            font-size: 18px;
+            padding: 16px;
+            border-radius: 50px; /* Pill shape from image */
+            border: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.2s;
+          }
+          
+          .mobile-btn-signup:disabled {
+            opacity: 0.7;
+          }
+
+          .mobile-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 25px 0;
+            padding: 0 40px;
+          }
+
+          .mobile-divider span {
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.3);
+          }
+
+          .mobile-divider p {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.8);
+          }
+
+          .mobile-btn-google {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: white;
+            padding: 14px;
+            border-radius: 50px; /* Pill shape from image */
+            font-size: 17px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          
+          .mobile-btn-google img {
+            width: 22px;
+            height: 22px;
+          }
+          
+          .mobile-btn-google:disabled {
+            opacity: 0.7;
+          }
+
+          .mobile-footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+          }
+
+          .mobile-footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: 800;
+            margin-left: 4px;
           }
         }
       `}</style>

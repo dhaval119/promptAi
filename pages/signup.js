@@ -620,50 +620,55 @@ export default function Signup() {
             z-index: 1;
             min-height: 100vh;
             width: 100%;
-            padding: 30px 25px;
+            padding: 28px 22px 40px;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             color: white;
-            background: rgba(0, 0, 0, 0.4); /* Slight dark overlay for contrast */
+            background: linear-gradient(
+              to bottom,
+              rgba(0, 0, 0, 0.25) 0%,
+              rgba(0, 0, 0, 0.55) 40%,
+              rgba(0, 0, 0, 0.85) 100%
+            );
           }
 
           .mobile-logo {
-            width: 45px;
+            width: 42px;
             height: auto;
-            margin-bottom: 50px;
+            margin-bottom: 42px;
             object-fit: contain;
           }
 
           .mobile-title {
-            font-size: 34px;
+            font-size: 28px;
             font-weight: 800;
             line-height: 1.15;
-            margin: 0 0 35px 0;
-            letter-spacing: -0.5px;
+            margin: 0 0 28px 0;
+            letter-spacing: -0.4px;
           }
 
           .mobile-form {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
           }
 
           .mobile-row {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             width: 100%;
           }
 
           .mobile-field {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             flex: 1;
           }
 
           .mobile-field label {
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 700;
           }
 
@@ -671,9 +676,9 @@ export default function Signup() {
             background: #1a1a1a;
             border: none;
             border-radius: 8px;
-            padding: 16px;
+            padding: 14px;
             color: white;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             font-family: 'Inter', sans-serif;
             outline: none;
@@ -682,16 +687,16 @@ export default function Signup() {
           }
 
           .mobile-field input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.42);
             font-weight: 600;
           }
 
           .mobile-password-field {
-            margin-bottom: 15px;
+            margin-bottom: 10px;
           }
 
           .mobile-hint {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             color: #dcdcdc;
             margin-top: -2px;
@@ -700,9 +705,9 @@ export default function Signup() {
           .mobile-error {
             background: rgba(255, 0, 0, 0.2);
             color: #ff4d4d;
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             text-align: center;
           }
@@ -711,8 +716,8 @@ export default function Signup() {
             background: white;
             color: black;
             font-weight: 800;
-            font-size: 18px;
-            padding: 16px;
+            font-size: 15px;
+            padding: 14px;
             border-radius: 50px;
             border: none;
             cursor: pointer;
@@ -732,8 +737,8 @@ export default function Signup() {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin: 25px 0;
-            padding: 0 40px;
+            margin: 22px 0;
+            padding: 0 30px;
           }
 
           .mobile-divider span {
@@ -744,32 +749,40 @@ export default function Signup() {
 
           .mobile-divider p {
             margin: 0;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             color: rgba(255, 255, 255, 0.8);
           }
 
           .mobile-btn-google {
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            background: #1a1a1a;
+            border: 1px solid #333;
             color: white;
-            padding: 14px;
+            padding: 13px;
             border-radius: 50px;
-            font-size: 17px;
+            font-size: 15px;
             font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
             cursor: pointer;
             font-family: 'Inter', sans-serif;
             width: 100%;
             box-sizing: border-box;
+            transition: all 0.3s ease;
+          }
+          
+          .mobile-btn-google:hover,
+          .mobile-btn-google:active {
+            background: white;
+            color: black;
+            border-color: white;
           }
           
           .mobile-btn-google img {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
           }
           
           .mobile-btn-google:disabled {
@@ -778,11 +791,11 @@ export default function Signup() {
 
           .mobile-footer {
             text-align: center;
-            margin-top: 30px;
-            font-size: 14px;
+            margin-top: 26px;
+            font-size: 13px;
             font-weight: 600;
             color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 20px;
+            margin-bottom: 16px;
           }
 
           .mobile-footer a {

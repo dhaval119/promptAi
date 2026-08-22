@@ -8,7 +8,37 @@ import {
   deleteConversation,
 } from '../lib/chatStorage';
 import { useAuth } from '../lib/AuthContext';
-import NavPill from '../components/NavPill'; 
+import NavPill from '../components/NavPill';
+
+const DAILY_FREE_LIMIT = 3;
+
+function getTodayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getUsageKey(uid) {
+  return `chat_daily_usage_${uid || 'guest'}_${getTodayKey()}`;
+}
+
+function getTodayUsage(uid) {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const raw = localStorage.getItem(getUsageKey(uid));
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function incrementTodayUsage(uid) {
+  if (typeof window === 'undefined') return;
+  try {
+    const current = getTodayUsage(uid);
+    localStorage.setItem(getUsageKey(uid), String(current + 1));
+  } catch {}
+}
 
 export default function Chat() {
   const router = useRouter();
@@ -18,15 +48,23 @@ export default function Chat() {
 
   const [chats, setChats] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(0);
-  const [messages, setMessages] = useState([]); 
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState(-1);
   const [chatsReady, setChatsReady] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [todayUsage, setTodayUsage] = useState(0);
 
   const threadRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Load today's usage when uid is ready
+  useEffect(() => {
+    if (authLoading) return;
+    setTodayUsage(getTodayUsage(uid));
+  }, [uid, authLoading]);
 
   const refreshChats = useCallback(async () => {
     try {
@@ -120,6 +158,14 @@ export default function Chat() {
     const text = (overrideText ?? input).trim().slice(0, MAX_MESSAGE_LENGTH);
     if (!text || loading) return;
 
+    // ===== DAILY FREE LIMIT CHECK =====
+    const used = getTodayUsage(uid);
+    if (used >= DAILY_FREE_LIMIT) {
+      setTodayUsage(used);
+      setShowLimitModal(true);
+      return;
+    }
+
     setMessages((prev) => [...prev, { sender: 'user', text }]);
     setInput('');
     setLoading(true);
@@ -136,12 +182,20 @@ export default function Chat() {
 
       setMessages((prev) => [...prev, { sender: 'ai', text: aiText }]);
 
-      const saved = await upsertConversation(uid, {
-        id: currentChatId || null,
-        title: data.title || text.slice(0, 45),
-        request: text,
-        response: aiText,
-      }, email);
+      // Increment usage only after successful response
+      incrementTodayUsage(uid);
+      setTodayUsage((prev) => prev + 1);
+
+      const saved = await upsertConversation(
+        uid,
+        {
+          id: currentChatId || null,
+          title: data.title || text.slice(0, 45),
+          request: text,
+          response: aiText,
+        },
+        email
+      );
 
       setCurrentChatId(saved.id);
       await refreshChats();
@@ -171,7 +225,10 @@ export default function Chat() {
     <>
       <Head>
         <title>AI Chat Interface</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+        />
       </Head>
 
       <div className="desktop">
@@ -303,39 +360,54 @@ export default function Chat() {
                       <span className="action-text">
                         {copiedIdx === i ? 'Copied!' : 'copy'}
                       </span>
-                      <img src="/assets/copy.png" className="action-icon" alt="copy" />
+                      <img
+                        src="/assets/copy.png"
+                        className="action-icon"
+                        alt="copy"
+                      />
                     </button>
-                    
+
                     {/* CHATGPT BUTTON */}
                     <button
                       className="action-btn"
                       title="Open in ChatGPT"
                       onClick={() => {
                         navigator.clipboard.writeText(m.text).then(() => {
-                          const url = 'https://chatgpt.com/?q=' + encodeURIComponent(m.text);
+                          const url =
+                            'https://chatgpt.com/?q=' +
+                            encodeURIComponent(m.text);
                           window.open(url, '_blank', 'noopener,noreferrer');
                         });
                       }}
                     >
                       <span className="action-text">Open in</span>
-                      <img src="/assets/chatgpt.png" className="action-icon" alt="ChatGPT" />
+                      <img
+                        src="/assets/chatgpt.png"
+                        className="action-icon"
+                        alt="ChatGPT"
+                      />
                     </button>
-                    
-                    {/* CLAUDE BUTTON (replaces Grok - grok.com does not accept a prefilled
-                        prompt via URL, so the text never reached it. Claude.ai also has no
-                        public prefill parameter, so we use the same copy+open pattern as
-                        the Gemini flow: copy to clipboard, open claude.ai, user pastes.) */}
+
+                    {/* CLAUDE BUTTON */}
                     <button
                       className="action-btn"
                       title="Open in Claude"
                       onClick={() => {
                         navigator.clipboard.writeText(m.text).then(() => {
-                          window.open('https://claude.ai/new', '_blank', 'noopener,noreferrer');
+                          window.open(
+                            'https://claude.ai/new',
+                            '_blank',
+                            'noopener,noreferrer'
+                          );
                         });
                       }}
                     >
                       <span className="action-text">Open in</span>
-                      <img src="/assets/claude.svg" className="action-icon" alt="Claude" />
+                      <img
+                        src="/assets/claude.svg"
+                        className="action-icon"
+                        alt="Claude"
+                      />
                     </button>
                   </div>
                 </section>
@@ -382,6 +454,73 @@ export default function Chat() {
             </div>
           </div>
         </main>
+
+        {/* ===================== LIMIT EXHAUSTED POPUP ===================== */}
+        {showLimitModal && (
+          <div className="limit-overlay" onClick={() => setShowLimitModal(false)}>
+            <div
+              className="limit-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="limit-close"
+                onClick={() => setShowLimitModal(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+
+              <div className="limit-left">
+                <div className="limit-badge">
+                  <span className="limit-red-dot" />
+                  <span className="limit-badge-text">
+                    Free Limit Exhausted ({DAILY_FREE_LIMIT}/{DAILY_FREE_LIMIT})
+                  </span>
+                </div>
+
+                <img
+                  src="/assets/dog.png"
+                  alt="Limit reached"
+                  className="limit-dog"
+                />
+              </div>
+
+              <div className="limit-right">
+                <h2 className="limit-title">
+                  Wow. Much Limit.
+                  <br />
+                  Very Exhausted.
+                </h2>
+
+                <p className="limit-desc">
+                  Limit Reached! Much sad. Ready to upgrade? Well, joke&apos;s
+                  on you! The developer spent all his time making this UI look
+                  pixel-perfect and completely forgot to build a payment
+                  gateway. The &apos;Premium&apos; version is still cooking.
+                </p>
+
+                <p className="limit-hint">
+                  Patience is a virtue. But if you have zero patience,
+                  <br />
+                  go bother the dev for a bypass code.
+                </p>
+
+                <button
+                  className="limit-btn"
+                  onClick={() => {
+                    // Optional: open email / discord / whatever you want
+                    window.open(
+                      'mailto:dev@example.com?subject=Bypass%20Code%20Please',
+                      '_blank'
+                    );
+                  }}
+                >
+                  Wake the Dev
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <style jsx global>{`
@@ -397,7 +536,7 @@ export default function Chat() {
           position: relative;
           width: 100%;
           height: 100vh;
-          height: 100dvh; /* real visible height on mobile browsers (address bar aware) */
+          height: 100dvh;
           background: #000;
           overflow: hidden;
         }
@@ -659,7 +798,6 @@ export default function Chat() {
         .conversation-thread {
           flex: 1;
           width: 100%;
-          /* Padding top badha di hai taaki text NavPill ke peeche na chhupe */
           padding: 120px 40px 140px 40px;
           overflow-y: auto;
           overflow-x: hidden;
@@ -712,11 +850,10 @@ export default function Chat() {
           white-space: pre-wrap;
         }
 
-        /* ACTIONS BUTTONS CSS (ALL 3 EXACT SAME DESIGN) */
         .action-row {
           display: flex;
           align-items: center;
-          gap: 25px; /* Copy, ChatGPT, aur Gemini ke beech gap */
+          gap: 25px;
           flex-wrap: wrap;
           margin-top: 10px;
         }
@@ -805,6 +942,203 @@ export default function Chat() {
           font-size: 14px;
         }
 
+        /* ===================== LIMIT MODAL STYLES ===================== */
+        .limit-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.82);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          animation: limitFadeIn 0.25s ease;
+        }
+
+        @keyframes limitFadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        .limit-modal {
+          position: relative;
+          background: #020202;
+          border: 1px solid #222;
+          border-radius: 28px;
+          max-width: 1100px;
+          width: 100%;
+          max-height: 92vh;
+          overflow: hidden;
+          display: flex;
+          box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+          animation: limitSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes limitSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.97);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .limit-close {
+          position: absolute;
+          top: 18px;
+          right: 22px;
+          background: transparent;
+          border: none;
+          color: #888;
+          font-size: 32px;
+          line-height: 1;
+          cursor: pointer;
+          z-index: 10;
+          transition: color 0.2s;
+          padding: 0;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .limit-close:hover {
+          color: #fff;
+        }
+
+        .limit-left {
+          flex: 0 0 48%;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-end;
+          background: #020202;
+          padding: 40px 20px 0;
+          overflow: hidden;
+        }
+
+        .limit-badge {
+          position: absolute;
+          top: 36px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          border: 2px solid #fff;
+          border-radius: 100px;
+          padding: 14px 28px 14px 22px;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(6px);
+          white-space: nowrap;
+          z-index: 5;
+        }
+
+        .limit-red-dot {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: #ff2d2d;
+          box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.6);
+          animation: redDotBlink 2.2s ease-in-out infinite;
+          flex-shrink: 0;
+        }
+
+        @keyframes redDotBlink {
+          0%,
+          100% {
+            opacity: 1;
+            box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.55);
+          }
+          50% {
+            opacity: 0.35;
+            box-shadow: 0 0 0 8px rgba(255, 45, 45, 0);
+          }
+        }
+
+        .limit-badge-text {
+          color: #fff;
+          font-size: 18px;
+          font-weight: 600;
+          letter-spacing: 0.2px;
+        }
+
+        .limit-dog {
+          width: 100%;
+          max-width: 420px;
+          height: auto;
+          object-fit: contain;
+          display: block;
+          margin-bottom: -8px;
+          user-select: none;
+          pointer-events: none;
+        }
+
+        .limit-right {
+          flex: 1;
+          padding: 70px 56px 56px 40px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+
+        .limit-title {
+          color: #fff;
+          font-size: 42px;
+          font-weight: 700;
+          line-height: 1.2;
+          margin: 0 0 28px 0;
+        }
+
+        .limit-desc {
+          color: #e0e0e0;
+          font-size: 18px;
+          line-height: 1.55;
+          margin: 0 0 24px 0;
+          max-width: 480px;
+        }
+
+        .limit-hint {
+          color: #b0b0b0;
+          font-size: 16px;
+          line-height: 1.5;
+          margin: 0 0 36px 0;
+        }
+
+        .limit-btn {
+          align-self: flex-start;
+          background: #d9d9d9;
+          color: #000;
+          border: none;
+          border-radius: 100px;
+          padding: 18px 48px;
+          font-size: 18px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.25s ease;
+        }
+
+        .limit-btn:hover {
+          background: #fff;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
+        }
+
+        .limit-btn:active {
+          transform: translateY(0);
+        }
+
+        /* Mobile */
         @media (max-width: 900px) {
           .logo-main {
             left: 12px;
@@ -915,7 +1249,63 @@ export default function Chat() {
           }
 
           .chat-input {
-            /* 16px minimum stops iOS Safari from auto-zooming the whole page on focus */
+            font-size: 16px;
+          }
+
+          /* Limit modal mobile */
+          .limit-modal {
+            flex-direction: column;
+            max-height: 94vh;
+            border-radius: 22px;
+          }
+
+          .limit-left {
+            flex: none;
+            padding: 28px 16px 0;
+            max-height: 42vh;
+          }
+
+          .limit-badge {
+            top: 20px;
+            padding: 10px 18px 10px 16px;
+          }
+
+          .limit-badge-text {
+            font-size: 14px;
+          }
+
+          .limit-red-dot {
+            width: 10px;
+            height: 10px;
+          }
+
+          .limit-dog {
+            max-width: 260px;
+          }
+
+          .limit-right {
+            padding: 28px 24px 36px;
+          }
+
+          .limit-title {
+            font-size: 26px;
+            margin-bottom: 16px;
+          }
+
+          .limit-desc {
+            font-size: 15px;
+            margin-bottom: 16px;
+          }
+
+          .limit-hint {
+            font-size: 14px;
+            margin-bottom: 24px;
+          }
+
+          .limit-btn {
+            width: 100%;
+            text-align: center;
+            padding: 16px 24px;
             font-size: 16px;
           }
         }

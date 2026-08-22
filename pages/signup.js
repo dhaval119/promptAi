@@ -54,7 +54,7 @@ export default function Signup() {
   }
 
   async function handleSubmit(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setErrorMsg('');
 
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) {
@@ -95,7 +95,8 @@ export default function Signup() {
     }
   }
 
-  async function handleGoogleSignup() {
+  async function handleGoogleSignup(e) {
+    if (e && e.preventDefault) e.preventDefault();
     setErrorMsg('');
     setBusy(true);
     try {
@@ -119,7 +120,9 @@ export default function Signup() {
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <title>Sign Up Account</title>
       </Head>
-      <div className="v492_121">
+
+      {/* ===================== DESKTOP LAYOUT ===================== */}
+      <div className="desktop-layout v492_121">
         <div className="custom-logo">
           <img src="/assets/ailogo.png" alt="AI Logo" />
         </div>
@@ -206,16 +209,148 @@ export default function Signup() {
         </div>
       </div>
 
+      {/* ===================== NEW MOBILE LAYOUT ===================== */}
+      <div className="mobile-layout">
+        <div style={{ display: 'flex', flexDirection: 'column', background: '#FFFFFF', minHeight: '100vh' }}>
+          <div style={{ overflow: 'hidden', alignSelf: 'stretch', display: 'flex', flexDirection: 'column', background: '#00000000' }}>
+            <div style={{ alignSelf: 'stretch' }}>
+              <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', background: '#D9D9D900', paddingBottom: '60px' }}>
+                <img
+                  src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/SdTkzsvVdg/fn8jki3s_expires_30_days.png"
+                  style={{ width: '104px', height: '104px', marginBottom: '157px', objectFit: 'fill' }}
+                  alt="Top Decor"
+                />
+                <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginLeft: '23px', marginRight: '23px' }}>
+                  
+                  <span style={{ color: '#FFFFFF', fontSize: '35px', fontWeight: 'bold', marginBottom: '31px', marginLeft: '1px', width: '268px' }}>
+                    Let&apos;s Begin <br />Something New
+                  </span>
+                  
+                  <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: '18px', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', marginLeft: '1px' }}>
+                      <span style={{ color: '#FFFFFF', fontSize: '16px', fontWeight: 'bold', marginRight: '98px' }}>
+                        First Name
+                      </span>
+                      <span style={{ color: '#FFFFFF', fontSize: '16px', fontWeight: 'bold' }}>
+                        Last Name
+                      </span>
+                    </div>
+                    
+                    <div style={{ alignSelf: 'stretch', display: 'flex', alignItems: 'center', gap: '18px' }}>
+                      <input
+                        type="text"
+                        placeholder="eg.Dhaval"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', flex: 1, alignSelf: 'stretch', background: '#1A1A1A', borderRadius: '5px', border: 'none', padding: '12px' }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="eg.Soni"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', flex: 1, alignSelf: 'stretch', background: '#1A1A1A', borderRadius: '5px', border: 'none', padding: '12px 13px' }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <span style={{ color: '#FFFFFF', fontSize: '16px', fontWeight: 'bold', marginBottom: '14px', marginLeft: '1px' }}>
+                    Email
+                  </span>
+                  <input
+                    type="email"
+                    placeholder="eg.soni@gmail.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', marginBottom: '18px', alignSelf: 'stretch', background: '#1A1A1A', borderRadius: '5px', border: 'none', padding: '12px' }}
+                  />
+                  
+                  <span style={{ color: '#FFFFFF', fontSize: '16px', fontWeight: 'bold', marginBottom: '14px', marginLeft: '1px' }}>
+                    Password
+                  </span>
+                  <input
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', marginBottom: '24px', alignSelf: 'stretch', background: '#1A1A1A', borderRadius: '5px', border: 'none', padding: '12px' }}
+                  />
+                  
+                  <span style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', marginBottom: '23px' }}>
+                    Must be at least 8 characters
+                  </span>
+                  
+                  {errorMsg && (
+                    <div style={{ color: '#ff4d4d', fontWeight: 'bold', fontSize: '13px', marginBottom: '15px', background: 'rgba(0,0,0,0.5)', padding: '8px', borderRadius: '5px', width: '100%', textAlign: 'center' }}>
+                      {errorMsg}
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={handleSubmit}
+                    disabled={busy}
+                    style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#FFFFFF', borderRadius: '50px', border: 'none', paddingTop: '11px', paddingBottom: '11px', marginBottom: '22px', textAlign: 'left', cursor: 'pointer' }}
+                  >
+                    <span style={{ color: '#000000', fontSize: '18px', fontWeight: 'bold' }}>
+                      {busy ? 'Please wait...' : 'Sign Up'}
+                    </span>
+                  </button>
+                  
+                  <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div style={{ width: '20px', height: '1px', background: '#FFFFFF80' }}></div>
+                      <span style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold' }}>OR</span>
+                      <div style={{ width: '20px', height: '1px', background: '#FFFFFF80' }}></div>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={handleGoogleSignup}
+                    disabled={busy}
+                    style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#1A1A1A', borderRadius: '50px', border: '1px solid #FFFFFF80', paddingTop: '9px', paddingBottom: '9px', marginBottom: '17px', textAlign: 'left', cursor: 'pointer' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
+                      <img
+                        src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/SdTkzsvVdg/egkej8s3_expires_30_days.png"
+                        style={{ width: '21px', height: '21px', objectFit: 'fill' }}
+                        alt="Google"
+                      />
+                      <span style={{ color: '#FFFFFF', fontSize: '18px', fontWeight: 'bold' }}>
+                        Continue with Google
+                      </span>
+                    </div>
+                  </button>
+                  
+                  <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Link href="/login" style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none' }}>
+                      Already have an account? Log in
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <img
+              src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/SdTkzsvVdg/kfcmlkpq_expires_30_days.png"
+              style={{ flex: 1, alignSelf: 'stretch', objectFit: 'fill', width: '100%' }}
+              alt="Bottom Decor"
+            />
+          </div>
+        </div>
+      </div>
+
       <style jsx global>{`
         html,
         body {
-          font-family: 'Inter', sans-serif;
+          font-family: 'Inter', system-ui, sans-serif;
           background: #000000ff;
           color: white;
           overflow: hidden;
           font-size: 14px;
           height: 100vh;
           width: 100vw;
+          margin: 0;
+          padding: 0;
         }
         @media (max-width: 900px) {
           html, body {
@@ -235,15 +370,22 @@ export default function Signup() {
       `}</style>
 
       <style jsx>{`
-        .v492_121 {
+        /* DISPLAY TOGGLE LOGIC */
+        .desktop-layout {
+          display: flex;
           width: 100%;
           height: 100%;
           background: #020202;
           position: relative;
-          display: flex;
           justify-content: center;
           align-items: center;
         }
+        
+        .mobile-layout {
+          display: none;
+        }
+
+        /* ------------------ ORIGINAL DESKTOP CSS ------------------ */
         .zoom-wrapper {
           display: flex;
           justify-content: center;
@@ -476,124 +618,14 @@ export default function Signup() {
           cursor: default;
         }
 
-        /* ---------- MOBILE LAYOUT ---------- */
+        /* ------------------ MOBILE MEDIA QUERY TOGGLE ------------------ */
         @media (max-width: 900px) {
-          .v492_121 {
-            align-items: flex-start;
-            min-height: 100vh;
-            height: auto;
-            padding: 80px 20px 40px;
-            box-sizing: border-box;
+          .desktop-layout {
+            display: none !important;
           }
-          .custom-logo {
-            left: 16px;
-            top: 16px;
-          }
-          .custom-logo img {
-            height: 40px;
-            width: 40px;
-          }
-          .zoom-wrapper {
-            flex-direction: column;
-            gap: 0;
-            transform: none;
+          .mobile-layout {
+            display: block !important;
             width: 100%;
-            max-width: 420px;
-            margin: 0 auto;
-          }
-          .v545_33 {
-            display: none;
-          }
-          .v494_25 {
-            width: 100%;
-            height: auto;
-            position: relative;
-            min-height: 0;
-          }
-          .v492_148 {
-            position: relative;
-            top: auto;
-            left: auto;
-            font-size: 30px;
-            margin-bottom: 24px;
-            display: block;
-          }
-          .v494_9,
-          .v494_10,
-          .v494_15,
-          .v494_18 {
-            position: relative !important;
-            top: auto !important;
-            left: auto !important;
-            display: block;
-            margin-bottom: 8px;
-          }
-          .v494_11,
-          .v494_12,
-          .v494_16,
-          .v494_19 {
-            position: relative !important;
-            top: auto !important;
-            left: auto !important;
-            width: 100% !important;
-            margin-bottom: 16px;
-            box-sizing: border-box;
-          }
-          .v494_21 {
-            position: relative !important;
-            top: auto !important;
-            left: auto !important;
-            display: block;
-            margin-bottom: 16px;
-          }
-          .v494_22 {
-            position: relative !important;
-            top: auto !important;
-            left: auto !important;
-            width: 100% !important;
-            margin-bottom: 12px;
-            box-sizing: border-box;
-          }
-          .error-message {
-            position: relative !important;
-            top: auto !important;
-            left: auto !important;
-            width: 100% !important;
-            margin-bottom: 12px;
-            box-sizing: border-box;
-          }
-          .firebase-divider {
-            position: relative !important;
-            top: auto !important;
-            left: auto !important;
-            width: 100% !important;
-            margin: 16px 0 12px;
-          }
-          .firebase-options {
-            position: relative !important;
-            top: auto !important;
-            left: auto !important;
-            width: 100%;
-          }
-          .firebase-btn {
-            width: 100% !important;
-            box-sizing: border-box;
-          }
-          .v494_24 {
-            position: relative !important;
-            top: auto !important;
-            width: 100%;
-            margin-top: 24px;
-            padding-bottom: 20px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .v492_148 {
-            font-size: 26px;
-          }
-          .v492_121 {
-            padding: 70px 16px 32px;
           }
         }
       `}</style>

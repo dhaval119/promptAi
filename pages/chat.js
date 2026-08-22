@@ -60,7 +60,6 @@ export default function Chat() {
   const threadRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Load today's usage when uid is ready
   useEffect(() => {
     if (authLoading) return;
     setTodayUsage(getTodayUsage(uid));
@@ -158,7 +157,7 @@ export default function Chat() {
     const text = (overrideText ?? input).trim().slice(0, MAX_MESSAGE_LENGTH);
     if (!text || loading) return;
 
-    // ===== DAILY FREE LIMIT CHECK =====
+    // Daily free limit check
     const used = getTodayUsage(uid);
     if (used >= DAILY_FREE_LIMIT) {
       setTodayUsage(used);
@@ -182,7 +181,6 @@ export default function Chat() {
 
       setMessages((prev) => [...prev, { sender: 'ai', text: aiText }]);
 
-      // Increment usage only after successful response
       incrementTodayUsage(uid);
       setTodayUsage((prev) => prev + 1);
 
@@ -351,7 +349,6 @@ export default function Chat() {
                   <p className="ai-prompt">{m.text}</p>
 
                   <div className="action-row">
-                    {/* COPY BUTTON */}
                     <button
                       className="action-btn"
                       onClick={() => copyPrompt(m.text, i)}
@@ -367,7 +364,6 @@ export default function Chat() {
                       />
                     </button>
 
-                    {/* CHATGPT BUTTON */}
                     <button
                       className="action-btn"
                       title="Open in ChatGPT"
@@ -388,7 +384,6 @@ export default function Chat() {
                       />
                     </button>
 
-                    {/* CLAUDE BUTTON */}
                     <button
                       className="action-btn"
                       title="Open in Claude"
@@ -455,21 +450,11 @@ export default function Chat() {
           </div>
         </main>
 
-        {/* ===================== LIMIT EXHAUSTED POPUP ===================== */}
+        {/* ===================== FULL SCREEN LIMIT POPUP ===================== */}
         {showLimitModal && (
-          <div className="limit-overlay" onClick={() => setShowLimitModal(false)}>
-            <div
-              className="limit-modal"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                className="limit-close"
-                onClick={() => setShowLimitModal(false)}
-                aria-label="Close"
-              >
-                ×
-              </button>
-
+          <div className="limit-fullscreen">
+            <div className="limit-container">
+              {/* LEFT SIDE - Dog + Badge */}
               <div className="limit-left">
                 <div className="limit-badge">
                   <span className="limit-red-dot" />
@@ -485,12 +470,13 @@ export default function Chat() {
                 />
               </div>
 
+              {/* RIGHT SIDE - Text Content */}
               <div className="limit-right">
-                <h2 className="limit-title">
+                <h1 className="limit-title">
                   Wow. Much Limit.
                   <br />
                   Very Exhausted.
-                </h2>
+                </h1>
 
                 <p className="limit-desc">
                   Limit Reached! Much sad. Ready to upgrade? Well, joke&apos;s
@@ -508,7 +494,6 @@ export default function Chat() {
                 <button
                   className="limit-btn"
                   onClick={() => {
-                    // Optional: open email / discord / whatever you want
                     window.open(
                       'mailto:dev@example.com?subject=Bypass%20Code%20Please',
                       '_blank'
@@ -942,196 +927,150 @@ export default function Chat() {
           font-size: 14px;
         }
 
-        /* ===================== LIMIT MODAL STYLES ===================== */
-        .limit-overlay {
+        /* ===================== FULL SCREEN LIMIT POPUP ===================== */
+        .limit-fullscreen {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.82);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          z-index: 9999;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          animation: limitFadeIn 0.25s ease;
-        }
-
-        @keyframes limitFadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        .limit-modal {
-          position: relative;
+          width: 100vw;
+          height: 100vh;
+          height: 100dvh;
           background: #020202;
-          border: 1px solid #222;
-          border-radius: 28px;
-          max-width: 1100px;
-          width: 100%;
-          max-height: 92vh;
+          z-index: 99999;
           overflow: hidden;
           display: flex;
-          box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
-          animation: limitSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes limitSlideUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px) scale(0.97);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        .limit-close {
-          position: absolute;
-          top: 18px;
-          right: 22px;
-          background: transparent;
-          border: none;
-          color: #888;
-          font-size: 32px;
-          line-height: 1;
-          cursor: pointer;
-          z-index: 10;
-          transition: color 0.2s;
-          padding: 0;
-          width: 36px;
-          height: 36px;
-          display: flex;
-          align-items: center;
+          align-items: stretch;
           justify-content: center;
         }
 
-        .limit-close:hover {
-          color: #fff;
+        .limit-container {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: stretch;
+          justify-content: space-between;
+          padding: 0 56px 0 40px;
+          box-sizing: border-box;
         }
 
         .limit-left {
           flex: 0 0 48%;
-          position: relative;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: flex-end;
-          background: #020202;
-          padding: 40px 20px 0;
+          position: relative;
+          height: 100%;
           overflow: hidden;
         }
 
         .limit-badge {
           position: absolute;
-          top: 36px;
+          top: 48px;
           left: 50%;
           transform: translateX(-50%);
           display: flex;
           align-items: center;
-          gap: 12px;
-          border: 2px solid #fff;
+          gap: 14px;
+          border: 2px solid #ffffff;
           border-radius: 100px;
-          padding: 14px 28px 14px 22px;
-          background: rgba(0, 0, 0, 0.6);
-          backdrop-filter: blur(6px);
+          padding: 16px 28px 16px 22px;
+          background: rgba(2, 2, 2, 0.75);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           white-space: nowrap;
-          z-index: 5;
+          z-index: 10;
         }
 
         .limit-red-dot {
-          width: 12px;
-          height: 12px;
+          width: 13px;
+          height: 13px;
           border-radius: 50%;
           background: #ff2d2d;
-          box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.6);
-          animation: redDotBlink 2.2s ease-in-out infinite;
           flex-shrink: 0;
+          animation: redDotBlink 2.4s ease-in-out infinite;
         }
 
         @keyframes redDotBlink {
           0%,
           100% {
             opacity: 1;
-            box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.55);
+            box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.6);
           }
           50% {
-            opacity: 0.35;
-            box-shadow: 0 0 0 8px rgba(255, 45, 45, 0);
+            opacity: 0.25;
+            box-shadow: 0 0 0 10px rgba(255, 45, 45, 0);
           }
         }
 
         .limit-badge-text {
-          color: #fff;
-          font-size: 18px;
+          color: #ffffff;
+          font-size: 22px;
           font-weight: 600;
-          letter-spacing: 0.2px;
+          letter-spacing: 0.3px;
         }
 
         .limit-dog {
           width: 100%;
-          max-width: 420px;
+          max-width: 680px;
           height: auto;
+          max-height: 92%;
           object-fit: contain;
+          object-position: bottom center;
           display: block;
-          margin-bottom: -8px;
           user-select: none;
           pointer-events: none;
         }
 
         .limit-right {
           flex: 1;
-          padding: 70px 56px 56px 40px;
           display: flex;
           flex-direction: column;
           justify-content: center;
+          padding: 0 40px 0 60px;
+          max-width: 620px;
         }
 
         .limit-title {
-          color: #fff;
-          font-size: 42px;
+          color: #ffffff;
+          font-size: 48px;
           font-weight: 700;
-          line-height: 1.2;
-          margin: 0 0 28px 0;
+          line-height: 1.18;
+          margin: 0 0 40px 0;
         }
 
         .limit-desc {
-          color: #e0e0e0;
-          font-size: 18px;
-          line-height: 1.55;
-          margin: 0 0 24px 0;
-          max-width: 480px;
+          color: #ffffff;
+          font-size: 22px;
+          line-height: 1.5;
+          margin: 0 0 32px 0;
+          max-width: 540px;
         }
 
         .limit-hint {
-          color: #b0b0b0;
-          font-size: 16px;
+          color: #ffffff;
+          font-size: 20px;
           line-height: 1.5;
-          margin: 0 0 36px 0;
+          margin: 0 0 48px 0;
+          opacity: 0.95;
         }
 
         .limit-btn {
           align-self: flex-start;
           background: #d9d9d9;
-          color: #000;
+          color: #000000;
           border: none;
           border-radius: 100px;
-          padding: 18px 48px;
-          font-size: 18px;
+          padding: 20px 56px;
+          font-size: 22px;
           font-weight: 700;
           cursor: pointer;
           transition: all 0.25s ease;
         }
 
         .limit-btn:hover {
-          background: #fff;
+          background: #ffffff;
           transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
+          box-shadow: 0 10px 30px rgba(255, 255, 255, 0.18);
         }
 
         .limit-btn:active {
@@ -1252,61 +1191,66 @@ export default function Chat() {
             font-size: 16px;
           }
 
-          /* Limit modal mobile */
-          .limit-modal {
+          /* Fullscreen limit popup - mobile */
+          .limit-container {
             flex-direction: column;
-            max-height: 94vh;
-            border-radius: 22px;
+            padding: 0 16px;
+            overflow-y: auto;
           }
 
           .limit-left {
             flex: none;
-            padding: 28px 16px 0;
-            max-height: 42vh;
+            height: auto;
+            min-height: 38vh;
+            padding-top: 24px;
           }
 
           .limit-badge {
             top: 20px;
-            padding: 10px 18px 10px 16px;
+            padding: 12px 18px 12px 16px;
           }
 
           .limit-badge-text {
-            font-size: 14px;
+            font-size: 15px;
           }
 
           .limit-red-dot {
-            width: 10px;
-            height: 10px;
+            width: 11px;
+            height: 11px;
           }
 
           .limit-dog {
-            max-width: 260px;
+            max-width: 300px;
+            max-height: 34vh;
           }
 
           .limit-right {
-            padding: 28px 24px 36px;
+            flex: none;
+            padding: 20px 8px 40px;
+            max-width: 100%;
+            justify-content: flex-start;
           }
 
           .limit-title {
-            font-size: 26px;
-            margin-bottom: 16px;
+            font-size: 28px;
+            margin-bottom: 20px;
           }
 
           .limit-desc {
-            font-size: 15px;
-            margin-bottom: 16px;
+            font-size: 16px;
+            margin-bottom: 18px;
           }
 
           .limit-hint {
-            font-size: 14px;
-            margin-bottom: 24px;
+            font-size: 15px;
+            margin-bottom: 28px;
           }
 
           .limit-btn {
             width: 100%;
             text-align: center;
             padding: 16px 24px;
-            font-size: 16px;
+            font-size: 17px;
           }
         }
 
@@ -1324,6 +1268,16 @@ export default function Chat() {
           }
           .conversation-thread {
             padding: 80px 10px 140px;
+          }
+
+          .limit-title {
+            font-size: 24px;
+          }
+          .limit-desc {
+            font-size: 15px;
+          }
+          .limit-hint {
+            font-size: 14px;
           }
         }
       `}</style>

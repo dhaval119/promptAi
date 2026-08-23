@@ -92,6 +92,10 @@ export default function Details() {
     router.push('/login');
   }
 
+  function handleCancel() {
+    router.push('/chat');
+  }
+
   if (loading || !user) return null;
 
   return (
@@ -105,6 +109,12 @@ export default function Details() {
         <div className="nav-fixed">
           <NavPill />
         </div>
+
+        {/* Mobile Cancel Button - only visible on mobile */}
+        <button type="button" className="mobile-cancel-btn" onClick={handleCancel}>
+          Cancel
+        </button>
+
         <main>
           {message ? <div className="success-msg">{message}</div> : null}
           {errorMsg ? <div className="success-msg error-variant">{errorMsg}</div> : null}
@@ -314,6 +324,11 @@ export default function Details() {
           color: #ff4d4d;
         }
 
+        /* Mobile Cancel Button - hidden on desktop */
+        .mobile-cancel-btn {
+          display: none;
+        }
+
         @media (max-width: 780px) {
           .container {
             padding: 0 16px;
@@ -348,14 +363,118 @@ export default function Details() {
           input, select, textarea {
             font-size: 16px !important; /* prevents iOS zoom */
           }
+
+          /* ===== Mobile Layout matching provided design ===== */
+          .mobile-cancel-btn {
+            display: block;
+            position: fixed;
+            top: 18px;
+            left: 16px;
+            z-index: 30;
+            background: transparent;
+            border: 1px solid #fff;
+            color: #fff;
+            border-radius: 25px;
+            padding: 8px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+          }
+
+          main {
+            padding-top: 100px;
+          }
+
+          h1.page-title {
+            text-align: left;
+            font-size: 20px !important;
+            font-weight: 700;
+            margin-bottom: 20px;
+            margin-left: 12px;
+            letter-spacing: 0;
+          }
+
+          .section-divider {
+            border-top: 1px solid rgba(255, 255, 255, 0.75);
+            margin: 20px 12px;
+          }
+
+          .section-block {
+            padding: 0 12px;
+          }
+
+          h2.section-title {
+            font-size: 20px;
+            margin-bottom: 10px;
+          }
+
+          p.section-subtitle {
+            font-size: 10px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 20px;
+          }
+
+          /* Hide the first "Account" section on mobile to match design */
+          .section-block:first-of-type {
+            display: none;
+          }
+
+          .form-grid {
+            margin-top: 20px;
+            row-gap: 0;
+          }
+
+          .form-group {
+            margin-bottom: 23px;
+          }
+
+          label {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 13px;
+          }
+
+          input[type='text'],
+          input[type='email'],
+          input[type='password'] {
+            height: 34px;
+            padding: 0 16px;
+            border-radius: 25px;
+            font-size: 14px;
+          }
+
+          .submit-container {
+            margin-top: 30px;
+            padding-bottom: 40px;
+            flex-direction: row;
+            justify-content: flex-end;
+            gap: 11px;
+          }
+
+          button.logout-btn,
+          button.submit-btn {
+            width: 119px;
+            min-width: 119px;
+            height: 37px;
+            padding: 0;
+            font-size: 14px;
+            border-radius: 25px;
+          }
         }
 
         @media (max-width: 480px) {
           main {
-            padding-top: 80px;
+            padding-top: 90px;
           }
           .container {
             padding: 0 12px;
+          }
+          .mobile-cancel-btn {
+            top: 16px;
+            left: 12px;
+            padding: 7px 16px;
+            font-size: 13px;
           }
         }
       `}</style>

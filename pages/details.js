@@ -368,12 +368,10 @@ export default function Details() {
             overflow-x: hidden;
           }
 
-          /* Hide NavPill entirely on mobile per requirement */
           .nav-fixed {
             display: none;
           }
 
-          /* Replaced Cancel text with Top-Right Icon */
           .mobile-cancel-btn {
             display: flex;
             align-items: center;
@@ -476,24 +474,31 @@ export default function Details() {
             background-color: transparent;
           }
 
+          /* --- Updated Button Layout For Mobile --- */
           .submit-container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
             margin-top: 32px;
             padding-bottom: 40px;
-            flex-direction: row;
-            justify-content: center;
-            gap: 12px;
           }
 
           button.logout-btn,
           button.submit-btn {
-            width: 120px;
-            min-width: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 130px;
+            min-width: 130px;
             height: 42px;
             padding: 0;
             font-size: 14px;
             font-weight: 700;
             border-radius: 50px;
-            background-color: transparent;
+            background-color: #000;
             color: #fff;
             border: 1px solid #fff;
           }

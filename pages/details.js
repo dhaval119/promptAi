@@ -105,13 +105,18 @@ export default function Details() {
       </Head>
       <div className="container">
         <Logo />
+        
+        {/* Desktop NavPill */}
         <div className="nav-fixed">
           <NavPill />
         </div>
 
-        {/* Mobile Cancel Button */}
+        {/* Mobile Top-Right Icon Button */}
         <button type="button" className="mobile-cancel-btn" onClick={handleCancel}>
-          Cancel
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
         </button>
 
         <main>
@@ -130,6 +135,7 @@ export default function Details() {
           <section className="section-block">
             <h2 className="section-title">Personal info</h2>
             <p className="section-subtitle mobile-subtitle">Update your personal information.</p>
+            <div className="section-divider mobile-only" />
             <p className="section-subtitle desktop-subtitle">Signed in with Firebase - changes are saved to your account.</p>
 
             <form onSubmit={handleSubmit}>
@@ -176,7 +182,6 @@ export default function Details() {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter new password"
                   />
                 </div>
               </div>
@@ -233,6 +238,9 @@ export default function Details() {
           border-top: 1px solid #333;
           margin: 30px 0;
           width: 100%;
+        }
+        .mobile-only {
+          display: none;
         }
         h2.section-title {
           font-size: 24px;
@@ -360,31 +368,30 @@ export default function Details() {
             overflow-x: hidden;
           }
 
+          /* Hide NavPill entirely on mobile per requirement */
           .nav-fixed {
-            right: 16px;
-            top: 22px;
-            transform: scale(0.85);
-            transform-origin: top right;
+            display: none;
           }
 
+          /* Replaced Cancel text with Top-Right Icon */
           .mobile-cancel-btn {
-            display: block;
-            position: fixed;
-            top: 22px;
-            left: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 28px;
+            right: 20px;
+            left: auto;
             z-index: 30;
             background: transparent;
-            border: 1px solid #fff;
+            border: none;
             color: #fff;
-            border-radius: 25px;
-            padding: 7px 16px;
-            font-size: 13px;
-            font-weight: 600;
+            padding: 0;
             cursor: pointer;
           }
 
           main {
-            padding-top: 100px;
+            padding-top: 80px;
             padding-bottom: 40px;
           }
 
@@ -397,8 +404,14 @@ export default function Details() {
           }
 
           .section-divider {
-            border-top: 1px solid rgba(255, 255, 255, 0.75);
+            border-top: 1px solid #444;
             margin: 0 0 24px 0;
+          }
+
+          .mobile-only {
+            display: block;
+            margin-top: 16px;
+            margin-bottom: 24px;
           }
 
           .desktop-only {
@@ -419,8 +432,8 @@ export default function Details() {
             display: block;
             font-size: 12px;
             font-weight: 500;
-            color: #fff;
-            margin-bottom: 24px;
+            color: #b0b0b0;
+            margin-bottom: 0;
             opacity: 0.9;
           }
 
@@ -439,9 +452,9 @@ export default function Details() {
           }
 
           label {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
           }
 
           .desktop-password-label {
@@ -455,11 +468,12 @@ export default function Details() {
           input[type='text'],
           input[type='email'],
           input[type='password'] {
-            height: 42px;
+            height: 44px;
             padding: 0 18px;
             border-radius: 50px;
             font-size: 15px;
             border: 1px solid #fff;
+            background-color: transparent;
           }
 
           .submit-container {
@@ -467,18 +481,21 @@ export default function Details() {
             padding-bottom: 40px;
             flex-direction: row;
             justify-content: center;
-            gap: 14px;
+            gap: 12px;
           }
 
           button.logout-btn,
           button.submit-btn {
             width: 120px;
             min-width: 120px;
-            height: 40px;
+            height: 42px;
             padding: 0;
             font-size: 14px;
             font-weight: 700;
             border-radius: 50px;
+            background-color: transparent;
+            color: #fff;
+            border: 1px solid #fff;
           }
         }
 
@@ -487,13 +504,11 @@ export default function Details() {
             padding: 0 16px;
           }
           main {
-            padding-top: 95px;
+            padding-top: 75px;
           }
           .mobile-cancel-btn {
-            top: 20px;
-            left: 14px;
-            padding: 6px 14px;
-            font-size: 12px;
+            top: 26px;
+            right: 16px;
           }
         }
       `}</style>

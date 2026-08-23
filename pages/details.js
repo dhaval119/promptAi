@@ -51,7 +51,6 @@ export default function Details() {
         return;
       }
 
-      // Save both camelCase (current docs) and keep compatible
       await setDoc(
         doc(db, 'users', user.uid),
         {
@@ -110,7 +109,7 @@ export default function Details() {
           <NavPill />
         </div>
 
-        {/* Mobile Cancel Button - only visible on mobile */}
+        {/* Mobile Cancel Button */}
         <button type="button" className="mobile-cancel-btn" onClick={handleCancel}>
           Cancel
         </button>
@@ -118,16 +117,21 @@ export default function Details() {
         <main>
           {message ? <div className="success-msg">{message}</div> : null}
           {errorMsg ? <div className="success-msg error-variant">{errorMsg}</div> : null}
+
           <h1 className="page-title">My Account</h1>
           <div className="section-divider" />
-          <section className="section-block">
+
+          <section className="section-block desktop-only">
             <h2 className="section-title">Account</h2>
             <p className="section-subtitle">View and edit your personal info below.</p>
           </section>
-          <div className="section-divider" />
+          <div className="section-divider desktop-only" />
+
           <section className="section-block">
             <h2 className="section-title">Personal info</h2>
-            <p className="section-subtitle">Signed in with Firebase - changes are saved to your account.</p>
+            <p className="section-subtitle mobile-subtitle">Update your personal information.</p>
+            <p className="section-subtitle desktop-subtitle">Signed in with Firebase - changes are saved to your account.</p>
+
             <form onSubmit={handleSubmit}>
               <div className="form-grid">
                 <div className="form-group">
@@ -161,7 +165,12 @@ export default function Details() {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="password">Password (Leave blank to keep current)</label>
+                  <label htmlFor="password" className="desktop-password-label">
+                    Password (Leave blank to keep current)
+                  </label>
+                  <label htmlFor="password" className="mobile-password-label">
+                    Password
+                  </label>
                   <input
                     id="password"
                     type="password"
@@ -171,6 +180,7 @@ export default function Details() {
                   />
                 </div>
               </div>
+
               <div className="submit-container">
                 <button type="button" onClick={handleLogout} className="logout-btn">
                   Logout
@@ -235,6 +245,18 @@ export default function Details() {
           font-size: 16px;
           font-weight: 500;
           margin-bottom: 20px;
+        }
+        .mobile-subtitle {
+          display: none;
+        }
+        .desktop-subtitle {
+          display: block;
+        }
+        .mobile-password-label {
+          display: none;
+        }
+        .desktop-password-label {
+          display: block;
         }
         .form-grid {
           display: grid;
@@ -323,158 +345,155 @@ export default function Details() {
         .success-msg.error-variant {
           color: #ff4d4d;
         }
-
-        /* Mobile Cancel Button - hidden on desktop */
         .mobile-cancel-btn {
           display: none;
         }
+        .desktop-only {
+          display: block;
+        }
 
+        /* ==================== MOBILE LAYOUT ==================== */
         @media (max-width: 780px) {
           .container {
-            padding: 0 16px;
+            padding: 0 20px;
             max-width: 100%;
             overflow-x: hidden;
           }
+
           .nav-fixed {
-            right: 12px;
-            transform: scale(0.78);
+            right: 16px;
+            top: 22px;
+            transform: scale(0.85);
             transform-origin: top right;
           }
-          main {
-            padding-top: 90px;
-            padding-bottom: 40px;
-          }
-          h1, .page-title, .heading {
-            font-size: 26px !important;
-          }
-          .form-grid {
-            grid-template-columns: 1fr;
-            gap: 16px;
-          }
-          .submit-container {
-            flex-direction: column-reverse;
-            gap: 12px;
-          }
-          button.submit-btn,
-          button.logout-btn {
-            width: 100%;
-            box-sizing: border-box;
-          }
-          input, select, textarea {
-            font-size: 16px !important; /* prevents iOS zoom */
-          }
 
-          /* ===== Mobile Layout matching provided design ===== */
           .mobile-cancel-btn {
             display: block;
             position: fixed;
-            top: 18px;
+            top: 22px;
             left: 16px;
             z-index: 30;
             background: transparent;
             border: 1px solid #fff;
             color: #fff;
             border-radius: 25px;
-            padding: 8px 18px;
-            font-size: 14px;
-            font-weight: 700;
+            padding: 7px 16px;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
           }
 
           main {
             padding-top: 100px;
+            padding-bottom: 40px;
           }
 
           h1.page-title {
-            text-align: left;
+            text-align: center;
             font-size: 20px !important;
             font-weight: 700;
-            margin-bottom: 20px;
-            margin-left: 12px;
+            margin-bottom: 24px;
             letter-spacing: 0;
           }
 
           .section-divider {
             border-top: 1px solid rgba(255, 255, 255, 0.75);
-            margin: 20px 12px;
+            margin: 0 0 24px 0;
+          }
+
+          .desktop-only {
+            display: none !important;
           }
 
           .section-block {
-            padding: 0 12px;
+            padding: 0;
           }
 
           h2.section-title {
-            font-size: 20px;
-            margin-bottom: 10px;
-          }
-
-          p.section-subtitle {
-            font-size: 10px;
+            font-size: 18px;
             font-weight: 700;
-            color: #fff;
-            margin-bottom: 20px;
+            margin-bottom: 6px;
           }
 
-          /* Hide the first "Account" section on mobile to match design */
-          .section-block:first-of-type {
+          .mobile-subtitle {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 24px;
+            opacity: 0.9;
+          }
+
+          .desktop-subtitle {
             display: none;
           }
 
           .form-grid {
-            margin-top: 20px;
-            row-gap: 0;
+            grid-template-columns: 1fr;
+            gap: 0;
+            margin-top: 8px;
           }
 
           .form-group {
-            margin-bottom: 23px;
+            margin-bottom: 20px;
           }
 
           label {
             font-size: 15px;
             font-weight: 700;
-            margin-bottom: 13px;
+            margin-bottom: 10px;
+          }
+
+          .desktop-password-label {
+            display: none;
+          }
+
+          .mobile-password-label {
+            display: block;
           }
 
           input[type='text'],
           input[type='email'],
           input[type='password'] {
-            height: 34px;
-            padding: 0 16px;
-            border-radius: 25px;
-            font-size: 14px;
+            height: 42px;
+            padding: 0 18px;
+            border-radius: 50px;
+            font-size: 15px;
+            border: 1px solid #fff;
           }
 
           .submit-container {
-            margin-top: 30px;
+            margin-top: 32px;
             padding-bottom: 40px;
             flex-direction: row;
-            justify-content: flex-end;
-            gap: 11px;
+            justify-content: center;
+            gap: 14px;
           }
 
           button.logout-btn,
           button.submit-btn {
-            width: 119px;
-            min-width: 119px;
-            height: 37px;
+            width: 120px;
+            min-width: 120px;
+            height: 40px;
             padding: 0;
             font-size: 14px;
-            border-radius: 25px;
+            font-weight: 700;
+            border-radius: 50px;
           }
         }
 
         @media (max-width: 480px) {
-          main {
-            padding-top: 90px;
-          }
           .container {
-            padding: 0 12px;
+            padding: 0 16px;
+          }
+          main {
+            padding-top: 95px;
           }
           .mobile-cancel-btn {
-            top: 16px;
-            left: 12px;
-            padding: 7px 16px;
-            font-size: 13px;
+            top: 20px;
+            left: 14px;
+            padding: 6px 14px;
+            font-size: 12px;
           }
         }
       `}</style>

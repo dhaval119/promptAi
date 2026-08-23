@@ -1183,16 +1183,24 @@ export default function Chat() {
           }
 
           .suggestion-buttons {
-            flex-direction: column;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 10px;
             width: 100%;
           }
 
           .suggestion-button {
-            width: 100%;
+            width: auto;
+            flex: 0 0 auto;
+            max-width: 100%;
+            font-size: 13px;
+            padding: 0 35px 0 15px;
+            height: 38px;
+          }
+
+          .suggestion-button span {
             max-width: none;
-            font-size: 14px;
-            padding: 12px 14px;
           }
 
           .conversation-thread {

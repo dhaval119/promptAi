@@ -449,7 +449,7 @@ export default function Chat() {
           </div>
         </main>
 
-        {/* ===================== FULL SCREEN LIMIT POPUP (exact match) ===================== */}
+        {/* ===================== FULL SCREEN LIMIT POPUP ===================== */}
         {showLimitModal && (
           <div className="limit-fullscreen">
             {/* Close button - top left */}
@@ -469,8 +469,8 @@ export default function Chat() {
               </span>
             </div>
 
-            <div className="limit-content">
-              {/* LEFT - Dog + OOPS */}
+            {/* ===== DESKTOP LAYOUT (PC / Laptop) ===== */}
+            <div className="limit-content limit-content-desktop">
               <div className="limit-left">
                 <div className="oops-text">
                   OOPS!
@@ -483,7 +483,6 @@ export default function Chat() {
                 />
               </div>
 
-              {/* RIGHT - Text */}
               <div className="limit-right">
                 <h1 className="limit-title">
                   Wow. Much Limit.
@@ -515,6 +514,48 @@ export default function Chat() {
                   }}
                 >
                   Wake the Dev
+                </button>
+              </div>
+            </div>
+
+            {/* ===== MOBILE LAYOUT (exact match to your HTML) ===== */}
+            <div className="limit-content-mobile">
+              <div className="limit-mobile-inner">
+                <div className="limit-mobile-img-wrap">
+                  <img
+                    src="/assets/dog1.png"
+                    alt="Doge"
+                    className="limit-mobile-dog"
+                  />
+                </div>
+
+                <span className="limit-mobile-title">
+                  Wow. Much Limit. <br />
+                  Very Exhausted.
+                </span>
+
+                <span className="limit-mobile-desc">
+                  Limit Reached! Much sad. Ready to upgrade? Well, joke&apos;s
+                  on you! The developer spent all his time making this UI look
+                  pixel-perfect and completely forgot to build a payment
+                  gateway. The &apos;Premium&apos; version is still cooking.
+                </span>
+
+                <span className="limit-mobile-hint">
+                  Patience is a virtue. But if you have zero patience, <br />
+                  go bother the dev for a bypass code.
+                </span>
+
+                <button
+                  className="limit-mobile-btn"
+                  onClick={() => {
+                    window.open(
+                      'mailto:dev@example.com?subject=Bypass%20Code%20Please',
+                      '_blank'
+                    );
+                  }}
+                >
+                  <span>Wake the Dev</span>
                 </button>
               </div>
             </div>
@@ -1029,7 +1070,8 @@ export default function Chat() {
           letter-spacing: 0.2px;
         }
 
-        .limit-content {
+        /* ===== DESKTOP LIMIT CONTENT ===== */
+        .limit-content-desktop {
           width: 100%;
           max-width: 1200px;
           height: 100%;
@@ -1137,6 +1179,11 @@ export default function Chat() {
 
         .limit-btn:active {
           transform: translateY(0);
+        }
+
+        /* ===== MOBILE LIMIT CONTENT (hidden on desktop) ===== */
+        .limit-content-mobile {
+          display: none;
         }
 
         /* Mobile */
@@ -1282,62 +1329,105 @@ export default function Chat() {
             height: 9px;
           }
 
-          .limit-content {
+          /* Hide desktop layout, show mobile layout */
+          .limit-content-desktop {
+            display: none;
+          }
+
+          .limit-content-mobile {
+            display: flex;
             flex-direction: column;
-            padding: 80px 20px 40px;
-            justify-content: flex-start;
-            overflow-y: auto;
-          }
-
-          .limit-left {
-            flex: none;
-            height: auto;
-            min-height: 280px;
-            margin-bottom: 10px;
-          }
-
-          .oops-text {
-            top: 6%;
-            left: 5%;
-            font-size: 28px;
-          }
-
-          .oops-quotes {
-            font-size: 20px;
-          }
-
-          .limit-dog {
-            max-width: 280px;
-            max-height: 260px;
-          }
-
-          .limit-right {
-            flex: none;
-            padding-left: 0;
-            max-width: 100%;
-            text-align: left;
-          }
-
-          .limit-title {
-            font-size: 26px;
-            margin-bottom: 16px;
-          }
-
-          .limit-desc {
-            font-size: 15px;
-            margin-bottom: 14px;
-          }
-
-          .limit-hint {
-            font-size: 14px;
-            margin-bottom: 24px;
-          }
-
-          .limit-btn {
             width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            background: #000000;
+            padding-top: 60px;
+            box-sizing: border-box;
+          }
+
+          .limit-mobile-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            width: 100%;
+            padding-bottom: 42px;
+          }
+
+          .limit-mobile-img-wrap {
+            align-self: stretch;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-bottom: 18px;
+            margin-left: 26px;
+            margin-right: 44px;
+            position: relative;
+            overflow: hidden;
+          }
+
+          .limit-mobile-dog {
+            height: 403px;
+            width: 100%;
+            align-self: stretch;
+            object-fit: contain;
+            object-position: center bottom;
+            display: block;
+            user-select: none;
+            pointer-events: none;
+          }
+
+          .limit-mobile-title {
+            color: #ffffff;
+            font-size: 30px;
+            font-weight: 700;
+            margin-bottom: 26px;
+            margin-left: 26px;
+            width: 243px;
+            line-height: 1.25;
+          }
+
+          .limit-mobile-desc {
+            color: #ffffff;
+            font-size: 17px;
+            margin-bottom: 20px;
+            margin-left: 26px;
+            width: 315px;
+            max-width: calc(100% - 52px);
+            line-height: 1.5;
+          }
+
+          .limit-mobile-hint {
+            color: #ffffff;
+            font-size: 12px;
+            margin-bottom: 45px;
+            margin-left: 26px;
+            width: 280px;
+            max-width: calc(100% - 52px);
+            line-height: 1.5;
+          }
+
+          .limit-mobile-btn {
+            align-self: stretch;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #d9d9d9;
+            border-radius: 100px;
+            border: none;
+            padding-top: 14px;
+            padding-bottom: 14px;
+            margin-bottom: 42px;
+            margin-left: 26px;
+            margin-right: 26px;
+            cursor: pointer;
             text-align: center;
-            padding: 14px 24px;
-            font-size: 15px;
+          }
+
+          .limit-mobile-btn span {
+            color: #000000;
+            font-size: 20px;
+            font-weight: 600;
           }
         }
 
@@ -1357,14 +1447,24 @@ export default function Chat() {
             padding: 80px 10px 140px;
           }
 
-          .limit-title {
-            font-size: 22px;
+          .limit-mobile-dog {
+            height: 320px;
           }
-          .limit-desc {
-            font-size: 14px;
+
+          .limit-mobile-title {
+            font-size: 26px;
+            width: auto;
+            max-width: calc(100% - 52px);
           }
-          .limit-hint {
-            font-size: 13px;
+
+          .limit-mobile-desc {
+            font-size: 15px;
+            width: auto;
+          }
+
+          .limit-mobile-hint {
+            font-size: 12px;
+            width: auto;
           }
         }
       `}</style>

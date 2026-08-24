@@ -300,7 +300,7 @@ export default function Chat() {
               </button>
 
               <button
-                className="suggestion-button"
+                className="suggestion-button suggestion-middle"
                 onClick={() => sendMessage('Professional resume for')}
               >
                 <span>Professional resume for</span>
@@ -1216,38 +1216,118 @@ export default function Chat() {
             left: 50%;
           }
 
-          .main-heading {
-            font-size: 24px;
-            white-space: normal;
-            padding: 0 8px;
-            line-height: 1.25;
+          /* ===== LANDING - MOBILE (match provided HTML) ===== */
+          .landing-content {
+            width: 100%;
+            max-width: 100%;
+            top: 38%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 0 27px;
+            box-sizing: border-box;
           }
 
-          .landing-content {
-            width: 92%;
-            top: 42%;
-            padding: 0 4px;
+          .main-heading {
+            font-size: 25px;
+            font-weight: bold;
+            white-space: normal;
+            margin-bottom: 14px;
+            padding: 0;
+            line-height: 1.3;
           }
 
           .suggestion-buttons {
+            display: flex;
             flex-direction: row;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             justify-content: center;
-            gap: 10px;
+            align-items: center;
+            gap: 25px;
             width: 100%;
+            margin-bottom: 0;
+            margin-left: 18px;
+            margin-right: 18px;
+            max-width: calc(100% - 36px);
+          }
+
+          /* Hide middle button on mobile to match HTML (only 2 buttons) */
+          .suggestion-middle {
+            display: none !important;
           }
 
           .suggestion-button {
+            flex: 1;
             width: auto;
-            flex: 0 0 auto;
-            max-width: 100%;
-            font-size: 13px;
-            padding: 0 35px 0 15px;
-            height: 38px;
+            max-width: none;
+            height: auto;
+            min-height: 32px;
+            padding: 8px 12px;
+            font-size: 8px;
+            font-weight: bold;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0px 4px 4px #00000040;
+            border-radius: 50px;
           }
 
           .suggestion-button span {
             max-width: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 8px;
+            font-weight: bold;
+          }
+
+          .suggestion-button :global(.suggestion-arrow) {
+            position: static;
+            width: 9px;
+            height: 6px;
+            transform: none;
+            top: auto;
+            right: auto;
+          }
+
+          .suggestion-button :global(.arrow-hover) {
+            display: none;
+          }
+
+          .suggestion-button:hover {
+            background: #000;
+            color: #fff;
+          }
+
+          .view-landing .chat-input-form {
+            position: absolute;
+            top: auto;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 54px);
+            max-width: 100%;
+          }
+
+          .view-landing .chat-input {
+            height: auto;
+            padding: 9px 50px 9px 22px;
+            font-size: 17px;
+            border-radius: 50px;
+          }
+
+          .view-landing .chat-submit-button {
+            width: 46px;
+            height: 100%;
+            right: 0;
+            top: 0;
+            transform: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .view-landing .chat-submit-icon {
+            width: 28px;
+            height: 28px;
           }
 
           .conversation-thread {
@@ -1294,14 +1374,8 @@ export default function Chat() {
             transform: translateX(-50%);
           }
 
-          .view-landing .chat-input-form {
-            width: 92%;
-            left: 50%;
-            transform: translateX(-50%);
-          }
-
           .chat-input-wrapper {
-            padding: 8px 12px;
+            padding: 0;
           }
 
           .chat-input {
@@ -1433,8 +1507,13 @@ export default function Chat() {
 
         @media (max-width: 480px) {
           .main-heading {
-            font-size: 20px;
+            font-size: 22px;
           }
+
+          .suggestion-button span {
+            font-size: 7.5px;
+          }
+
           .action-text {
             display: none;
           }

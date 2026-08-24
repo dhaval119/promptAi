@@ -56,9 +56,30 @@ export default function Chat() {
   const [chatsReady, setChatsReady] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [todayUsage, setTodayUsage] = useState(0);
+  const [kbOffset, setKbOffset] = useState(0);
 
   const threadRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Keyboard height tracking (mobile)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+
+    const vv = window.visualViewport;
+    const update = () => {
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKbOffset(offset > 50 ? offset : 0);
+    };
+
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    update();
+
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -128,6 +149,14 @@ export default function Chat() {
     }
   }, [messages, loading]);
 
+  // Limit popup aate hi keyboard band
+  useEffect(() => {
+    if (showLimitModal) {
+      inputRef.current?.blur();
+      setKbOffset(0);
+    }
+  }, [showLimitModal]);
+
   function startNewChat() {
     setCurrentChatId(0);
     setMessages([]);
@@ -160,6 +189,7 @@ export default function Chat() {
     const used = getTodayUsage(uid);
     if (used >= DAILY_FREE_LIMIT) {
       setTodayUsage(used);
+      inputRef.current?.blur();
       setShowLimitModal(true);
       return;
     }
@@ -167,6 +197,7 @@ export default function Chat() {
     setMessages((prev) => [...prev, { sender: 'user', text }]);
     setInput('');
     setLoading(true);
+    inputRef.current?.blur();
 
     try {
       const res = await fetch('/api/chat', {
@@ -205,7 +236,7 @@ export default function Chat() {
       ]);
     } finally {
       setLoading(false);
-      inputRef.current?.focus();
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
   }
 
@@ -229,7 +260,10 @@ export default function Chat() {
       </Head>
 
       <div className="desktop">
-        <NavPill />
+        {/* NavPill only on desktop */}
+        <div className="nav-desktop-only">
+          <NavPill />
+        </div>
 
         <img
           src="/assets/ailogo.png"
@@ -415,7 +449,15 @@ export default function Chat() {
             ) : null}
           </article>
 
-          <div className="chat-input-form">
+          <div
+            className="chat-input-form"
+            style={{
+              bottom:
+                kbOffset > 0
+                  ? `${kbOffset + 8}px`
+                  : undefined,
+            }}
+          >
             <div className="chat-input-wrapper">
               <input
                 type="text"
@@ -452,7 +494,6 @@ export default function Chat() {
         {/* ===================== FULL SCREEN LIMIT POPUP ===================== */}
         {showLimitModal && (
           <div className="limit-fullscreen">
-            {/* Close button - top left */}
             <button
               className="limit-close-btn"
               onClick={() => setShowLimitModal(false)}
@@ -461,7 +502,6 @@ export default function Chat() {
               ×
             </button>
 
-            {/* Top center badge */}
             <div className="limit-badge">
               <span className="limit-red-dot" />
               <span className="limit-badge-text">
@@ -469,7 +509,7 @@ export default function Chat() {
               </span>
             </div>
 
-            {/* ===== DESKTOP LAYOUT (PC / Laptop) ===== */}
+            {/* ===== DESKTOP LAYOUT ===== */}
             <div className="limit-content limit-content-desktop">
               <div className="limit-left">
                 <div className="oops-text">
@@ -518,10 +558,14 @@ export default function Chat() {
               </div>
             </div>
 
-            {/* ===== MOBILE LAYOUT (exact match to your HTML) ===== */}
+            {/* ===== MOBILE LAYOUT ===== */}
             <div className="limit-content-mobile">
               <div className="limit-mobile-inner">
                 <div className="limit-mobile-img-wrap">
+                  <div className="limit-mobile-oops">
+                    OOPS!
+                    <span>’’</span>
+                  </div>
                   <img
                     src="/assets/dog1.png"
                     alt="Doge"
@@ -529,22 +573,24 @@ export default function Chat() {
                   />
                 </div>
 
-                <span className="limit-mobile-title">
-                  Wow. Much Limit. <br />
+                <h1 className="limit-mobile-title">
+                  Wow. Much Limit.
+                  <br />
                   Very Exhausted.
-                </span>
+                </h1>
 
-                <span className="limit-mobile-desc">
+                <p className="limit-mobile-desc">
                   Limit Reached! Much sad. Ready to upgrade? Well, joke&apos;s
                   on you! The developer spent all his time making this UI look
                   pixel-perfect and completely forgot to build a payment
                   gateway. The &apos;Premium&apos; version is still cooking.
-                </span>
+                </p>
 
-                <span className="limit-mobile-hint">
-                  Patience is a virtue. But if you have zero patience, <br />
+                <p className="limit-mobile-hint">
+                  Patience is a virtue. But if you have zero patience,
+                  <br />
                   go bother the dev for a bypass code.
-                </span>
+                </p>
 
                 <button
                   className="limit-mobile-btn"
@@ -555,7 +601,7 @@ export default function Chat() {
                     );
                   }}
                 >
-                  <span>Wake the Dev</span>
+                  Wake the Dev
                 </button>
               </div>
             </div>
@@ -568,6 +614,8 @@ export default function Chat() {
         body {
           background: #000;
           overflow: hidden;
+          margin: 0;
+          padding: 0;
         }
       `}</style>
 
@@ -579,6 +627,10 @@ export default function Chat() {
           height: 100dvh;
           background: #000;
           overflow: hidden;
+        }
+
+        .nav-desktop-only {
+          display: block;
         }
 
         .logo-main {
@@ -688,6 +740,7 @@ export default function Chat() {
           left: 0;
           width: calc(100% - 250px);
           height: 100vh;
+          height: 100dvh;
           display: flex;
           flex-direction: column;
           transition: transform 0.4s ease, width 0.4s ease;
@@ -715,6 +768,7 @@ export default function Chat() {
           max-width: 90%;
           z-index: 30;
           pointer-events: auto;
+          bottom: auto !important;
         }
 
         .view-landing .landing-content {
@@ -732,6 +786,7 @@ export default function Chat() {
           transform: translateX(-50%);
           width: 750px;
           max-width: 90%;
+          z-index: 40;
         }
 
         .main-content:not(.no-sidebar) .view-chat .chat-input-form {
@@ -932,8 +987,8 @@ export default function Chat() {
         }
 
         .chat-input-form {
-          z-index: 10;
-          transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+          z-index: 40;
+          transition: bottom 0.15s ease;
         }
 
         .chat-input-wrapper {
@@ -982,12 +1037,12 @@ export default function Chat() {
           font-size: 14px;
         }
 
-        /* ===================== FULL SCREEN LIMIT POPUP ===================== */
+        /* ===================== LIMIT POPUP ===================== */
         .limit-fullscreen {
           position: fixed;
           inset: 0;
-          width: 100vw;
-          height: 100vh;
+          width: 100%;
+          height: 100%;
           height: 100dvh;
           background: #000000;
           z-index: 99999;
@@ -998,7 +1053,6 @@ export default function Chat() {
           justify-content: center;
         }
 
-        /* Close button - top left */
         .limit-close-btn {
           position: absolute;
           top: 22px;
@@ -1023,7 +1077,6 @@ export default function Chat() {
           color: #ffffff;
         }
 
-        /* Top center badge */
         .limit-badge {
           position: absolute;
           top: 28px;
@@ -1070,7 +1123,6 @@ export default function Chat() {
           letter-spacing: 0.2px;
         }
 
-        /* ===== DESKTOP LIMIT CONTENT ===== */
         .limit-content-desktop {
           width: 100%;
           max-width: 1200px;
@@ -1181,18 +1233,22 @@ export default function Chat() {
           transform: translateY(0);
         }
 
-        /* ===== MOBILE LIMIT CONTENT (hidden on desktop) ===== */
         .limit-content-mobile {
           display: none;
         }
 
-        /* Mobile */
+        /* ===================== MOBILE ===================== */
         @media (max-width: 900px) {
+          .nav-desktop-only {
+            display: none !important;
+          }
+
           .logo-main {
-            left: 12px;
-            top: 14px;
+            left: 16px;
+            top: 16px;
             width: 40px;
             height: 40px;
+            z-index: 100;
           }
 
           .sidebar {
@@ -1216,22 +1272,25 @@ export default function Chat() {
             left: 50%;
           }
 
-          /* ===== LANDING - MOBILE (match provided HTML) ===== */
+          /* ===== LANDING MOBILE (exact design match) ===== */
           .landing-content {
-            width: 100%;
-            max-width: 100%;
-            top: 38%;
+            position: absolute;
+            top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            padding: 0 27px;
+            width: 100%;
+            max-width: 100%;
+            padding: 0 24px;
             box-sizing: border-box;
+            text-align: center;
+            z-index: 20;
           }
 
           .main-heading {
             font-size: 25px;
-            font-weight: bold;
+            font-weight: 700;
             white-space: normal;
-            margin-bottom: 14px;
+            margin-bottom: 18px;
             padding: 0;
             line-height: 1.3;
           }
@@ -1242,15 +1301,12 @@ export default function Chat() {
             flex-wrap: nowrap;
             justify-content: center;
             align-items: center;
-            gap: 25px;
+            gap: 12px;
             width: 100%;
             margin-bottom: 0;
-            margin-left: 18px;
-            margin-right: 18px;
-            max-width: calc(100% - 36px);
+            max-width: 100%;
           }
 
-          /* Hide middle button on mobile to match HTML (only 2 buttons) */
           .suggestion-middle {
             display: none !important;
           }
@@ -1260,12 +1316,12 @@ export default function Chat() {
             width: auto;
             max-width: none;
             height: auto;
-            min-height: 32px;
-            padding: 8px 12px;
-            font-size: 8px;
-            font-weight: bold;
+            min-height: 36px;
+            padding: 8px 14px;
+            font-size: 11px;
+            font-weight: 600;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
             box-shadow: 0px 4px 4px #00000040;
             border-radius: 50px;
           }
@@ -1275,17 +1331,18 @@ export default function Chat() {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            font-size: 8px;
-            font-weight: bold;
+            font-size: 11px;
+            font-weight: 600;
           }
 
           .suggestion-button :global(.suggestion-arrow) {
             position: static;
-            width: 9px;
-            height: 6px;
+            width: 10px;
+            height: 8px;
             transform: none;
             top: auto;
             right: auto;
+            flex-shrink: 0;
           }
 
           .suggestion-button :global(.arrow-hover) {
@@ -1297,41 +1354,51 @@ export default function Chat() {
             color: #fff;
           }
 
+          /* Input right under buttons on landing */
           .view-landing .chat-input-form {
             position: absolute;
-            top: auto;
-            bottom: 28px;
+            top: calc(50% + 70px);
             left: 50%;
             transform: translateX(-50%);
-            width: calc(100% - 54px);
+            width: calc(100% - 48px);
             max-width: 100%;
+            bottom: auto !important;
+            z-index: 30;
           }
 
           .view-landing .chat-input {
-            height: auto;
-            padding: 9px 50px 9px 22px;
-            font-size: 17px;
+            height: 46px;
+            padding: 0 50px 0 20px;
+            font-size: 16px;
             border-radius: 50px;
           }
 
           .view-landing .chat-submit-button {
-            width: 46px;
-            height: 100%;
-            right: 0;
-            top: 0;
-            transform: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 42px;
+            height: 42px;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
           }
 
           .view-landing .chat-submit-icon {
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
+          }
+
+          /* Chat view - sticky bottom input */
+          .view-chat .chat-input-form {
+            position: fixed;
+            bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 24px);
+            max-width: 100%;
+            z-index: 50;
           }
 
           .conversation-thread {
-            padding: 88px 12px 150px;
+            padding: 80px 14px 100px;
           }
 
           .user-message {
@@ -1344,34 +1411,27 @@ export default function Chat() {
           }
 
           .ai-heading {
-            font-size: 16px;
+            font-size: 15px;
           }
 
           .ai-prompt {
             font-size: 14px;
             line-height: 1.55;
+            padding: 16px;
           }
 
           .action-row {
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
           }
 
           .action-btn {
-            padding: 6px 10px;
-            font-size: 12px;
+            padding: 4px 0;
           }
 
           .action-icon {
             width: 18px;
             height: 18px;
-          }
-
-          .view-chat .chat-input-form {
-            bottom: calc(12px + env(safe-area-inset-bottom));
-            width: 94%;
-            left: 50%;
-            transform: translateX(-50%);
           }
 
           .chat-input-wrapper {
@@ -1380,18 +1440,22 @@ export default function Chat() {
 
           .chat-input {
             font-size: 16px;
+            height: 48px;
           }
 
-          /* Limit popup mobile */
+          /* ===== LIMIT POPUP MOBILE - full fit, no grey ===== */
           .limit-close-btn {
-            top: 16px;
-            left: 16px;
+            top: 14px;
+            left: 14px;
             font-size: 32px;
+            color: #aaa;
           }
 
           .limit-badge {
-            top: 18px;
+            top: 16px;
             padding: 8px 16px 8px 12px;
+            left: 50%;
+            transform: translateX(-50%);
           }
 
           .limit-badge-text {
@@ -1399,13 +1463,12 @@ export default function Chat() {
           }
 
           .limit-red-dot {
-            width: 9px;
-            height: 9px;
+            width: 8px;
+            height: 8px;
           }
 
-          /* Hide desktop layout, show mobile layout */
           .limit-content-desktop {
-            display: none;
+            display: none !important;
           }
 
           .limit-content-mobile {
@@ -1413,39 +1476,61 @@ export default function Chat() {
             flex-direction: column;
             width: 100%;
             height: 100%;
+            max-height: 100dvh;
             overflow-y: auto;
+            overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             background: #000000;
-            padding-top: 60px;
+            padding: 70px 0 24px;
             box-sizing: border-box;
           }
 
           .limit-mobile-inner {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
             width: 100%;
-            padding-bottom: 42px;
+            padding: 0 24px 20px;
+            box-sizing: border-box;
           }
 
           .limit-mobile-img-wrap {
-            align-self: stretch;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            margin-bottom: 18px;
-            margin-left: 26px;
-            margin-right: 44px;
             position: relative;
-            overflow: hidden;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 12px;
+          }
+
+          .limit-mobile-oops {
+            position: absolute;
+            top: 8%;
+            left: 8%;
+            color: #9b6dff;
+            font-size: 28px;
+            font-weight: 800;
+            font-style: italic;
+            transform: rotate(-10deg);
+            z-index: 2;
+            line-height: 1;
+            text-shadow: 0 0 16px rgba(155, 109, 255, 0.45);
+          }
+
+          .limit-mobile-oops span {
+            display: block;
+            font-size: 18px;
+            margin-top: -2px;
+            margin-left: 6px;
           }
 
           .limit-mobile-dog {
-            height: 403px;
-            width: 100%;
-            align-self: stretch;
+            width: 78%;
+            max-width: 300px;
+            height: auto;
+            max-height: 42vh;
             object-fit: contain;
-            object-position: center bottom;
+            object-position: center;
             display: block;
             user-select: none;
             pointer-events: none;
@@ -1453,55 +1538,50 @@ export default function Chat() {
 
           .limit-mobile-title {
             color: #ffffff;
-            font-size: 30px;
+            font-size: 26px;
             font-weight: 700;
-            margin-bottom: 26px;
-            margin-left: 26px;
-            width: 243px;
             line-height: 1.25;
+            margin: 8px 0 16px 0;
+            text-align: left;
+            width: 100%;
+            max-width: 340px;
           }
 
           .limit-mobile-desc {
-            color: #ffffff;
-            font-size: 17px;
-            margin-bottom: 20px;
-            margin-left: 26px;
-            width: 315px;
-            max-width: calc(100% - 52px);
-            line-height: 1.5;
+            color: #e0e0e0;
+            font-size: 15px;
+            line-height: 1.55;
+            margin: 0 0 14px 0;
+            text-align: left;
+            width: 100%;
+            max-width: 340px;
           }
 
           .limit-mobile-hint {
-            color: #ffffff;
-            font-size: 12px;
-            margin-bottom: 45px;
-            margin-left: 26px;
-            width: 280px;
-            max-width: calc(100% - 52px);
+            color: #b0b0b0;
+            font-size: 13px;
             line-height: 1.5;
+            margin: 0 0 28px 0;
+            text-align: left;
+            width: 100%;
+            max-width: 340px;
           }
 
           .limit-mobile-btn {
-            align-self: stretch;
+            width: 100%;
+            max-width: 340px;
             display: flex;
-            flex-direction: column;
             align-items: center;
+            justify-content: center;
             background: #d9d9d9;
-            border-radius: 100px;
+            color: #000;
             border: none;
-            padding-top: 14px;
-            padding-bottom: 14px;
-            margin-bottom: 42px;
-            margin-left: 26px;
-            margin-right: 26px;
+            border-radius: 100px;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
             text-align: center;
-          }
-
-          .limit-mobile-btn span {
-            color: #000000;
-            font-size: 20px;
-            font-weight: 600;
           }
         }
 
@@ -1510,40 +1590,44 @@ export default function Chat() {
             font-size: 22px;
           }
 
+          .suggestion-button {
+            padding: 7px 10px;
+            min-height: 34px;
+          }
+
           .suggestion-button span {
-            font-size: 7.5px;
+            font-size: 10px;
           }
 
           .action-text {
             display: none;
           }
+
           .action-btn {
-            padding: 8px;
-            min-width: 40px;
+            padding: 6px;
+            min-width: 36px;
             justify-content: center;
           }
+
           .conversation-thread {
-            padding: 80px 10px 140px;
+            padding: 72px 12px 90px;
           }
 
           .limit-mobile-dog {
-            height: 320px;
+            max-height: 36vh;
+            max-width: 260px;
           }
 
           .limit-mobile-title {
-            font-size: 26px;
-            width: auto;
-            max-width: calc(100% - 52px);
+            font-size: 22px;
           }
 
           .limit-mobile-desc {
-            font-size: 15px;
-            width: auto;
+            font-size: 14px;
           }
 
           .limit-mobile-hint {
             font-size: 12px;
-            width: auto;
           }
         }
       `}</style>

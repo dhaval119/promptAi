@@ -40,6 +40,18 @@ function incrementTodayUsage(uid) {
   } catch {}
 }
 
+// ChatGPT-style word-by-word typewriter
+async function typeWriter(fullText, onUpdate, signal) {
+  const words = fullText.split(/(\s+)/);
+  let current = '';
+  for (let i = 0; i < words.length; i++) {
+    if (signal?.aborted) return;
+    current += words[i];
+    onUpdate(current);
+    await new Promise((r) => setTimeout(r, words[i].trim() ? 28 : 8));
+  }
+}
+
 export default function Chat() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -57,24 +69,22 @@ export default function Chat() {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [todayUsage, setTodayUsage] = useState(0);
   const [kbOffset, setKbOffset] = useState(0);
+  const [sharedIdx, setSharedIdx] = useState(-1);
 
   const threadRef = useRef(null);
   const inputRef = useRef(null);
+  const abortRef = useRef(null);
 
-  // Keyboard height (only moves the input, not the whole page)
   useEffect(() => {
     if (typeof window === 'undefined' || !window.visualViewport) return;
-
     const vv = window.visualViewport;
     const update = () => {
       const offset = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
       setKbOffset(offset > 40 ? offset : 0);
     };
-
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
     update();
-
     return () => {
       vv.removeEventListener('resize', update);
       vv.removeEventListener('scroll', update);
@@ -127,10 +137,15 @@ export default function Chat() {
           return;
         }
         setCurrentChatId(conv.id);
-        setMessages([
-          { sender: 'user', text: conv.request },
-          ...(conv.response ? [{ sender: 'ai', text: conv.response }] : []),
-        ]);
+        // Multi-turn: if history stored as messages array use it, else fall back to single pair
+        if (Array.isArray(conv.messages) && conv.messages.length > 0) {
+          setMessages(conv.messages);
+        } else {
+          setMessages([
+            { sender: 'user', text: conv.request },
+            ...(conv.response ? [{ sender: 'ai', text: conv.response }] : []),
+          ]);
+        }
       } catch (err) {
         console.error('[chat] getConversation failed', err);
         setMessages([]);
@@ -148,7 +163,6 @@ export default function Chat() {
     }
   }, [messages, loading]);
 
-  // Limit popup → keyboard turant band
   useEffect(() => {
     if (showLimitModal) {
       inputRef.current?.blur();
@@ -157,6 +171,7 @@ export default function Chat() {
   }, [showLimitModal]);
 
   function startNewChat() {
+    if (abortRef.current) abortRef.current.abort();
     setCurrentChatId(0);
     setMessages([]);
     router.replace('/chat', undefined, { shallow: true });
@@ -169,14 +184,67 @@ export default function Chat() {
       if (!conv) return;
 
       setCurrentChatId(conv.id);
-      setMessages([
-        { sender: 'user', text: conv.request },
-        ...(conv.response ? [{ sender: 'ai', text: conv.response }] : []),
-      ]);
+      if (Array.isArray(conv.messages) && conv.messages.length > 0) {
+        setMessages(conv.messages);
+      } else {
+        setMessages([
+          { sender: 'user', text: conv.request },
+          ...(conv.response ? [{ sender: 'ai', text: conv.response }] : []),
+        ]);
+      }
       router.replace(`/chat?chat_id=${conv.id}`, undefined, { shallow: true });
     } catch (err) {
       console.error('[chat] openChat failed', err);
     }
+  }
+
+  async function handleDeleteChat(e, id) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm('Delete this chat?')) return;
+    try {
+      await deleteConversation(uid, id, email);
+      if (String(currentChatId) === String(id)) {
+        startNewChat();
+      }
+      await refreshChats();
+    } catch (err) {
+      console.error('[chat] delete failed', err);
+    }
+  }
+
+  function sharePrompt(text, idx) {
+    const url =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/chat?chat_id=${currentChatId || ''}`
+        : '';
+    const shareText = text + (url ? `\n\n${url}` : '');
+    if (navigator.share) {
+      navigator.share({ text: shareText }).catch(() => {
+        navigator.clipboard.writeText(shareText);
+        setSharedIdx(idx);
+        setTimeout(() => setSharedIdx(-1), 2000);
+      });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      setSharedIdx(idx);
+      setTimeout(() => setSharedIdx(-1), 2000);
+    }
+  }
+
+  function exportAsTxt() {
+    if (messages.length === 0) return;
+    let content = 'Chat Export\n' + '='.repeat(40) + '\n\n';
+    messages.forEach((m) => {
+      content += (m.sender === 'user' ? 'You: ' : 'AI: ') + m.text + '\n\n';
+    });
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chat-${currentChatId || 'new'}-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   const MAX_MESSAGE_LENGTH = 2000;
@@ -193,10 +261,16 @@ export default function Chat() {
       return;
     }
 
+    // Multi-turn: append user message, keep previous history
     setMessages((prev) => [...prev, { sender: 'user', text }]);
     setInput('');
     setLoading(true);
     inputRef.current?.blur();
+
+    // Abort previous typewriter if any
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const res = await fetch('/api/chat', {
@@ -208,10 +282,34 @@ export default function Chat() {
       const data = await res.json();
       const aiText = data.text || 'Something went wrong. Please try again.';
 
-      setMessages((prev) => [...prev, { sender: 'ai', text: aiText }]);
+      // Add empty AI message then typewriter into it
+      setMessages((prev) => [...prev, { sender: 'ai', text: '' }]);
+      setLoading(false);
+
+      await typeWriter(
+        aiText,
+        (partial) => {
+          setMessages((prev) => {
+            const next = [...prev];
+            const last = next[next.length - 1];
+            if (last && last.sender === 'ai') {
+              next[next.length - 1] = { ...last, text: partial };
+            }
+            return next;
+          });
+        },
+        controller.signal
+      );
 
       incrementTodayUsage(uid);
       setTodayUsage((prev) => prev + 1);
+
+      // Build full messages for multi-turn persistence
+      const finalMessages = [
+        ...messages,
+        { sender: 'user', text },
+        { sender: 'ai', text: aiText },
+      ];
 
       const saved = await upsertConversation(
         uid,
@@ -220,6 +318,7 @@ export default function Chat() {
           title: data.title || text.slice(0, 45),
           request: text,
           response: aiText,
+          messages: finalMessages, // multi-turn history
         },
         email
       );
@@ -228,12 +327,12 @@ export default function Chat() {
       await refreshChats();
       router.replace(`/chat?chat_id=${saved.id}`, undefined, { shallow: true });
     } catch (err) {
+      if (err.name === 'AbortError') return;
       console.error('[chat] sendMessage failed', err);
       setMessages((prev) => [
         ...prev,
         { sender: 'ai', text: 'Network error. Please try again.' },
       ]);
-    } finally {
       setLoading(false);
     }
   }
@@ -258,12 +357,10 @@ export default function Chat() {
       </Head>
 
       <div className="desktop">
-        {/* NavPill only desktop */}
         <div className="nav-desktop-only">
           <NavPill />
         </div>
 
-        {/* Logo - always */}
         <img
           src="/assets/ailogo.png"
           alt="AI Logo"
@@ -271,7 +368,6 @@ export default function Chat() {
           onClick={() => setSidebarHidden((h) => !h)}
         />
 
-        {/* Mobile only - login icon → /details */}
         <img
           src="/assets/login.png"
           alt="Profile"
@@ -305,7 +401,14 @@ export default function Chat() {
                       }}
                       href={`/chat?chat_id=${c.id}`}
                     >
-                      {c.title}
+                      <span className="sidebar-title">{c.title}</span>
+                      <button
+                        className="sidebar-delete"
+                        title="Delete chat"
+                        onClick={(e) => handleDeleteChat(e, c.id)}
+                      >
+                        ×
+                      </button>
                     </a>
                   </li>
                 ))
@@ -388,75 +491,100 @@ export default function Chat() {
 
                   <p className="ai-prompt">{m.text}</p>
 
-                  <div className="action-row">
-                    <button
-                      className="action-btn"
-                      onClick={() => copyPrompt(m.text, i)}
-                      title="Copy Prompt"
-                    >
-                      <span className="action-text">
-                        {copiedIdx === i ? 'Copied!' : 'copy'}
-                      </span>
-                      <img
-                        src="/assets/copy.png"
-                        className="action-icon"
-                        alt="copy"
-                      />
-                    </button>
+                  {m.text ? (
+                    <div className="action-row">
+                      <button
+                        className="action-btn"
+                        onClick={() => copyPrompt(m.text, i)}
+                        title="Copy Prompt"
+                      >
+                        <span className="action-text">
+                          {copiedIdx === i ? 'Copied!' : 'copy'}
+                        </span>
+                        <img
+                          src="/assets/copy.png"
+                          className="action-icon"
+                          alt="copy"
+                        />
+                      </button>
 
-                    <button
-                      className="action-btn"
-                      title="Open in ChatGPT"
-                      onClick={() => {
-                        navigator.clipboard.writeText(m.text).then(() => {
-                          const url =
-                            'https://chatgpt.com/?q=' +
-                            encodeURIComponent(m.text);
-                          window.open(url, '_blank', 'noopener,noreferrer');
-                        });
-                      }}
-                    >
-                      <span className="action-text">Open in</span>
-                      <img
-                        src="/assets/chatgpt.png"
-                        className="action-icon"
-                        alt="ChatGPT"
-                      />
-                    </button>
+                      <button
+                        className="action-btn"
+                        title="Share prompt"
+                        onClick={() => sharePrompt(m.text, i)}
+                      >
+                        <span className="action-text">
+                          {sharedIdx === i ? 'Shared!' : 'share'}
+                        </span>
+                      </button>
 
-                    <button
-                      className="action-btn"
-                      title="Open in Claude"
-                      onClick={() => {
-                        navigator.clipboard.writeText(m.text).then(() => {
-                          window.open(
-                            'https://claude.ai/new',
-                            '_blank',
-                            'noopener,noreferrer'
-                          );
-                        });
-                      }}
-                    >
-                      <span className="action-text">Open in</span>
-                      <img
-                        src="/assets/claude.svg"
-                        className="action-icon"
-                        alt="Claude"
-                      />
-                    </button>
-                  </div>
+                      <button
+                        className="action-btn"
+                        title="Export as TXT"
+                        onClick={exportAsTxt}
+                      >
+                        <span className="action-text">export</span>
+                      </button>
+
+                      <button
+                        className="action-btn"
+                        title="Open in ChatGPT"
+                        onClick={() => {
+                          navigator.clipboard.writeText(m.text).then(() => {
+                            const url =
+                              'https://chatgpt.com/?q=' +
+                              encodeURIComponent(m.text);
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          });
+                        }}
+                      >
+                        <span className="action-text">Open in</span>
+                        <img
+                          src="/assets/chatgpt.png"
+                          className="action-icon"
+                          alt="ChatGPT"
+                        />
+                      </button>
+
+                      <button
+                        className="action-btn"
+                        title="Open in Claude"
+                        onClick={() => {
+                          navigator.clipboard.writeText(m.text).then(() => {
+                            window.open(
+                              'https://claude.ai/new',
+                              '_blank',
+                              'noopener,noreferrer'
+                            );
+                          });
+                        }}
+                      >
+                        <span className="action-text">Open in</span>
+                        <img
+                          src="/assets/claude.svg"
+                          className="action-icon"
+                          alt="Claude"
+                        />
+                      </button>
+                    </div>
+                  ) : null}
                 </section>
               )
             )}
 
+            {/* Skeleton loading effect */}
             {loading ? (
-              <div className="ai-group loading">
-                <p>Generating optimized prompt...</p>
+              <div className="ai-group skeleton-group">
+                <div className="skeleton-line sk-title" />
+                <div className="skeleton-box">
+                  <div className="skeleton-line" />
+                  <div className="skeleton-line" />
+                  <div className="skeleton-line sk-short" />
+                </div>
               </div>
             ) : null}
           </article>
 
-          {/* Input - only this moves with keyboard */}
           <div
             className="chat-input-form"
             style={
@@ -498,7 +626,6 @@ export default function Chat() {
           </div>
         </main>
 
-        {/* ===================== LIMIT POPUP ===================== */}
         {showLimitModal && (
           <div className="limit-fullscreen">
             <button
@@ -516,10 +643,8 @@ export default function Chat() {
               </span>
             </div>
 
-            {/* ===== DESKTOP ===== */}
             <div className="limit-content limit-content-desktop">
               <div className="limit-left">
-                {/* OOPS removed - already in image */}
                 <img
                   src="/assets/dog1.png"
                   alt="Doge"
@@ -562,11 +687,9 @@ export default function Chat() {
               </div>
             </div>
 
-            {/* ===== MOBILE ===== */}
             <div className="limit-content-mobile">
               <div className="limit-mobile-inner">
                 <div className="limit-mobile-img-wrap">
-                  {/* OOPS removed - already in image */}
                   <img
                     src="/assets/dog1.png"
                     alt="Doge"
@@ -721,12 +844,41 @@ export default function Chat() {
           opacity: 0.7;
           transition: opacity 0.3s;
           width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          padding: 5px 0;
+          text-decoration: none;
+        }
+
+        .sidebar-title {
+          flex: 1;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          padding: 5px 0;
-          display: block;
-          text-decoration: none;
+        }
+
+        .sidebar-delete {
+          flex-shrink: 0;
+          background: transparent;
+          border: none;
+          color: #666;
+          font-size: 18px;
+          line-height: 1;
+          cursor: pointer;
+          padding: 0 4px;
+          opacity: 0;
+          transition: opacity 0.2s, color 0.2s;
+        }
+
+        .sidebar-link:hover .sidebar-delete,
+        .sidebar-link.active .sidebar-delete {
+          opacity: 1;
+        }
+
+        .sidebar-delete:hover {
+          color: #ff4d4d;
         }
 
         .sidebar-link:hover {
@@ -948,12 +1100,13 @@ export default function Chat() {
           border-radius: 12px;
           border: 1px solid #222;
           white-space: pre-wrap;
+          min-height: 24px;
         }
 
         .action-row {
           display: flex;
           align-items: center;
-          gap: 25px;
+          gap: 20px;
           flex-wrap: wrap;
           margin-top: 10px;
         }
@@ -989,6 +1142,53 @@ export default function Chat() {
         .action-btn:hover .action-text,
         .action-btn:hover .action-icon {
           opacity: 1;
+        }
+
+        /* Skeleton */
+        .skeleton-group {
+          gap: 12px;
+        }
+
+        .skeleton-box {
+          background: #111;
+          border: 1px solid #222;
+          border-radius: 12px;
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .skeleton-line {
+          height: 14px;
+          border-radius: 6px;
+          background: linear-gradient(
+            90deg,
+            #1a1a1a 25%,
+            #2a2a2a 50%,
+            #1a1a1a 75%
+          );
+          background-size: 200% 100%;
+          animation: skeletonShimmer 1.4s ease-in-out infinite;
+        }
+
+        .skeleton-line.sk-title {
+          width: 140px;
+          height: 16px;
+          margin-bottom: 4px;
+        }
+
+        .skeleton-line.sk-short {
+          width: 55%;
+        }
+
+        @keyframes skeletonShimmer {
+          0% {
+            background-position: 200% 0;
+          }
+          100% {
+            background-position: -200% 0;
+          }
         }
 
         .chat-input-form {
@@ -1034,15 +1234,7 @@ export default function Chat() {
           height: 30px;
         }
 
-        .loading p {
-          color: #888;
-          font-style: italic;
-          margin: 0;
-          padding: 10px 0;
-          font-size: 14px;
-        }
-
-        /* ===================== LIMIT POPUP ===================== */
+        /* Limit popup */
         .limit-fullscreen {
           position: fixed;
           inset: 0;
@@ -1219,7 +1411,7 @@ export default function Chat() {
           display: none;
         }
 
-        /* ===================== MOBILE ===================== */
+        /* Mobile */
         @media (max-width: 900px) {
           .nav-desktop-only {
             display: none !important;
@@ -1256,6 +1448,10 @@ export default function Chat() {
             transform: translateX(-105%);
           }
 
+          .sidebar-delete {
+            opacity: 0.7;
+          }
+
           .main-content {
             width: 100% !important;
             transform: translateX(0) !important;
@@ -1266,7 +1462,6 @@ export default function Chat() {
             left: 50%;
           }
 
-          /* ===== LANDING - stable, no jump ===== */
           .landing-content {
             position: absolute;
             top: 42%;
@@ -1348,8 +1543,6 @@ export default function Chat() {
             color: #fff;
           }
 
-          /* Landing input - stays under buttons when no keyboard.
-             When keyboard open, only THIS form moves up via style bottom */
           .view-landing .chat-input-form {
             position: absolute;
             top: calc(42% + 78px);
@@ -1361,7 +1554,6 @@ export default function Chat() {
             bottom: auto;
           }
 
-          /* When keyboard is open, override to bottom */
           .view-landing .chat-input-form[style*='bottom'] {
             top: auto !important;
           }
@@ -1386,7 +1578,6 @@ export default function Chat() {
             height: 24px;
           }
 
-          /* Chat view - sticky bottom */
           .view-chat .chat-input-form {
             position: fixed;
             bottom: calc(12px + env(safe-area-inset-bottom, 0px));
@@ -1443,7 +1634,6 @@ export default function Chat() {
             height: 48px;
           }
 
-          /* ===== LIMIT POPUP MOBILE ===== */
           .limit-close-btn {
             top: 14px;
             left: 14px;
@@ -1577,13 +1767,7 @@ export default function Chat() {
           }
 
           .action-text {
-            display: none;
-          }
-
-          .action-btn {
-            padding: 6px;
-            min-width: 36px;
-            justify-content: center;
+            font-size: 12px;
           }
 
           .conversation-thread {

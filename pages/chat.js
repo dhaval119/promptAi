@@ -40,7 +40,29 @@ function incrementTodayUsage(uid) {
   } catch {}
 }
 
-// ChatGPT-style word-by-word typewriter
+function getDateLabel(ts) {
+  if (!ts) return 'Earlier';
+  const d = new Date(ts);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (day.getTime() === today.getTime()) return 'Today';
+  if (day.getTime() === yesterday.getTime()) return 'Yesterday';
+  return 'Earlier';
+}
+
+function groupChatsByDate(chats) {
+  const groups = { Today: [], Yesterday: [], Earlier: [] };
+  (chats || []).forEach((c) => {
+    const label = getDateLabel(c.updatedAt || c.createdAt || c.timestamp);
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(c);
+  });
+  return groups;
+}
+
 async function typeWriter(fullText, onUpdate, signal) {
   const words = fullText.split(/(\s+)/);
   let current = '';
@@ -70,10 +92,22 @@ export default function Chat() {
   const [todayUsage, setTodayUsage] = useState(0);
   const [kbOffset, setKbOffset] = useState(0);
   const [sharedIdx, setSharedIdx] = useState(-1);
+  const [menuOpenId, setMenuOpenId] = useState(null);
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [pinnedIds, setPinnedIds] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      return JSON.parse(localStorage.getItem('chat_pinned') || '[]');
+    } catch {
+      return [];
+    }
+  });
 
   const threadRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.visualViewport) return;
@@ -137,7 +171,6 @@ export default function Chat() {
           return;
         }
         setCurrentChatId(conv.id);
-        // Multi-turn: if history stored as messages array use it, else fall back to single pair
         if (Array.isArray(conv.messages) && conv.messages.length > 0) {
           setMessages(conv.messages);
         } else {
@@ -170,10 +203,22 @@ export default function Chat() {
     }
   }, [showLimitModal]);
 
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpenId(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
   function startNewChat() {
     if (abortRef.current) abortRef.current.abort();
     setCurrentChatId(0);
     setMessages([]);
+    setMenuOpenId(null);
     router.replace('/chat', undefined, { shallow: true });
     setTimeout(() => inputRef.current?.focus(), 50);
   }
@@ -184,6 +229,7 @@ export default function Chat() {
       if (!conv) return;
 
       setCurrentChatId(conv.id);
+      setMenuOpenId(null);
       if (Array.isArray(conv.messages) && conv.messages.length > 0) {
         setMessages(conv.messages);
       } else {
@@ -198,9 +244,8 @@ export default function Chat() {
     }
   }
 
-  async function handleDeleteChat(e, id) {
-    e.preventDefault();
-    e.stopPropagation();
+  async function handleDeleteChat(id) {
+    setMenuOpenId(null);
     if (!window.confirm('Delete this chat?')) return;
     try {
       await deleteConversation(uid, id, email);
@@ -211,6 +256,46 @@ export default function Chat() {
     } catch (err) {
       console.error('[chat] delete failed', err);
     }
+  }
+
+  function handleOpenNewTab(id) {
+    setMenuOpenId(null);
+    window.open(`/chat?chat_id=${id}`, '_blank', 'noopener,noreferrer');
+  }
+
+  function handleStartRename(c) {
+    setMenuOpenId(null);
+    setRenamingId(c.id);
+    setRenameValue(c.title || '');
+  }
+
+  async function handleFinishRename(id) {
+    const title = renameValue.trim().slice(0, 60);
+    setRenamingId(null);
+    if (!title) return;
+    try {
+      await upsertConversation(
+        uid,
+        { id, title, request: '', response: '' },
+        email
+      );
+      await refreshChats();
+    } catch (err) {
+      console.error('[chat] rename failed', err);
+    }
+  }
+
+  function handlePin(id) {
+    setMenuOpenId(null);
+    setPinnedIds((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : [...prev, id];
+      try {
+        localStorage.setItem('chat_pinned', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   }
 
   function sharePrompt(text, idx) {
@@ -232,21 +317,6 @@ export default function Chat() {
     }
   }
 
-  function exportAsTxt() {
-    if (messages.length === 0) return;
-    let content = 'Chat Export\n' + '='.repeat(40) + '\n\n';
-    messages.forEach((m) => {
-      content += (m.sender === 'user' ? 'You: ' : 'AI: ') + m.text + '\n\n';
-    });
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `chat-${currentChatId || 'new'}-${Date.now()}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   const MAX_MESSAGE_LENGTH = 2000;
 
   async function sendMessage(overrideText) {
@@ -261,13 +331,11 @@ export default function Chat() {
       return;
     }
 
-    // Multi-turn: append user message, keep previous history
     setMessages((prev) => [...prev, { sender: 'user', text }]);
     setInput('');
     setLoading(true);
     inputRef.current?.blur();
 
-    // Abort previous typewriter if any
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -282,7 +350,6 @@ export default function Chat() {
       const data = await res.json();
       const aiText = data.text || 'Something went wrong. Please try again.';
 
-      // Add empty AI message then typewriter into it
       setMessages((prev) => [...prev, { sender: 'ai', text: '' }]);
       setLoading(false);
 
@@ -304,7 +371,6 @@ export default function Chat() {
       incrementTodayUsage(uid);
       setTodayUsage((prev) => prev + 1);
 
-      // Build full messages for multi-turn persistence
       const finalMessages = [
         ...messages,
         { sender: 'user', text },
@@ -318,7 +384,7 @@ export default function Chat() {
           title: data.title || text.slice(0, 45),
           request: text,
           response: aiText,
-          messages: finalMessages, // multi-turn history
+          messages: finalMessages,
         },
         email
       );
@@ -345,6 +411,15 @@ export default function Chat() {
   }
 
   const isLanding = messages.length === 0;
+
+  // Sort: pinned first, then group
+  const sortedChats = [...chats].sort((a, b) => {
+    const ap = pinnedIds.includes(a.id) ? 0 : 1;
+    const bp = pinnedIds.includes(b.id) ? 0 : 1;
+    if (ap !== bp) return ap - bp;
+    return 0;
+  });
+  const grouped = groupChatsByDate(sortedChats);
 
   return (
     <>
@@ -381,39 +456,104 @@ export default function Chat() {
               New chat
             </button>
 
-            <h2 className="chats-heading">Recent</h2>
+            {!chatsReady ? (
+              <p className="sidebar-item empty">Loading...</p>
+            ) : chats.length === 0 ? (
+              <p className="sidebar-item empty">No recent chats</p>
+            ) : (
+              Object.entries(grouped).map(([label, items]) =>
+                items.length === 0 ? null : (
+                  <div key={label} className="sidebar-group">
+                    <h2 className="chats-heading">{label}</h2>
+                    <ul className="sidebar-list">
+                      {items.map((c) => (
+                        <li className="sidebar-item" key={c.id}>
+                          {renamingId === c.id ? (
+                            <input
+                              className="sidebar-rename-input"
+                              value={renameValue}
+                              autoFocus
+                              onChange={(e) => setRenameValue(e.target.value)}
+                              onBlur={() => handleFinishRename(c.id)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleFinishRename(c.id);
+                                if (e.key === 'Escape') setRenamingId(null);
+                              }}
+                            />
+                          ) : (
+                            <div
+                              className={`sidebar-link-wrap ${
+                                String(currentChatId) === String(c.id)
+                                  ? 'active'
+                                  : ''
+                              }`}
+                            >
+                              <a
+                                className="sidebar-link"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  openChat(c.id);
+                                }}
+                                href={`/chat?chat_id=${c.id}`}
+                              >
+                                {pinnedIds.includes(c.id) && (
+                                  <span className="pin-mark">📌</span>
+                                )}
+                                <span className="sidebar-title">{c.title}</span>
+                              </a>
 
-            <ul className="sidebar-list">
-              {!chatsReady ? (
-                <li className="sidebar-item empty">Loading...</li>
-              ) : chats.length === 0 ? (
-                <li className="sidebar-item empty">No recent chats</li>
-              ) : (
-                chats.map((c) => (
-                  <li className="sidebar-item" key={c.id}>
-                    <a
-                      className={`sidebar-link ${
-                        String(currentChatId) === String(c.id) ? 'active' : ''
-                      }`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        openChat(c.id);
-                      }}
-                      href={`/chat?chat_id=${c.id}`}
-                    >
-                      <span className="sidebar-title">{c.title}</span>
-                      <button
-                        className="sidebar-delete"
-                        title="Delete chat"
-                        onClick={(e) => handleDeleteChat(e, c.id)}
-                      >
-                        ×
-                      </button>
-                    </a>
-                  </li>
-                ))
-              )}
-            </ul>
+                              <button
+                                className="sidebar-more"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setMenuOpenId(
+                                    menuOpenId === c.id ? null : c.id
+                                  );
+                                }}
+                                title="More"
+                              >
+                                ···
+                              </button>
+
+                              {menuOpenId === c.id && (
+                                <div className="sidebar-menu" ref={menuRef}>
+                                  <button
+                                    onClick={() => handleOpenNewTab(c.id)}
+                                  >
+                                    <span className="menu-icon">↗</span>
+                                    Open new tab
+                                  </button>
+                                  <button
+                                    onClick={() => handleStartRename(c)}
+                                  >
+                                    <span className="menu-icon">✎</span>
+                                    Rename
+                                  </button>
+                                  <button onClick={() => handlePin(c.id)}>
+                                    <span className="menu-icon">📌</span>
+                                    {pinnedIds.includes(c.id)
+                                      ? 'Unpin'
+                                      : 'Pin'}
+                                  </button>
+                                  <button
+                                    className="menu-delete"
+                                    onClick={() => handleDeleteChat(c.id)}
+                                  >
+                                    <span className="menu-icon">🗑</span>
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              )
+            )}
           </nav>
         </aside>
 
@@ -516,14 +656,19 @@ export default function Chat() {
                         <span className="action-text">
                           {sharedIdx === i ? 'Shared!' : 'share'}
                         </span>
-                      </button>
-
-                      <button
-                        className="action-btn"
-                        title="Export as TXT"
-                        onClick={exportAsTxt}
-                      >
-                        <span className="action-text">export</span>
+                        <svg
+                          className="action-icon share-icon"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <circle cx="18" cy="5" r="3" />
+                          <circle cx="6" cy="12" r="3" />
+                          <circle cx="18" cy="19" r="3" />
+                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                        </svg>
                       </button>
 
                       <button
@@ -545,34 +690,12 @@ export default function Chat() {
                           alt="ChatGPT"
                         />
                       </button>
-
-                      <button
-                        className="action-btn"
-                        title="Open in Claude"
-                        onClick={() => {
-                          navigator.clipboard.writeText(m.text).then(() => {
-                            window.open(
-                              'https://claude.ai/new',
-                              '_blank',
-                              'noopener,noreferrer'
-                            );
-                          });
-                        }}
-                      >
-                        <span className="action-text">Open in</span>
-                        <img
-                          src="/assets/claude.svg"
-                          className="action-icon"
-                          alt="Claude"
-                        />
-                      </button>
                     </div>
                   ) : null}
                 </section>
               )
             )}
 
-            {/* Skeleton loading effect */}
             {loading ? (
               <div className="ai-group skeleton-group">
                 <div className="skeleton-line sk-title" />
@@ -790,8 +913,8 @@ export default function Chat() {
         .sidebar-nav {
           position: absolute;
           top: 120px;
-          left: 25px;
-          right: 10px;
+          left: 18px;
+          right: 8px;
           bottom: 20px;
           overflow-y: auto;
           -webkit-overflow-scrolling: touch;
@@ -804,17 +927,22 @@ export default function Chat() {
           background: none;
           border: none;
           cursor: pointer;
-          margin-bottom: 40px;
+          margin-bottom: 28px;
           text-align: left;
           padding: 0;
         }
 
+        .sidebar-group {
+          margin-bottom: 18px;
+        }
+
         .chats-heading {
           color: #fff;
-          opacity: 0.75;
-          font-weight: 700;
-          font-size: 20px;
-          margin: 0 0 25px 0;
+          opacity: 0.55;
+          font-weight: 600;
+          font-size: 13px;
+          margin: 0 0 10px 2px;
+          letter-spacing: 0.3px;
         }
 
         .sidebar-list {
@@ -824,7 +952,8 @@ export default function Chat() {
         }
 
         .sidebar-item {
-          margin-bottom: 15px;
+          margin-bottom: 4px;
+          position: relative;
         }
 
         .sidebar-item.empty {
@@ -833,62 +962,131 @@ export default function Chat() {
           font-size: 14px;
         }
 
-        .sidebar-link {
-          color: #fff;
-          font-weight: 500;
-          font-size: 15px;
-          background: none;
-          border: none;
-          cursor: pointer;
-          text-align: left;
-          opacity: 0.7;
-          transition: opacity 0.3s;
-          width: 100%;
+        .sidebar-link-wrap {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-          padding: 5px 0;
+          border-radius: 8px;
+          padding: 6px 6px 6px 8px;
+          transition: background 0.15s;
+          position: relative;
+        }
+
+        .sidebar-link-wrap:hover,
+        .sidebar-link-wrap.active {
+          background: #1a1a1a;
+        }
+
+        .sidebar-link {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: #fff;
+          font-weight: 500;
+          font-size: 14px;
           text-decoration: none;
+          opacity: 0.8;
+          min-width: 0;
+          overflow: hidden;
+        }
+
+        .sidebar-link-wrap.active .sidebar-link {
+          opacity: 1;
+          font-weight: 600;
         }
 
         .sidebar-title {
-          flex: 1;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
 
-        .sidebar-delete {
+        .pin-mark {
+          font-size: 11px;
+          flex-shrink: 0;
+        }
+
+        .sidebar-more {
           flex-shrink: 0;
           background: transparent;
           border: none;
-          color: #666;
-          font-size: 18px;
+          color: #888;
+          font-size: 16px;
           line-height: 1;
           cursor: pointer;
-          padding: 0 4px;
+          padding: 2px 6px;
+          border-radius: 6px;
           opacity: 0;
-          transition: opacity 0.2s, color 0.2s;
+          transition: opacity 0.15s, background 0.15s, color 0.15s;
         }
 
-        .sidebar-link:hover .sidebar-delete,
-        .sidebar-link.active .sidebar-delete {
+        .sidebar-link-wrap:hover .sidebar-more,
+        .sidebar-link-wrap.active .sidebar-more {
           opacity: 1;
         }
 
-        .sidebar-delete:hover {
-          color: #ff4d4d;
+        .sidebar-more:hover {
+          background: #2a2a2a;
+          color: #fff;
         }
 
-        .sidebar-link:hover {
-          opacity: 1;
+        .sidebar-menu {
+          position: absolute;
+          right: 4px;
+          top: 100%;
+          margin-top: 4px;
+          background: #2a2a2a;
+          border: 1px solid #3a3a3a;
+          border-radius: 10px;
+          padding: 6px;
+          min-width: 160px;
+          z-index: 50;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
         }
 
-        .sidebar-link.active {
-          opacity: 1;
-          color: #a9a9a9;
-          font-weight: 700;
+        .sidebar-menu button {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          background: transparent;
+          border: none;
+          color: #e0e0e0;
+          font-size: 13px;
+          padding: 8px 10px;
+          border-radius: 6px;
+          cursor: pointer;
+          text-align: left;
+        }
+
+        .sidebar-menu button:hover {
+          background: #3a3a3a;
+        }
+
+        .sidebar-menu .menu-delete {
+          color: #ff6b6b;
+        }
+
+        .sidebar-menu .menu-delete:hover {
+          background: rgba(255, 80, 80, 0.15);
+        }
+
+        .menu-icon {
+          width: 16px;
+          text-align: center;
+          font-size: 13px;
+          opacity: 0.9;
+        }
+
+        .sidebar-rename-input {
+          width: 100%;
+          background: #1a1a1a;
+          border: 1px solid #444;
+          border-radius: 6px;
+          color: #fff;
+          font-size: 14px;
+          padding: 6px 8px;
+          outline: none;
         }
 
         .main-content {
@@ -1106,7 +1304,7 @@ export default function Chat() {
         .action-row {
           display: flex;
           align-items: center;
-          gap: 20px;
+          gap: 18px;
           flex-wrap: wrap;
           margin-top: 10px;
         }
@@ -1114,7 +1312,7 @@ export default function Chat() {
         .action-btn {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 5px;
           cursor: pointer;
           user-select: none;
           background: transparent;
@@ -1125,7 +1323,7 @@ export default function Chat() {
 
         .action-text {
           color: #fff;
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 700;
           opacity: 0.7;
           transition: opacity 0.2s ease;
@@ -1133,18 +1331,24 @@ export default function Chat() {
         }
 
         .action-icon {
-          width: 22px;
-          height: 22px;
+          width: 16px;
+          height: 16px;
           object-fit: contain;
-          border-radius: 4px;
+          border-radius: 3px;
+          opacity: 0.85;
+        }
+
+        .share-icon {
+          color: #fff;
+          opacity: 0.85;
         }
 
         .action-btn:hover .action-text,
-        .action-btn:hover .action-icon {
+        .action-btn:hover .action-icon,
+        .action-btn:hover .share-icon {
           opacity: 1;
         }
 
-        /* Skeleton */
         .skeleton-group {
           gap: 12px;
         }
@@ -1234,7 +1438,6 @@ export default function Chat() {
           height: 30px;
         }
 
-        /* Limit popup */
         .limit-fullscreen {
           position: fixed;
           inset: 0;
@@ -1411,7 +1614,6 @@ export default function Chat() {
           display: none;
         }
 
-        /* Mobile */
         @media (max-width: 900px) {
           .nav-desktop-only {
             display: none !important;
@@ -1448,8 +1650,8 @@ export default function Chat() {
             transform: translateX(-105%);
           }
 
-          .sidebar-delete {
-            opacity: 0.7;
+          .sidebar-more {
+            opacity: 0.8;
           }
 
           .main-content {
@@ -1613,16 +1815,12 @@ export default function Chat() {
 
           .action-row {
             flex-wrap: wrap;
-            gap: 12px;
-          }
-
-          .action-btn {
-            padding: 4px 0;
+            gap: 14px;
           }
 
           .action-icon {
-            width: 18px;
-            height: 18px;
+            width: 15px;
+            height: 15px;
           }
 
           .chat-input-wrapper {
@@ -1767,7 +1965,7 @@ export default function Chat() {
           }
 
           .action-text {
-            font-size: 12px;
+            font-size: 11px;
           }
 
           .conversation-thread {

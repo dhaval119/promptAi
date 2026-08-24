@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from 'firebase/auth';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithPopup, 
+  updateProfile,
+  sendEmailVerification 
+} from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { useAuth } from '../lib/AuthContext';
@@ -28,6 +33,7 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
   // Helper to check if current view is mobile or desktop based on window width
@@ -64,6 +70,7 @@ export default function Signup() {
   async function handleSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
     setErrorMsg('');
+    setSuccessMsg('');
 
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) {
       setErrorMsg('Please fill in all fields.');
@@ -81,9 +88,14 @@ export default function Signup() {
         return;
       }
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      
       await updateProfile(cred.user, {
         displayName: `${firstName.trim()} ${lastName.trim()}`,
       });
+
+      // Send Email Verification (Free Firebase method)
+      await sendEmailVerification(cred.user);
+
       await setDoc(doc(db, 'users', cred.user.uid), {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -93,8 +105,16 @@ export default function Signup() {
         last_reset: serverTimestamp(),
         last_login_at: serverTimestamp(),
         created_at: serverTimestamp(),
+        email_verified: false,
       });
-      router.push(getTargetRoute());
+
+      setSuccessMsg('Account created! Verification email sent. Please check your inbox.');
+      
+      // Optional: redirect after short delay
+      setTimeout(() => {
+        router.push(getTargetRoute());
+      }, 2500);
+
     } catch (err) {
       setErrorMsg(friendlyError(err.code));
     } finally {
@@ -105,6 +125,7 @@ export default function Signup() {
   async function handleGoogleSignup(e) {
     if (e && e.preventDefault) e.preventDefault();
     setErrorMsg('');
+    setSuccessMsg('');
     setBusy(true);
     try {
       if (!auth || !googleProvider) {
@@ -198,6 +219,9 @@ export default function Signup() {
               </button>
 
               {errorMsg ? <div className="error-message">{errorMsg}</div> : null}
+              {successMsg ? (
+                <div className="error-message" style={{ color: '#4caf50' }}>{successMsg}</div>
+              ) : null}
             </form>
 
             <div className="firebase-divider">— OR —</div>
@@ -277,6 +301,11 @@ export default function Signup() {
             </div>
 
             {errorMsg && <div className="mobile-error">{errorMsg}</div>}
+            {successMsg && (
+              <div className="mobile-error" style={{ color: '#4caf50', background: 'rgba(76,175,80,0.2)' }}>
+                {successMsg}
+              </div>
+            )}
 
             <button type="submit" className="mobile-btn-signup" disabled={busy}>
               {busy ? 'Please wait...' : 'Sign Up'}

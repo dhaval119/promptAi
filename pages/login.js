@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  signInWithPopup, 
+  sendPasswordResetEmail 
+} from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { useAuth } from '../lib/AuthContext';
@@ -32,7 +36,9 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
 
   // Mobile → /chat | Desktop → /
   const getTargetRoute = () => {
@@ -76,6 +82,7 @@ export default function Login() {
   async function handleSubmit(e) {
     e.preventDefault();
     setErrorMsg('');
+    setSuccessMsg('');
 
     if (!email || !password) {
       setErrorMsg('Please fill in all fields.');
@@ -112,6 +119,7 @@ export default function Login() {
 
   async function handleGoogleLogin() {
     setErrorMsg('');
+    setSuccessMsg('');
     setBusy(true);
 
     try {
@@ -129,6 +137,31 @@ export default function Login() {
       setErrorMsg(
         'Google Error: ' + (err.message || 'Something went wrong.')
       );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleForgotPassword() {
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    if (!email) {
+      setErrorMsg('Please enter your email first.');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      if (!auth) {
+        setErrorMsg('Firebase is not configured.');
+        return;
+      }
+      await sendPasswordResetEmail(auth, email);
+      setSuccessMsg('Password reset email sent! Check your inbox.');
+      setShowForgot(false);
+    } catch (err) {
+      setErrorMsg(friendlyError(err.code) || 'Failed to send reset email.');
     } finally {
       setBusy(false);
     }
@@ -190,6 +223,26 @@ export default function Login() {
                 Must be at least 8 characters
               </span>
 
+              {/* Forgot Password Link */}
+              <div style={{ position: 'absolute', top: 370, left: 0, width: 484, textAlign: 'right' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowForgot(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'rgba(255,255,255,0.75)',
+                    fontSize: 13,
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    padding: 0,
+                    fontFamily: 'Inter, sans-serif'
+                  }}
+                >
+                  Forgot password?
+                </button>
+              </div>
+
               <button
                 type="submit"
                 name="login_submit"
@@ -202,7 +255,82 @@ export default function Login() {
               {errorMsg ? (
                 <div className="error-message">{errorMsg}</div>
               ) : null}
+              {successMsg ? (
+                <div className="error-message" style={{ color: '#4caf50' }}>{successMsg}</div>
+              ) : null}
             </form>
+
+            {/* Forgot Password Modal (simple overlay) */}
+            {showForgot && (
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                background: 'rgba(0,0,0,0.85)',
+                zIndex: 50,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderRadius: 8,
+                padding: 20
+              }}>
+                <p style={{ color: 'white', fontWeight: 'bold', marginBottom: 15, textAlign: 'center' }}>
+                  Enter your email to receive a password reset link
+                </p>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Your email"
+                  style={{
+                    width: '90%',
+                    padding: '12px 15px',
+                    background: '#1a1a1a',
+                    border: 'none',
+                    borderRadius: 8,
+                    color: 'white',
+                    marginBottom: 15,
+                    fontWeight: 'bold'
+                  }}
+                />
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={busy}
+                    style={{
+                      padding: '10px 20px',
+                      background: 'white',
+                      color: 'black',
+                      border: 'none',
+                      borderRadius: 8,
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {busy ? 'Sending...' : 'Send Reset Link'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgot(false)}
+                    style={{
+                      padding: '10px 20px',
+                      background: '#333',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 8,
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="firebase-divider">— OR —</div>
 
@@ -269,12 +397,106 @@ export default function Login() {
               <span className="mobile-hint">Must be at least 8 characters</span>
             </div>
 
+            {/* Mobile Forgot Password */}
+            <div style={{ textAlign: 'right', marginTop: -8, marginBottom: 8 }}>
+              <button
+                type="button"
+                onClick={() => setShowForgot(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.75)',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+              >
+                Forgot password?
+              </button>
+            </div>
+
             {errorMsg && <div className="mobile-error">{errorMsg}</div>}
+            {successMsg && <div className="mobile-error" style={{ color: '#4caf50', background: 'rgba(76,175,80,0.2)' }}>{successMsg}</div>}
 
             <button type="submit" className="mobile-btn-signin" disabled={busy}>
               {busy ? 'Please wait...' : 'Sign In'}
             </button>
           </form>
+
+          {/* Mobile Forgot Modal */}
+          {showForgot && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              background: 'rgba(0,0,0,0.9)',
+              zIndex: 100,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: 20
+            }}>
+              <p style={{ color: 'white', fontWeight: 700, marginBottom: 15, textAlign: 'center' }}>
+                Enter your email to receive a password reset link
+              </p>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Your email"
+                style={{
+                  width: '100%',
+                  maxWidth: 320,
+                  padding: '14px',
+                  background: '#1a1a1a',
+                  border: 'none',
+                  borderRadius: 8,
+                  color: 'white',
+                  marginBottom: 15,
+                  fontWeight: 700
+                }}
+              />
+              <div style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 320 }}>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={busy}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    background: 'white',
+                    color: 'black',
+                    border: 'none',
+                    borderRadius: 50,
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {busy ? 'Sending...' : 'Send Link'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForgot(false)}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 50,
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="mobile-divider">
             <span></span>

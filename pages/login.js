@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { 
-  signInWithEmailAndPassword, 
-  signInWithPopup, 
-  sendPasswordResetEmail 
+import {
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  sendPasswordResetEmail,
+  sendEmailVerification,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
@@ -79,6 +80,18 @@ export default function Login() {
     }
   }
 
+  // After successful login → send verification email if not verified
+  async function sendLoginEmailIfNeeded(fbUser) {
+    try {
+      if (fbUser && !fbUser.emailVerified) {
+        await sendEmailVerification(fbUser);
+        setSuccessMsg('Login successful! Verification email sent to your inbox.');
+      }
+    } catch (err) {
+      console.log('Verification email error:', err.message);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setErrorMsg('');
@@ -109,6 +122,9 @@ export default function Login() {
         );
       }
 
+      // Send email to user's email ID
+      await sendLoginEmailIfNeeded(cred.user);
+
       router.push(getTargetRoute());
     } catch (err) {
       setErrorMsg(friendlyError(err.code));
@@ -132,6 +148,10 @@ export default function Login() {
 
       const result = await signInWithPopup(auth, googleProvider);
       await ensureUserDoc(result.user);
+
+      // Send email to user's email ID
+      await sendLoginEmailIfNeeded(result.user);
+
       router.push(getTargetRoute());
     } catch (err) {
       setErrorMsg(
@@ -158,7 +178,7 @@ export default function Login() {
         return;
       }
       await sendPasswordResetEmail(auth, email);
-      setSuccessMsg('Password reset email sent! Check your inbox.');
+      setSuccessMsg('Password reset email sent! Check your inbox (and spam).');
       setShowForgot(false);
     } catch (err) {
       setErrorMsg(friendlyError(err.code) || 'Failed to send reset email.');
@@ -223,25 +243,26 @@ export default function Login() {
                 Must be at least 8 characters
               </span>
 
-              {/* Forgot Password Link */}
-              <div style={{ position: 'absolute', top: 370, left: 0, width: 484, textAlign: 'right' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowForgot(true)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'rgba(255,255,255,0.75)',
-                    fontSize: 13,
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    padding: 0,
-                    fontFamily: 'Inter, sans-serif'
-                  }}
-                >
-                  Forgot password?
-                </button>
-              </div>
+              {/* Forgot Password - clean position */}
+              <button
+                type="button"
+                onClick={() => setShowForgot(true)}
+                style={{
+                  position: 'absolute',
+                  top: 368,
+                  right: 0,
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.75)',
+                  fontSize: 13,
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  padding: 0,
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                Forgot password?
+              </button>
 
               <button
                 type="submit"
@@ -256,29 +277,41 @@ export default function Login() {
                 <div className="error-message">{errorMsg}</div>
               ) : null}
               {successMsg ? (
-                <div className="error-message" style={{ color: '#4caf50' }}>{successMsg}</div>
+                <div className="error-message" style={{ color: '#4caf50' }}>
+                  {successMsg}
+                </div>
               ) : null}
             </form>
 
-            {/* Forgot Password Modal (simple overlay) */}
+            {/* Forgot Password Modal */}
             {showForgot && (
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                background: 'rgba(0,0,0,0.85)',
-                zIndex: 50,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                borderRadius: 8,
-                padding: 20
-              }}>
-                <p style={{ color: 'white', fontWeight: 'bold', marginBottom: 15, textAlign: 'center' }}>
-                  Enter your email to receive a password reset link
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  background: 'rgba(0,0,0,0.88)',
+                  zIndex: 50,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: 8,
+                  padding: 20,
+                }}
+              >
+                <p
+                  style={{
+                    color: 'white',
+                    fontWeight: 'bold',
+                    marginBottom: 15,
+                    textAlign: 'center',
+                    fontSize: 15,
+                  }}
+                >
+                  Enter your email to receive password reset link
                 </p>
                 <input
                   type="email"
@@ -293,7 +326,8 @@ export default function Login() {
                     borderRadius: 8,
                     color: 'white',
                     marginBottom: 15,
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    fontSize: 14,
                   }}
                 />
                 <div style={{ display: 'flex', gap: 10 }}>
@@ -308,7 +342,7 @@ export default function Login() {
                       border: 'none',
                       borderRadius: 8,
                       fontWeight: 'bold',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
                     }}
                   >
                     {busy ? 'Sending...' : 'Send Reset Link'}
@@ -323,7 +357,7 @@ export default function Login() {
                       border: 'none',
                       borderRadius: 8,
                       fontWeight: 'bold',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
                     }}
                   >
                     Cancel
@@ -398,7 +432,7 @@ export default function Login() {
             </div>
 
             {/* Mobile Forgot Password */}
-            <div style={{ textAlign: 'right', marginTop: -8, marginBottom: 8 }}>
+            <div style={{ textAlign: 'right', marginTop: -6, marginBottom: 6 }}>
               <button
                 type="button"
                 onClick={() => setShowForgot(true)}
@@ -409,7 +443,7 @@ export default function Login() {
                   fontSize: 12,
                   fontWeight: 700,
                   cursor: 'pointer',
-                  padding: 0
+                  padding: 0,
                 }}
               >
                 Forgot password?
@@ -417,7 +451,14 @@ export default function Login() {
             </div>
 
             {errorMsg && <div className="mobile-error">{errorMsg}</div>}
-            {successMsg && <div className="mobile-error" style={{ color: '#4caf50', background: 'rgba(76,175,80,0.2)' }}>{successMsg}</div>}
+            {successMsg && (
+              <div
+                className="mobile-error"
+                style={{ color: '#4caf50', background: 'rgba(76,175,80,0.2)' }}
+              >
+                {successMsg}
+              </div>
+            )}
 
             <button type="submit" className="mobile-btn-signin" disabled={busy}>
               {busy ? 'Please wait...' : 'Sign In'}
@@ -426,22 +467,32 @@ export default function Login() {
 
           {/* Mobile Forgot Modal */}
           {showForgot && (
-            <div style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              background: 'rgba(0,0,0,0.9)',
-              zIndex: 100,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              padding: 20
-            }}>
-              <p style={{ color: 'white', fontWeight: 700, marginBottom: 15, textAlign: 'center' }}>
-                Enter your email to receive a password reset link
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                background: 'rgba(0,0,0,0.92)',
+                zIndex: 100,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: 20,
+              }}
+            >
+              <p
+                style={{
+                  color: 'white',
+                  fontWeight: 700,
+                  marginBottom: 15,
+                  textAlign: 'center',
+                  fontSize: 15,
+                }}
+              >
+                Enter your email to receive password reset link
               </p>
               <input
                 type="email"
@@ -457,7 +508,7 @@ export default function Login() {
                   borderRadius: 8,
                   color: 'white',
                   marginBottom: 15,
-                  fontWeight: 700
+                  fontWeight: 700,
                 }}
               />
               <div style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 320 }}>
@@ -473,7 +524,7 @@ export default function Login() {
                     border: 'none',
                     borderRadius: 50,
                     fontWeight: 800,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
                   }}
                 >
                   {busy ? 'Sending...' : 'Send Link'}
@@ -489,7 +540,7 @@ export default function Login() {
                     border: 'none',
                     borderRadius: 50,
                     fontWeight: 700,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
                   }}
                 >
                   Cancel
@@ -534,7 +585,8 @@ export default function Login() {
           padding: 0;
         }
         @media (max-width: 900px) {
-          html, body {
+          html,
+          body {
             overflow-x: hidden;
             overflow-y: auto;
             height: auto;

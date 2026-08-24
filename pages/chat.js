@@ -41,8 +41,9 @@ function incrementTodayUsage(uid) {
 }
 
 function getDateLabel(ts) {
-  if (!ts) return 'Earlier';
+  if (!ts) return 'Recent';
   const d = new Date(ts);
+  if (isNaN(d.getTime())) return 'Recent';
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today);
@@ -54,12 +55,26 @@ function getDateLabel(ts) {
 }
 
 function groupChatsByDate(chats) {
-  const groups = { Today: [], Yesterday: [], Earlier: [] };
+  const groups = {
+    Today: [],
+    Yesterday: [],
+    Earlier: [],
+    Recent: [],
+  };
+
   (chats || []).forEach((c) => {
-    const label = getDateLabel(c.updatedAt || c.createdAt || c.timestamp);
+    const ts = c.updatedAt || c.createdAt || c.timestamp || c.date || null;
+    const label = getDateLabel(ts);
     if (!groups[label]) groups[label] = [];
     groups[label].push(c);
   });
+
+  const totalDated =
+    groups.Today.length + groups.Yesterday.length + groups.Earlier.length;
+  if (totalDated === 0 && groups.Recent.length === 0 && chats?.length) {
+    groups.Recent = [...chats];
+  }
+
   return groups;
 }
 
@@ -72,6 +87,26 @@ async function typeWriter(fullText, onUpdate, signal) {
     onUpdate(current);
     await new Promise((r) => setTimeout(r, words[i].trim() ? 28 : 8));
   }
+}
+
+// Pin icon SVG
+function PinIcon({ size = 14, filled = false }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ flexShrink: 0 }}
+    >
+      <path d="M12 17v5" />
+      <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+    </svg>
+  );
 }
 
 export default function Chat() {
@@ -113,7 +148,10 @@ export default function Chat() {
     if (typeof window === 'undefined' || !window.visualViewport) return;
     const vv = window.visualViewport;
     const update = () => {
-      const offset = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
+      const offset = Math.max(
+        0,
+        window.innerHeight - vv.height - (vv.offsetTop || 0)
+      );
       setKbOffset(offset > 40 ? offset : 0);
     };
     vv.addEventListener('resize', update);
@@ -203,7 +241,6 @@ export default function Chat() {
     }
   }, [showLimitModal]);
 
-  // Close menu on outside click
   useEffect(() => {
     function handleClick(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -412,7 +449,6 @@ export default function Chat() {
 
   const isLanding = messages.length === 0;
 
-  // Sort: pinned first, then group
   const sortedChats = [...chats].sort((a, b) => {
     const ap = pinnedIds.includes(a.id) ? 0 : 1;
     const bp = pinnedIds.includes(b.id) ? 0 : 1;
@@ -461,8 +497,10 @@ export default function Chat() {
             ) : chats.length === 0 ? (
               <p className="sidebar-item empty">No recent chats</p>
             ) : (
-              Object.entries(grouped).map(([label, items]) =>
-                items.length === 0 ? null : (
+              ['Today', 'Yesterday', 'Earlier', 'Recent'].map((label) => {
+                const items = grouped[label] || [];
+                if (items.length === 0) return null;
+                return (
                   <div key={label} className="sidebar-group">
                     <h2 className="chats-heading">{label}</h2>
                     <ul className="sidebar-list">
@@ -497,7 +535,9 @@ export default function Chat() {
                                 href={`/chat?chat_id=${c.id}`}
                               >
                                 {pinnedIds.includes(c.id) && (
-                                  <span className="pin-mark">📌</span>
+                                  <span className="pin-mark">
+                                    <PinIcon size={12} filled />
+                                  </span>
                                 )}
                                 <span className="sidebar-title">{c.title}</span>
                               </a>
@@ -531,7 +571,12 @@ export default function Chat() {
                                     Rename
                                   </button>
                                   <button onClick={() => handlePin(c.id)}>
-                                    <span className="menu-icon">📌</span>
+                                    <span className="menu-icon">
+                                      <PinIcon
+                                        size={14}
+                                        filled={pinnedIds.includes(c.id)}
+                                      />
+                                    </span>
                                     {pinnedIds.includes(c.id)
                                       ? 'Unpin'
                                       : 'Pin'}
@@ -551,8 +596,8 @@ export default function Chat() {
                       ))}
                     </ul>
                   </div>
-                )
-              )
+                );
+              })
             )}
           </nav>
         </aside>
@@ -1002,7 +1047,9 @@ export default function Chat() {
         }
 
         .pin-mark {
-          font-size: 11px;
+          display: flex;
+          align-items: center;
+          color: #a78bfa;
           flex-shrink: 0;
         }
 
@@ -1073,7 +1120,9 @@ export default function Chat() {
 
         .menu-icon {
           width: 16px;
-          text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           font-size: 13px;
           opacity: 0.9;
         }

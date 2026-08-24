@@ -89,7 +89,6 @@ async function typeWriter(fullText, onUpdate, signal) {
   }
 }
 
-// Pin icon SVG
 function PinIcon({ size = 14, filled = false }) {
   return (
     <svg
@@ -487,6 +486,16 @@ export default function Chat() {
         />
 
         <aside className={`sidebar ${sidebarHidden ? 'hide' : ''}`}>
+          {/* Collapse button « */}
+          <button
+            className="sidebar-collapse-btn"
+            onClick={() => setSidebarHidden(true)}
+            title="Close sidebar"
+            aria-label="Close sidebar"
+          >
+            «
+          </button>
+
           <nav className="sidebar-nav">
             <button className="new-chat" onClick={startNewChat}>
               New chat
@@ -953,6 +962,29 @@ export default function Chat() {
 
         .sidebar.hide {
           transform: translateX(-250px);
+        }
+
+        /* « collapse button */
+        .sidebar-collapse-btn {
+          position: absolute;
+          top: 22px;
+          right: 16px;
+          background: transparent;
+          border: none;
+          color: #fff;
+          font-size: 22px;
+          font-weight: 300;
+          line-height: 1;
+          cursor: pointer;
+          padding: 4px 8px;
+          z-index: 10;
+          opacity: 0.7;
+          transition: opacity 0.2s, color 0.2s;
+        }
+
+        .sidebar-collapse-btn:hover {
+          opacity: 1;
+          color: #fff;
         }
 
         .sidebar-nav {
@@ -1697,6 +1729,12 @@ export default function Chat() {
 
           .sidebar.hide {
             transform: translateX(-105%);
+          }
+
+          .sidebar-collapse-btn {
+            top: 16px;
+            right: 14px;
+            font-size: 20px;
           }
 
           .sidebar-more {

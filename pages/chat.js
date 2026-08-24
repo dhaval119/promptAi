@@ -61,14 +61,14 @@ export default function Chat() {
   const threadRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Keyboard height tracking (mobile)
+  // Keyboard height (only moves the input, not the whole page)
   useEffect(() => {
     if (typeof window === 'undefined' || !window.visualViewport) return;
 
     const vv = window.visualViewport;
     const update = () => {
-      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      setKbOffset(offset > 50 ? offset : 0);
+      const offset = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
+      setKbOffset(offset > 40 ? offset : 0);
     };
 
     vv.addEventListener('resize', update);
@@ -104,7 +104,6 @@ export default function Chat() {
     if (typeof window !== 'undefined' && window.innerWidth <= 900) {
       setSidebarHidden(true);
     }
-    inputRef.current?.focus();
   }, [authLoading, refreshChats]);
 
   useEffect(() => {
@@ -149,7 +148,7 @@ export default function Chat() {
     }
   }, [messages, loading]);
 
-  // Limit popup aate hi keyboard band
+  // Limit popup → keyboard turant band
   useEffect(() => {
     if (showLimitModal) {
       inputRef.current?.blur();
@@ -161,7 +160,7 @@ export default function Chat() {
     setCurrentChatId(0);
     setMessages([]);
     router.replace('/chat', undefined, { shallow: true });
-    inputRef.current?.focus();
+    setTimeout(() => inputRef.current?.focus(), 50);
   }
 
   async function openChat(id) {
@@ -236,7 +235,6 @@ export default function Chat() {
       ]);
     } finally {
       setLoading(false);
-      setTimeout(() => inputRef.current?.focus(), 100);
     }
   }
 
@@ -260,16 +258,25 @@ export default function Chat() {
       </Head>
 
       <div className="desktop">
-        {/* NavPill only on desktop */}
+        {/* NavPill only desktop */}
         <div className="nav-desktop-only">
           <NavPill />
         </div>
 
+        {/* Logo - always */}
         <img
           src="/assets/ailogo.png"
           alt="AI Logo"
           className="logo-main"
           onClick={() => setSidebarHidden((h) => !h)}
+        />
+
+        {/* Mobile only - login icon → /details */}
+        <img
+          src="/assets/login.png"
+          alt="Profile"
+          className="login-icon-mobile"
+          onClick={() => router.push('/details')}
         />
 
         <aside className={`sidebar ${sidebarHidden ? 'hide' : ''}`}>
@@ -449,14 +456,14 @@ export default function Chat() {
             ) : null}
           </article>
 
+          {/* Input - only this moves with keyboard */}
           <div
             className="chat-input-form"
-            style={{
-              bottom:
-                kbOffset > 0
-                  ? `${kbOffset + 8}px`
-                  : undefined,
-            }}
+            style={
+              kbOffset > 0
+                ? { bottom: `${kbOffset + 6}px`, top: 'auto' }
+                : undefined
+            }
           >
             <div className="chat-input-wrapper">
               <input
@@ -491,7 +498,7 @@ export default function Chat() {
           </div>
         </main>
 
-        {/* ===================== FULL SCREEN LIMIT POPUP ===================== */}
+        {/* ===================== LIMIT POPUP ===================== */}
         {showLimitModal && (
           <div className="limit-fullscreen">
             <button
@@ -509,13 +516,10 @@ export default function Chat() {
               </span>
             </div>
 
-            {/* ===== DESKTOP LAYOUT ===== */}
+            {/* ===== DESKTOP ===== */}
             <div className="limit-content limit-content-desktop">
               <div className="limit-left">
-                <div className="oops-text">
-                  OOPS!
-                  <span className="oops-quotes">’’</span>
-                </div>
+                {/* OOPS removed - already in image */}
                 <img
                   src="/assets/dog1.png"
                   alt="Doge"
@@ -558,14 +562,11 @@ export default function Chat() {
               </div>
             </div>
 
-            {/* ===== MOBILE LAYOUT ===== */}
+            {/* ===== MOBILE ===== */}
             <div className="limit-content-mobile">
               <div className="limit-mobile-inner">
                 <div className="limit-mobile-img-wrap">
-                  <div className="limit-mobile-oops">
-                    OOPS!
-                    <span>’’</span>
-                  </div>
+                  {/* OOPS removed - already in image */}
                   <img
                     src="/assets/dog1.png"
                     alt="Doge"
@@ -642,6 +643,10 @@ export default function Chat() {
           top: 23px;
           z-index: 100;
           cursor: pointer;
+        }
+
+        .login-icon-mobile {
+          display: none;
         }
 
         .sidebar {
@@ -768,7 +773,7 @@ export default function Chat() {
           max-width: 90%;
           z-index: 30;
           pointer-events: auto;
-          bottom: auto !important;
+          bottom: auto;
         }
 
         .view-landing .landing-content {
@@ -988,7 +993,7 @@ export default function Chat() {
 
         .chat-input-form {
           z-index: 40;
-          transition: bottom 0.15s ease;
+          transition: bottom 0.12s ease;
         }
 
         .chat-input-wrapper {
@@ -1079,7 +1084,7 @@ export default function Chat() {
 
         .limit-badge {
           position: absolute;
-          top: 28px;
+          top: 36px;
           left: 50%;
           transform: translateX(-50%);
           display: flex;
@@ -1144,29 +1149,6 @@ export default function Chat() {
           height: 100%;
         }
 
-        .oops-text {
-          position: absolute;
-          top: 18%;
-          left: 8%;
-          color: #9b6dff;
-          font-size: 42px;
-          font-weight: 800;
-          font-style: italic;
-          letter-spacing: 1px;
-          z-index: 5;
-          transform: rotate(-8deg);
-          line-height: 1;
-          text-shadow: 0 0 20px rgba(155, 109, 255, 0.4);
-        }
-
-        .oops-quotes {
-          display: block;
-          font-size: 28px;
-          margin-top: -4px;
-          margin-left: 8px;
-          opacity: 0.9;
-        }
-
         .limit-dog {
           width: 100%;
           max-width: 520px;
@@ -1190,24 +1172,24 @@ export default function Chat() {
 
         .limit-title {
           color: #ffffff;
-          font-size: 42px;
+          font-size: 38px;
           font-weight: 700;
           line-height: 1.2;
-          margin: 0 0 28px 0;
+          margin: 0 0 22px 0;
         }
 
         .limit-desc {
           color: #e8e8e8;
-          font-size: 17px;
+          font-size: 15px;
           line-height: 1.55;
-          margin: 0 0 22px 0;
+          margin: 0 0 18px 0;
         }
 
         .limit-hint {
           color: #c8c8c8;
-          font-size: 16px;
+          font-size: 14px;
           line-height: 1.5;
-          margin: 0 0 36px 0;
+          margin: 0 0 32px 0;
         }
 
         .limit-btn {
@@ -1251,6 +1233,18 @@ export default function Chat() {
             z-index: 100;
           }
 
+          .login-icon-mobile {
+            display: block;
+            position: fixed;
+            right: 16px;
+            top: 16px;
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            z-index: 100;
+            cursor: pointer;
+          }
+
           .sidebar {
             width: 82vw;
             max-width: 300px;
@@ -1272,25 +1266,25 @@ export default function Chat() {
             left: 50%;
           }
 
-          /* ===== LANDING MOBILE (exact design match) ===== */
+          /* ===== LANDING - stable, no jump ===== */
           .landing-content {
             position: absolute;
-            top: 50%;
+            top: 42%;
             left: 50%;
             transform: translate(-50%, -50%);
             width: 100%;
             max-width: 100%;
-            padding: 0 24px;
+            padding: 0 20px;
             box-sizing: border-box;
             text-align: center;
             z-index: 20;
           }
 
           .main-heading {
-            font-size: 25px;
+            font-size: 24px;
             font-weight: 700;
             white-space: normal;
-            margin-bottom: 18px;
+            margin-bottom: 16px;
             padding: 0;
             line-height: 1.3;
           }
@@ -1301,7 +1295,7 @@ export default function Chat() {
             flex-wrap: nowrap;
             justify-content: center;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             width: 100%;
             margin-bottom: 0;
             max-width: 100%;
@@ -1317,11 +1311,11 @@ export default function Chat() {
             max-width: none;
             height: auto;
             min-height: 36px;
-            padding: 8px 14px;
+            padding: 8px 12px;
             font-size: 11px;
             font-weight: 600;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
             box-shadow: 0px 4px 4px #00000040;
             border-radius: 50px;
           }
@@ -1354,39 +1348,45 @@ export default function Chat() {
             color: #fff;
           }
 
-          /* Input right under buttons on landing */
+          /* Landing input - stays under buttons when no keyboard.
+             When keyboard open, only THIS form moves up via style bottom */
           .view-landing .chat-input-form {
             position: absolute;
-            top: calc(50% + 70px);
+            top: calc(42% + 78px);
             left: 50%;
             transform: translateX(-50%);
-            width: calc(100% - 48px);
+            width: calc(100% - 40px);
             max-width: 100%;
-            bottom: auto !important;
             z-index: 30;
+            bottom: auto;
+          }
+
+          /* When keyboard is open, override to bottom */
+          .view-landing .chat-input-form[style*='bottom'] {
+            top: auto !important;
           }
 
           .view-landing .chat-input {
             height: 46px;
-            padding: 0 50px 0 20px;
+            padding: 0 48px 0 18px;
             font-size: 16px;
             border-radius: 50px;
           }
 
           .view-landing .chat-submit-button {
-            width: 42px;
-            height: 42px;
+            width: 40px;
+            height: 40px;
             right: 4px;
             top: 50%;
             transform: translateY(-50%);
           }
 
           .view-landing .chat-submit-icon {
-            width: 26px;
-            height: 26px;
+            width: 24px;
+            height: 24px;
           }
 
-          /* Chat view - sticky bottom input */
+          /* Chat view - sticky bottom */
           .view-chat .chat-input-form {
             position: fixed;
             bottom: calc(12px + env(safe-area-inset-bottom, 0px));
@@ -1443,23 +1443,21 @@ export default function Chat() {
             height: 48px;
           }
 
-          /* ===== LIMIT POPUP MOBILE - full fit, no grey ===== */
+          /* ===== LIMIT POPUP MOBILE ===== */
           .limit-close-btn {
             top: 14px;
             left: 14px;
-            font-size: 32px;
+            font-size: 30px;
             color: #aaa;
           }
 
           .limit-badge {
-            top: 16px;
-            padding: 8px 16px 8px 12px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 48px;
+            padding: 7px 14px 7px 11px;
           }
 
           .limit-badge-text {
-            font-size: 13px;
+            font-size: 12px;
           }
 
           .limit-red-dot {
@@ -1481,7 +1479,7 @@ export default function Chat() {
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             background: #000000;
-            padding: 70px 0 24px;
+            padding: 80px 0 20px;
             box-sizing: border-box;
           }
 
@@ -1490,7 +1488,7 @@ export default function Chat() {
             flex-direction: column;
             align-items: center;
             width: 100%;
-            padding: 0 24px 20px;
+            padding: 0 22px 16px;
             box-sizing: border-box;
           }
 
@@ -1500,35 +1498,14 @@ export default function Chat() {
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 12px;
-          }
-
-          .limit-mobile-oops {
-            position: absolute;
-            top: 8%;
-            left: 8%;
-            color: #9b6dff;
-            font-size: 28px;
-            font-weight: 800;
-            font-style: italic;
-            transform: rotate(-10deg);
-            z-index: 2;
-            line-height: 1;
-            text-shadow: 0 0 16px rgba(155, 109, 255, 0.45);
-          }
-
-          .limit-mobile-oops span {
-            display: block;
-            font-size: 18px;
-            margin-top: -2px;
-            margin-left: 6px;
+            margin-bottom: 8px;
           }
 
           .limit-mobile-dog {
-            width: 78%;
-            max-width: 300px;
+            width: 72%;
+            max-width: 280px;
             height: auto;
-            max-height: 42vh;
+            max-height: 38vh;
             object-fit: contain;
             object-position: center;
             display: block;
@@ -1538,38 +1515,38 @@ export default function Chat() {
 
           .limit-mobile-title {
             color: #ffffff;
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 700;
             line-height: 1.25;
-            margin: 8px 0 16px 0;
+            margin: 6px 0 12px 0;
             text-align: left;
             width: 100%;
-            max-width: 340px;
+            max-width: 320px;
           }
 
           .limit-mobile-desc {
             color: #e0e0e0;
-            font-size: 15px;
-            line-height: 1.55;
-            margin: 0 0 14px 0;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 0 0 10px 0;
             text-align: left;
             width: 100%;
-            max-width: 340px;
+            max-width: 320px;
           }
 
           .limit-mobile-hint {
             color: #b0b0b0;
-            font-size: 13px;
-            line-height: 1.5;
-            margin: 0 0 28px 0;
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 0 0 22px 0;
             text-align: left;
             width: 100%;
-            max-width: 340px;
+            max-width: 320px;
           }
 
           .limit-mobile-btn {
             width: 100%;
-            max-width: 340px;
+            max-width: 320px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1577,8 +1554,8 @@ export default function Chat() {
             color: #000;
             border: none;
             border-radius: 100px;
-            padding: 14px 24px;
-            font-size: 16px;
+            padding: 13px 24px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             text-align: center;
@@ -1614,20 +1591,20 @@ export default function Chat() {
           }
 
           .limit-mobile-dog {
-            max-height: 36vh;
-            max-width: 260px;
+            max-height: 34vh;
+            max-width: 240px;
           }
 
           .limit-mobile-title {
-            font-size: 22px;
+            font-size: 20px;
           }
 
           .limit-mobile-desc {
-            font-size: 14px;
+            font-size: 12.5px;
           }
 
           .limit-mobile-hint {
-            font-size: 12px;
+            font-size: 11.5px;
           }
         }
       `}</style>

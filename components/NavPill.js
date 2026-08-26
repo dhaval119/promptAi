@@ -4,7 +4,8 @@ import { useAuth } from '../lib/AuthContext';
 export default function NavPill() {
   const router = useRouter();
   const { user } = useAuth();
-  const isChat = router.pathname === '/chat';
+   const isChat = router.pathname === '/chat';
+  const isHome = router.pathname === '/';
 
   function goToSection(hash) {
     // Agar already home pe ho to direct scroll, warna pehle home pe jao
@@ -18,7 +19,7 @@ export default function NavPill() {
   }
 
   return (
-    <nav className={`nav-pill ${isChat ? 'on-chat' : 'on-other'}`}>
+      <nav className={`nav-pill ${isHome ? 'on-home' : isChat ? 'on-chat' : 'on-other'}`}>
       <a href="/">Home</a>
       <a href="/features">Features</a>
       <a
@@ -63,12 +64,16 @@ export default function NavPill() {
           white-space: nowrap;
         }
 
-        .nav-pill.on-other {
+               .nav-pill.on-home {
           right: 250px;
         }
 
+        .nav-pill.on-other {
+          right: 55px;
+        }
+
         .nav-pill.on-chat {
-          right: 28px;
+          right: 55px;
         }
 
         .nav-pill a {

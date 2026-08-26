@@ -86,9 +86,16 @@ function PinIcon({ size = 14, filled = false }) {
 
 export default function Chat() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const uid = user?.uid ?? null;
   const email = user?.email ?? null;
+  const isPremium = !!(profile?.is_premium || profile?.isPremium);
+  const isBlocked = !!(
+    profile?.is_blocked ||
+    profile?.isBlocked ||
+    profile?.soft_deleted ||
+    profile?.softDeleted
+  );
 
   const [chats, setChats] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(0);
@@ -142,13 +149,23 @@ export default function Chat() {
     if (authLoading) return;
     let cancelled = false;
     (async () => {
-      const n = await getTodayUsage(uid);
-      if (!cancelled) setTodayUsage(n);
+      const count = await getTodayUsage(uid);
+      if (!cancelled) setTodayUsage(count);
     })();
     return () => {
       cancelled = true;
     };
   }, [uid, authLoading]);
+
+  // When user returns to tab, refresh profile (premium/block may have changed in admin)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onFocus = () => {
+      refreshProfile().catch(() => {});
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [refreshProfile]);
 
   const refreshChats = useCallback(async () => {
     try {
@@ -293,7 +310,11 @@ export default function Chat() {
     setRenamingId(null);
     if (!title) return;
     try {
-      await upsertConversation(uid, { id, title }, email);
+      await upsertConversation(
+        uid,
+        { id, title, request: '', response: '' },
+        email
+      );
       await refreshChats();
     } catch (err) {
       console.error('[chat] rename failed', err);
@@ -338,12 +359,36 @@ export default function Chat() {
     const text = (overrideText ?? input).trim().slice(0, MAX_MESSAGE_LENGTH);
     if (!text || loading) return;
 
-    const used = await getTodayUsage(uid);
-    if (isOverLimit(used)) {
-      setTodayUsage(used);
-      inputRef.current?.blur();
-      setShowLimitModal(true);
+    // Always re-fetch profile so admin Premium/Block applies immediately
+    let latest = profile;
+    try {
+      const fresh = await refreshProfile();
+      if (fresh) latest = fresh;
+    } catch {}
+
+    const blockedNow = !!(
+      latest?.is_blocked ||
+      latest?.isBlocked ||
+      latest?.soft_deleted ||
+      latest?.softDeleted
+    );
+    if (blockedNow) {
+      alert('Your account is blocked or deleted. Contact support.');
       return;
+    }
+
+    // Premium users have no daily free limit
+    const premiumNow = !!(latest?.is_premium || latest?.isPremium);
+    // used later when incrementing usage
+    var skipUsageIncrement = premiumNow;
+    if (!premiumNow) {
+      const used = await getTodayUsage(uid);
+      setTodayUsage(used);
+      if (isOverLimit(used)) {
+        inputRef.current?.blur();
+        setShowLimitModal(true);
+        return;
+      }
     }
 
     setMessages((prev) => [...prev, { sender: 'user', text }]);
@@ -383,8 +428,10 @@ export default function Chat() {
         controller.signal
       );
 
-      const newCount = await incrementTodayUsage(uid);
-      setTodayUsage(newCount);
+      if (!skipUsageIncrement) {
+        const newCount = await incrementTodayUsage(uid);
+        setTodayUsage(newCount);
+      }
 
       const finalMessages = [
         ...messages,
@@ -438,11 +485,13 @@ export default function Chat() {
   return (
     <>
       <Head>
-        <title>Chat – PromptAI</title>
+        <title>PromptAI – Chat</title>
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
         />
+        <meta name="theme-color" content="#020202" />
+        <link rel="manifest" href="/manifest.json" />
       </Head>
 
       <div className="desktop">

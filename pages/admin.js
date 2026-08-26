@@ -11,11 +11,9 @@ import {
   orderBy,
   limit,
   collectionGroup,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-
-// Admin access: AuthContext isAdmin (Firestore users/{uid}.role == 'admin'
-// OR bootstrap email sonidhaval2468@gmail.com). No broad email string match.
 
 /** Same key as lib/chatStorage.js – Firestore path safe email */
 function emailKey(email) {
@@ -46,7 +44,7 @@ function formatDate(ts) {
 
 export default function AdminPage() {
   const router = useRouter();
-  const { user, loading, isAdmin } = useAuth();
+  const { user, profile, loading, isAdmin } = useAuth();
   const [users, setUsers] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [tab, setTab] = useState('dashboard');
@@ -59,6 +57,8 @@ export default function AdminPage() {
   });
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(null); // 1-31 of current month
 
   useEffect(() => {
     if (loading) return;
@@ -66,10 +66,11 @@ export default function AdminPage() {
       router.replace('/login');
       return;
     }
-    if (!isAdmin) {
+    // Wait for profile so isAdmin is accurate
+    if (profile && !isAdmin) {
       router.replace('/');
     }
-  }, [user, loading, isAdmin, router]);
+  }, [user, profile, isAdmin, loading, router]);
 
   const loadData = useCallback(async () => {
     if (!user || !isAdmin || !db) return;
@@ -227,7 +228,68 @@ export default function AdminPage() {
     }
   }
 
-  if (loading || !user || !isAdmin) {
+  async function resetUsage(uid) {
+    if (!db || busy) return;
+    setBusy(true);
+    try {
+      await updateDoc(doc(db, 'users', uid), {
+        usage_count: 0,
+        last_reset: serverTimestamp(),
+      });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === uid ? { ...u, usage_count: 0 } : u))
+      );
+      alert('Daily usage reset to 0.');
+    } catch (e) {
+      console.error(e);
+      alert('Reset failed. Check Firestore rules.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function softDeleteUser(uid, current) {
+    if (!db || busy) return;
+    setBusy(true);
+    try {
+      const next = !current;
+      await updateDoc(doc(db, 'users', uid), {
+        soft_deleted: next,
+        is_blocked: next ? true : false,
+      });
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === uid
+            ? { ...u, soft_deleted: next, is_blocked: next ? true : u.is_blocked }
+            : u
+        )
+      );
+    } catch (e) {
+      console.error(e);
+      alert('Soft-delete failed. Check Firestore rules.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function setUserRole(uid, role) {
+    if (!db || busy) return;
+    if (role !== 'admin' && role !== 'user') return;
+    setBusy(true);
+    try {
+      await updateDoc(doc(db, 'users', uid), { role });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === uid ? { ...u, role } : u))
+      );
+    } catch (e) {
+      console.error(e);
+      alert('Role update failed. Check Firestore rules.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (loading || !user || !profile || !isAdmin) {
     return (
       <div
         style={{
@@ -250,7 +312,6 @@ export default function AdminPage() {
     { id: 'users', label: 'User' },
     { id: 'chats', label: 'Chats' },
     { id: 'payments', label: 'Payments' },
-    { id: 'conversation', label: 'Conversation' },
     { id: 'logs', label: 'User profile logs' },
   ];
 
@@ -268,15 +329,40 @@ export default function AdminPage() {
   return (
     <>
       <Head>
-        <title>Admin Dashboard - Prompt AI</title>
+        <title>PromptAI – Admin</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <meta name="robots" content="noindex, nofollow" />
       </Head>
 
-      <div className="admin-root">
+      <div className={`admin-root ${sidebarHidden ? "no-sidebar" : ""}`}>
+        {sidebarHidden && (
+          <button
+            type="button"
+            className="sidebar-open-btn"
+            onClick={() => setSidebarHidden(false)}
+            title="Open sidebar"
+          >
+            <img src="/assets/ailogo.png" alt="Open" />
+          </button>
+        )}
         {/* Sidebar */}
-        <aside className="admin-sidebar">
-          <img src="/assets/ailogo.png" alt="Logo" className="sidebar-logo" />
+        <aside className={`admin-sidebar ${sidebarHidden ? 'hide' : ''}`}>
+          <button
+            type="button"
+            className="sidebar-collapse-btn"
+            onClick={() => setSidebarHidden(true)}
+            title="Close sidebar"
+            aria-label="Close sidebar"
+          >
+            ×
+          </button>
+          <img
+            src="/assets/ailogo.png"
+            alt="Logo"
+            className="sidebar-logo"
+            onClick={() => setSidebarHidden((h) => !h)}
+            style={{ cursor: 'pointer' }}
+          />
           <span className="sidebar-title">Dashboard</span>
           {navItems.map((item) => (
             <button
@@ -297,8 +383,7 @@ export default function AdminPage() {
             {tab === 'users' && 'Users'}
             {tab === 'chats' && 'Chats'}
             {tab === 'payments' && 'Payments'}
-            {tab === 'conversation' && 'Conversations'}
-            {tab === 'logs' && 'User Profile Logs'}
+                        {tab === 'logs' && 'User Profile Logs'}
           </h1>
 
           {loadError && (
@@ -348,20 +433,110 @@ export default function AdminPage() {
                 </div>
 
                 <div className="calendar-card">
-                  <span className="section-title center">August 2026</span>
+                  <span className="section-title center">
+                    {new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+                  </span>
                   <div className="cal-days">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
                       <span key={d} className="cal-head">{d}</span>
                     ))}
-                    {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                      <span
-                        key={d}
-                        className={`cal-cell ${d === 20 ? 'today' : ''}`}
-                      >
-                        {d}
-                      </span>
-                    ))}
+                    {(() => {
+                      const now = new Date();
+                      const year = now.getFullYear();
+                      const month = now.getMonth();
+                      const daysInMonth = new Date(year, month + 1, 0).getDate();
+                      const firstDow = new Date(year, month, 1).getDay();
+                      const today = now.getDate();
+                      // Count users active/created per day this month
+                      const counts = {};
+                      users.forEach((u) => {
+                        const ts = u.created_at || u.createdAt || u.last_login_at || u.lastLoginAt;
+                        if (!ts) return;
+                        let d;
+                        try {
+                          d = typeof ts?.toDate === 'function' ? ts.toDate() : new Date(ts);
+                        } catch { return; }
+                        if (Number.isNaN(d.getTime())) return;
+                        if (d.getFullYear() !== year || d.getMonth() !== month) return;
+                        const day = d.getDate();
+                        counts[day] = (counts[day] || 0) + 1;
+                      });
+                      const cells = [];
+                      for (let i = 0; i < firstDow; i++) {
+                        cells.push(<span key={'e' + i} className="cal-cell empty" />);
+                      }
+                      for (let d = 1; d <= daysInMonth; d++) {
+                        const c = counts[d] || 0;
+                        const active = selectedDay === d;
+                        cells.push(
+                          <button
+                            type="button"
+                            key={d}
+                            className={`cal-cell ${d === today ? 'today' : ''} ${active ? 'selected' : ''}`}
+                            onClick={() => setSelectedDay(active ? null : d)}
+                            title={c ? c + ' user(s)' : 'No users'}
+                          >
+                            <span className="cal-num">{d}</span>
+                            {c > 0 && <span className="cal-count">{c}</span>}
+                          </button>
+                        );
+                      }
+                      return cells;
+                    })()}
                   </div>
+                  {selectedDay != null && (
+                    <div className="cal-day-detail">
+                      <strong>Day {selectedDay}</strong>
+                      <span>
+                        {' '}
+                        —{' '}
+                        {users.filter((u) => {
+                          const ts = u.created_at || u.createdAt || u.last_login_at || u.lastLoginAt;
+                          if (!ts) return false;
+                          let d;
+                          try {
+                            d = typeof ts?.toDate === 'function' ? ts.toDate() : new Date(ts);
+                          } catch { return false; }
+                          if (Number.isNaN(d.getTime())) return false;
+                          const now = new Date();
+                          return (
+                            d.getFullYear() === now.getFullYear() &&
+                            d.getMonth() === now.getMonth() &&
+                            d.getDate() === selectedDay
+                          );
+                        }).length}{' '}
+                        user(s)
+                      </span>
+                      <ul className="cal-user-list">
+                        {users
+                          .filter((u) => {
+                            const ts = u.created_at || u.createdAt || u.last_login_at || u.lastLoginAt;
+                            if (!ts) return false;
+                            let d;
+                            try {
+                              d = typeof ts?.toDate === 'function' ? ts.toDate() : new Date(ts);
+                            } catch { return false; }
+                            if (Number.isNaN(d.getTime())) return false;
+                            const now = new Date();
+                            return (
+                              d.getFullYear() === now.getFullYear() &&
+                              d.getMonth() === now.getMonth() &&
+                              d.getDate() === selectedDay
+                            );
+                          })
+                          .map((u) => (
+                            <li key={u.id}>
+                              {safeStr(
+                                [u.first_name || u.firstName, u.last_name || u.lastName]
+                                  .filter(Boolean)
+                                  .join(' ') || u.email,
+                                u.email || u.id
+                              )}
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
             </>
@@ -428,6 +603,27 @@ export default function AdminPage() {
                             >
                               {blocked ? 'Unblock' : 'Block'}
                             </button>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              className="btn"
+                              onClick={() => resetUsage(u.id)}
+                              title="Reset daily free prompt count"
+                            >
+                              Reset Usage
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              className="btn danger"
+                              onClick={() =>
+                                softDeleteUser(u.id, !!(u.soft_deleted || u.softDeleted))
+                              }
+                            >
+                              {u.soft_deleted || u.softDeleted
+                                ? 'Restore'
+                                : 'Soft Delete'}
+                            </button>
                           </td>
                         </tr>
                       );
@@ -438,38 +634,44 @@ export default function AdminPage() {
             </div>
           )}
 
-          {(tab === 'chats' || tab === 'conversation') && (
+          {tab === 'chats' && (
             <div className="table-wrap">
               <p className="scroll-hint">Swipe to see more →</p>
               <table>
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th>User</th>
                     <th>Title</th>
                     <th>Request</th>
                     <th>Response preview</th>
                     <th>Updated</th>
-                    <th>Path</th>
                   </tr>
                 </thead>
                 <tbody>
                   {conversations.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="empty">
+                      <td colSpan={5} className="empty">
                         No conversations found in Firebase
                       </td>
                     </tr>
                   ) : (
-                    conversations.map((c) => (
-                      <tr key={c.path || c.id}>
-                        <td>{String(c.id).slice(0, 10)}</td>
-                        <td>{safeStr(c.title)}</td>
-                        <td className="clip">{safeStr(c.request).slice(0, 80)}</td>
-                        <td className="clip">{safeStr(c.response).slice(0, 80)}</td>
-                        <td>{formatDate(c.updatedAt || c.createdAt)}</td>
-                        <td className="clip small">{safeStr(c.path || c.emailKey)}</td>
-                      </tr>
-                    ))
+                    conversations.map((c) => {
+                      const userLabel =
+                        c.userEmail ||
+                        c.ownerEmail ||
+                        c.email ||
+                        c.userName ||
+                        (c.uid ? String(c.uid).slice(0, 8) : '—');
+                      return (
+                        <tr key={(c.path || '') + c.id}>
+                          <td>{safeStr(userLabel)}</td>
+                          <td>{safeStr(c.title)}</td>
+                          <td className="clip">{safeStr(c.request).slice(0, 80)}</td>
+                          <td className="clip">{safeStr(c.response).slice(0, 80)}</td>
+                          <td>{formatDate(c.updatedAt || c.createdAt)}</td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -590,6 +792,50 @@ export default function AdminPage() {
           align-items: flex-start;
           padding: 24px 0 40px;
           min-height: 100vh;
+          position: sticky;
+          top: 0;
+          height: 100vh;
+          overflow-y: auto;
+          z-index: 40;
+        }
+        .admin-sidebar.hide {
+          display: none;
+        }
+        .admin-root.no-sidebar .admin-main {
+          width: 100%;
+        }
+        .sidebar-collapse-btn {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          background: transparent;
+          border: none;
+          color: #888;
+          font-size: 22px;
+          cursor: pointer;
+          line-height: 1;
+        }
+        .sidebar-collapse-btn:hover {
+          color: #fff;
+        }
+        .sidebar-open-btn {
+          position: fixed;
+          top: 16px;
+          left: 16px;
+          z-index: 50;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          border: none;
+          background: #141414;
+          padding: 6px;
+          cursor: pointer;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+        }
+        .sidebar-open-btn img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
         }
         .sidebar-logo {
           width: 48px;
@@ -911,7 +1157,54 @@ export default function AdminPage() {
             font-size: 12px;
           }
         }
-      `}</style>
+      `}
+        .cal-cell {
+          border: none;
+          background: transparent;
+          color: #fff;
+          cursor: pointer;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 36px;
+          border-radius: 8px;
+          font: inherit;
+        }
+        .cal-cell:hover {
+          background: #222;
+        }
+        .cal-cell.selected {
+          background: #333;
+          outline: 1px solid #555;
+        }
+        .cal-cell.today {
+          outline: 1px solid #666;
+        }
+        .cal-cell.empty {
+          pointer-events: none;
+        }
+        .cal-count {
+          font-size: 10px;
+          color: #8cf;
+          font-weight: 700;
+        }
+        .cal-day-detail {
+          margin-top: 16px;
+          padding-top: 12px;
+          border-top: 1px solid #333;
+          font-size: 14px;
+        }
+        .cal-user-list {
+          margin: 8px 0 0;
+          padding-left: 18px;
+          color: #ccc;
+        }
+        .admin-sidebar {
+          /* relative for collapse btn positioning */
+        }
+</style>
     </>
   );
 }

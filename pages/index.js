@@ -106,6 +106,15 @@ export default function Home() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
+  // Mobile: never stay on landing — login if guest, chat if logged in
+  useEffect(() => {
+    if (authLoading) return;
+    if (typeof window === 'undefined') return;
+    if (window.innerWidth > 900) return;
+    if (user) router.replace('/chat');
+    else router.replace('/login');
+  }, [user, authLoading, router]);
+
   function goChat() {
     if (authLoading) return;
     if (user) router.push('/chat');
@@ -175,7 +184,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Prompt AI</title>
+        <title>PromptAI – Home</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>

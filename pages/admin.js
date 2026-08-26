@@ -14,19 +14,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-// Strict admin allow-list (case-insensitive). Never rely only on client-side checks in production.
-const ADMIN_EMAILS = [
-  'sonidhaval2468@gmail.com',
-  'dhaval@gmai.com',
-  'dhaval123@gmai.com',
-];
-
-function isAdminEmail(email) {
-  if (!email || typeof email !== 'string') return false;
-  const e = email.trim().toLowerCase();
-  if (ADMIN_EMAILS.some((a) => a.toLowerCase() === e)) return true;
-  return e.includes('dhaval');
-}
+// Admin access: AuthContext isAdmin (Firestore users/{uid}.role == 'admin'
+// OR bootstrap email sonidhaval2468@gmail.com). No broad email string match.
 
 /** Same key as lib/chatStorage.js – Firestore path safe email */
 function emailKey(email) {
@@ -57,7 +46,7 @@ function formatDate(ts) {
 
 export default function AdminPage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const [users, setUsers] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [tab, setTab] = useState('dashboard');
@@ -77,13 +66,13 @@ export default function AdminPage() {
       router.replace('/login');
       return;
     }
-    if (!isAdminEmail(user.email)) {
+    if (!isAdmin) {
       router.replace('/');
     }
-  }, [user, loading, router]);
+  }, [user, loading, isAdmin, router]);
 
   const loadData = useCallback(async () => {
-    if (!user || !isAdminEmail(user.email) || !db) return;
+    if (!user || !isAdmin || !db) return;
     setLoadError('');
     let list = [];
     let allChats = [];
@@ -191,7 +180,7 @@ export default function AdminPage() {
     });
 
     if (warnings.length) setLoadError(warnings.join(' '));
-  }, [user]);
+  }, [user, isAdmin]);
 
   useEffect(() => {
     loadData();
@@ -238,7 +227,7 @@ export default function AdminPage() {
     }
   }
 
-  if (loading || !user || !isAdminEmail(user?.email)) {
+  if (loading || !user || !isAdmin) {
     return (
       <div
         style={{

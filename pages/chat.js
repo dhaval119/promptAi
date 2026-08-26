@@ -9,36 +9,12 @@ import {
 } from '../lib/chatStorage';
 import { useAuth } from '../lib/AuthContext';
 import NavPill from '../components/NavPill';
-
-const DAILY_FREE_LIMIT = 3;
-
-function getTodayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function getUsageKey(uid) {
-  return `chat_daily_usage_${uid || 'guest'}_${getTodayKey()}`;
-}
-
-function getTodayUsage(uid) {
-  if (typeof window === 'undefined') return 0;
-  try {
-    const raw = localStorage.getItem(getUsageKey(uid));
-    const n = parseInt(raw, 10);
-    return Number.isFinite(n) && n >= 0 ? n : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function incrementTodayUsage(uid) {
-  if (typeof window === 'undefined') return;
-  try {
-    const current = getTodayUsage(uid);
-    localStorage.setItem(getUsageKey(uid), String(current + 1));
-  } catch {}
-}
+import {
+  DAILY_FREE_LIMIT,
+  getTodayUsage,
+  incrementTodayUsage,
+  isOverLimit,
+} from '../lib/usage';
 
 function getDateLabel(ts) {
   if (!ts) return 'Recent';
@@ -164,7 +140,14 @@ export default function Chat() {
 
   useEffect(() => {
     if (authLoading) return;
-    setTodayUsage(getTodayUsage(uid));
+    let cancelled = false;
+    (async () => {
+      const n = await getTodayUsage(uid);
+      if (!cancelled) setTodayUsage(n);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [uid, authLoading]);
 
   const refreshChats = useCallback(async () => {
@@ -310,11 +293,7 @@ export default function Chat() {
     setRenamingId(null);
     if (!title) return;
     try {
-      await upsertConversation(
-        uid,
-        { id, title, request: '', response: '' },
-        email
-      );
+      await upsertConversation(uid, { id, title }, email);
       await refreshChats();
     } catch (err) {
       console.error('[chat] rename failed', err);
@@ -359,8 +338,8 @@ export default function Chat() {
     const text = (overrideText ?? input).trim().slice(0, MAX_MESSAGE_LENGTH);
     if (!text || loading) return;
 
-    const used = getTodayUsage(uid);
-    if (used >= DAILY_FREE_LIMIT) {
+    const used = await getTodayUsage(uid);
+    if (isOverLimit(used)) {
       setTodayUsage(used);
       inputRef.current?.blur();
       setShowLimitModal(true);
@@ -404,8 +383,8 @@ export default function Chat() {
         controller.signal
       );
 
-      incrementTodayUsage(uid);
-      setTodayUsage((prev) => prev + 1);
+      const newCount = await incrementTodayUsage(uid);
+      setTodayUsage(newCount);
 
       const finalMessages = [
         ...messages,
@@ -459,7 +438,7 @@ export default function Chat() {
   return (
     <>
       <Head>
-        <title>AI Chat Interface</title>
+        <title>Chat – PromptAI</title>
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"

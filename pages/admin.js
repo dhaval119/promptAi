@@ -1157,8 +1157,7 @@ export default function AdminPage() {
             font-size: 12px;
           }
         }
-      `}
-        .cal-cell {
+      .cal-cell {
           border: none;
           background: transparent;
           color: #fff;
@@ -1204,7 +1203,7 @@ export default function AdminPage() {
         .admin-sidebar {
           /* relative for collapse btn positioning */
         }
-</style>
+      `}</style>
     </>
   );
 }

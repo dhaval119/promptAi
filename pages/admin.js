@@ -363,7 +363,6 @@ export default function AdminPage() {
             onClick={() => setSidebarHidden((h) => !h)}
             style={{ cursor: 'pointer' }}
           />
-          <span className="sidebar-title">Dashboard</span>
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -590,7 +589,7 @@ export default function AdminPage() {
                             <button
                               type="button"
                               disabled={busy}
-                              className="btn primary"
+                              className="btn btn-premium"
                               onClick={() => togglePremium(u.id, premium)}
                             >
                               {premium ? 'Remove Premium' : 'Make Premium'}
@@ -598,7 +597,7 @@ export default function AdminPage() {
                             <button
                               type="button"
                               disabled={busy}
-                              className="btn danger"
+                              className="btn btn-block"
                               onClick={() => toggleBlock(u.id, blocked)}
                             >
                               {blocked ? 'Unblock' : 'Block'}
@@ -606,23 +605,12 @@ export default function AdminPage() {
                             <button
                               type="button"
                               disabled={busy}
-                              className="btn"
-                              onClick={() => resetUsage(u.id)}
-                              title="Reset daily free prompt count"
-                            >
-                              Reset Usage
-                            </button>
-                            <button
-                              type="button"
-                              disabled={busy}
-                              className="btn danger"
+                              className="btn btn-delete"
                               onClick={() =>
                                 softDeleteUser(u.id, !!(u.soft_deleted || u.softDeleted))
                               }
                             >
-                              {u.soft_deleted || u.softDeleted
-                                ? 'Restore'
-                                : 'Soft Delete'}
+                              {u.soft_deleted || u.softDeleted ? 'Restore' : 'Delete'}
                             </button>
                           </td>
                         </tr>
@@ -838,11 +826,12 @@ export default function AdminPage() {
           object-fit: contain;
         }
         .sidebar-logo {
-          width: 48px;
-          height: 48px;
+          width: 50px;
+          height: 50px;
           object-fit: contain;
-          margin: 8px auto 12px;
+          margin: 12px auto 80px;
           display: block;
+          background: transparent;
         }
         .sidebar-title {
           color: #fff;
@@ -1072,7 +1061,37 @@ export default function AdminPage() {
           font-weight: 600;
           cursor: pointer;
           color: #fff;
+          background: #2a2a2a;
+          transition: background 0.2s, color 0.2s;
         }
+        .btn:hover:not(:disabled) {
+          background: #3a3a3a;
+        }
+        .btn.btn-premium {
+          background: #2a2a2a;
+          color: #e5e5e5;
+        }
+        .btn.btn-premium:hover:not(:disabled) {
+          background: #2563eb;
+          color: #fff;
+        }
+        .btn.btn-block {
+          background: #2a2a2a;
+          color: #e5e5e5;
+        }
+        .btn.btn-block:hover:not(:disabled) {
+          background: #dc2626;
+          color: #fff;
+        }
+        .btn.btn-delete {
+          background: #2a2a2a;
+          color: #e5e5e5;
+        }
+        .btn.btn-delete:hover:not(:disabled) {
+          background: #b91c1c;
+          color: #fff;
+        }
+
         .btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;

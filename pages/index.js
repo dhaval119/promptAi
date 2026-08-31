@@ -105,15 +105,40 @@ function FaqAccordion({ idPrefix = '' }) {
 export default function Home() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const [mobileRedirecting, setMobileRedirecting] = useState(false);
 
-  // Mobile: never stay on landing — login if guest, chat if logged in
+  // Mobile: never show index — login if guest, chat if logged in
   useEffect(() => {
-    if (authLoading) return;
     if (typeof window === 'undefined') return;
     if (window.innerWidth > 900) return;
+    setMobileRedirecting(true);
+    if (authLoading) return;
     if (user) router.replace('/chat');
     else router.replace('/login');
   }, [user, authLoading, router]);
+
+  // Avoid flash of desktop landing on mobile while redirect runs
+  if (mobileRedirecting) {
+    return (
+      <>
+        <Head>
+          <title>PromptAI</title>
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+          />
+        </Head>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: '#020202',
+            zIndex: 99999,
+          }}
+        />
+      </>
+    );
+  }
 
   function goChat() {
     if (authLoading) return;

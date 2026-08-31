@@ -56,7 +56,7 @@ async function callGroq(prompt, key, model) {
 // Upstash Redis) in front of the route, but it stops naive rapid-fire abuse
 // from a single warm instance without adding any new dependency.
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const RATE_LIMIT_MAX_REQUESTS = 20;
+const RATE_LIMIT_MAX_REQUESTS = 12;
 const rateLimitHits = new Map();
 
 function getClientIp(req) {
@@ -67,6 +67,12 @@ function getClientIp(req) {
 
 function isRateLimited(ip) {
   const now = Date.now();
+  // Opportunistic cleanup to avoid unbounded growth on long-lived instances
+  if (rateLimitHits.size > 5000) {
+    for (const [k, v] of rateLimitHits) {
+      if (now - v.windowStart > RATE_LIMIT_WINDOW_MS * 2) rateLimitHits.delete(k);
+    }
+  }
   const entry = rateLimitHits.get(ip);
   if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
     rateLimitHits.set(ip, { windowStart: now, count: 1 });
@@ -77,16 +83,24 @@ function isRateLimited(ip) {
   return false;
 }
 
-const MAX_MESSAGE_LENGTH = 2000;
+const MAX_MESSAGE_LENGTH = 8000;
 
 export default async function handler(req, res) {
   // Security headers for this endpoint
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
 
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'method_not_allowed' });
+  }
+
+  // Basic body size / content-type guard
+  const ct = (req.headers['content-type'] || '').toLowerCase();
+  if (!ct.includes('application/json')) {
+    return res.status(415).json({ error: 'unsupported_media_type' });
   }
 
   const ip = getClientIp(req);

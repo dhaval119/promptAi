@@ -55,10 +55,22 @@ function groupChatsByDate(chats) {
 }
 
 async function typeWriter(fullText, onUpdate, signal) {
+  // If tab/app is already in background, show full text immediately
+  // so generation never "pauses and restarts" when user returns.
+  if (typeof document !== 'undefined' && document.hidden) {
+    onUpdate(fullText);
+    return;
+  }
+
   const words = fullText.split(/(\s+)/);
   let current = '';
   for (let i = 0; i < words.length; i++) {
     if (signal?.aborted) return;
+    // Jump to full text if user backgrounds the tab mid-animation
+    if (typeof document !== 'undefined' && document.hidden) {
+      onUpdate(fullText);
+      return;
+    }
     current += words[i];
     onUpdate(current);
     await new Promise((r) => setTimeout(r, words[i].trim() ? 28 : 8));
@@ -335,25 +347,37 @@ export default function Chat() {
   }
 
   function sharePrompt(text, idx) {
+    // Text-only share — never attach files/screenshot. URL is plain text only.
     const url =
       typeof window !== 'undefined'
         ? `${window.location.origin}/chat?chat_id=${currentChatId || ''}`
         : '';
-    const shareText = text + (url ? `\n\n${url}` : '');
-    if (navigator.share) {
-      navigator.share({ text: shareText }).catch(() => {
-        navigator.clipboard.writeText(shareText);
+    const shareText = (text || '').trim() + (url ? `\n\n${url}` : '');
+    const doClipboard = () => {
+      navigator.clipboard.writeText(shareText).then(() => {
         setSharedIdx(idx);
         setTimeout(() => setSharedIdx(-1), 2000);
-      });
+      }).catch(() => {});
+    };
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      // Explicitly omit `files` and use only text so OS share sheet does not
+      // attach a page screenshot / media preview on mobile.
+      navigator
+        .share({ title: 'PromptAI', text: shareText })
+        .then(() => {
+          setSharedIdx(idx);
+          setTimeout(() => setSharedIdx(-1), 2000);
+        })
+        .catch((err) => {
+          // User cancelled or share failed → fall back to clipboard
+          if (err && err.name !== 'AbortError') doClipboard();
+        });
     } else {
-      navigator.clipboard.writeText(shareText);
-      setSharedIdx(idx);
-      setTimeout(() => setSharedIdx(-1), 2000);
+      doClipboard();
     }
   }
 
-  const MAX_MESSAGE_LENGTH = 2000;
+  const MAX_MESSAGE_LENGTH = 8000;
 
   async function sendMessage(overrideText) {
     const text = (overrideText ?? input).trim().slice(0, MAX_MESSAGE_LENGTH);
@@ -379,8 +403,7 @@ export default function Chat() {
 
     // Premium users have no daily free limit
     const premiumNow = !!(latest?.is_premium || latest?.isPremium);
-    // used later when incrementing usage
-    var skipUsageIncrement = premiumNow;
+    const skipUsageIncrement = premiumNow;
     if (!premiumNow) {
       const used = await getTodayUsage(uid);
       setTodayUsage(used);
@@ -391,8 +414,15 @@ export default function Chat() {
       }
     }
 
+    // Snapshot previous messages so we don't use a stale closure later
+    const prevMessagesSnapshot = messages;
+
     setMessages((prev) => [...prev, { sender: 'user', text }]);
     setInput('');
+    // Reset textarea height after clear
+    if (inputRef.current) {
+      inputRef.current.style.height = '';
+    }
     setLoading(true);
     inputRef.current?.blur();
 
@@ -400,15 +430,37 @@ export default function Chat() {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // Track in-flight full text so visibilitychange can complete it
+    let resolvedAiText = null;
+
+    const onVisibility = () => {
+      if (document.hidden && resolvedAiText && !controller.signal.aborted) {
+        // Force full text into the last AI bubble immediately
+        setMessages((prev) => {
+          const next = [...prev];
+          const last = next[next.length - 1];
+          if (last && last.sender === 'ai') {
+            next[next.length - 1] = { ...last, text: resolvedAiText };
+          }
+          return next;
+        });
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibility);
+    }
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ msg: text }),
+        signal: controller.signal,
       });
 
       const data = await res.json();
       const aiText = data.text || 'Something went wrong. Please try again.';
+      resolvedAiText = aiText;
 
       setMessages((prev) => [...prev, { sender: 'ai', text: '' }]);
       setLoading(false);
@@ -428,13 +480,15 @@ export default function Chat() {
         controller.signal
       );
 
+      if (controller.signal.aborted) return;
+
       if (!skipUsageIncrement) {
         const newCount = await incrementTodayUsage(uid);
         setTodayUsage(newCount);
       }
 
       const finalMessages = [
-        ...messages,
+        ...prevMessagesSnapshot,
         { sender: 'user', text },
         { sender: 'ai', text: aiText },
       ];
@@ -462,6 +516,10 @@ export default function Chat() {
         { sender: 'ai', text: 'Network error. Please try again.' },
       ]);
       setLoading(false);
+    } finally {
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibility);
+      }
     }
   }
 
@@ -799,17 +857,25 @@ export default function Chat() {
             }
           >
             <div className="chat-input-wrapper">
-              <input
-                type="text"
+              <textarea
                 className="chat-input"
                 placeholder="Ask anything..."
                 autoComplete="off"
                 ref={inputRef}
                 value={input}
                 maxLength={MAX_MESSAGE_LENGTH}
-                onChange={(e) => setInput(e.target.value)}
+                rows={1}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  // Auto-grow like ChatGPT/Claude — lines expand upward
+                  const el = e.target;
+                  el.style.height = 'auto';
+                  const next = Math.min(el.scrollHeight, 160);
+                  el.style.height = `${Math.max(next, 50)}px`;
+                }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  // Enter sends; Shift+Enter inserts newline
+                  if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     sendMessage();
                   }
@@ -820,6 +886,7 @@ export default function Chat() {
               <button
                 className="chat-submit-button"
                 onClick={() => sendMessage()}
+                type="button"
               >
                 <img
                   src="/assets/send.png"
@@ -1516,14 +1583,22 @@ export default function Chat() {
 
         .chat-input {
           width: 100%;
+          min-height: 50px;
           height: 50px;
+          max-height: 160px;
           background: #0e0e0e;
-          border-radius: 50px;
+          border-radius: 25px;
           border: none;
-          padding: 0 65px 0 35px;
+          padding: 14px 65px 14px 35px;
           font-size: 18px;
+          line-height: 1.35;
           color: #fff;
           outline: none;
+          resize: none;
+          overflow-y: auto;
+          font-family: inherit;
+          box-sizing: border-box;
+          vertical-align: middle;
         }
 
         .chat-input::placeholder {
@@ -1532,14 +1607,16 @@ export default function Chat() {
 
         .chat-submit-button {
           position: absolute;
-          top: 50%;
+          bottom: 4px;
           right: 10px;
-          transform: translateY(-50%);
           width: 42px;
           height: 42px;
           background: transparent;
           border: none;
           cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .chat-submit-icon {
@@ -1876,18 +1953,21 @@ export default function Chat() {
           }
 
           .view-landing .chat-input {
+            min-height: 46px;
             height: 46px;
-            padding: 0 48px 0 18px;
+            max-height: 140px;
+            padding: 12px 48px 12px 18px;
             font-size: 16px;
-            border-radius: 50px;
+            border-radius: 23px;
           }
 
           .view-landing .chat-submit-button {
             width: 40px;
             height: 40px;
             right: 4px;
-            top: 50%;
-            transform: translateY(-50%);
+            bottom: 3px;
+            top: auto;
+            transform: none;
           }
 
           .view-landing .chat-submit-icon {
@@ -1944,7 +2024,10 @@ export default function Chat() {
 
           .chat-input {
             font-size: 16px;
+            min-height: 48px;
             height: 48px;
+            max-height: 140px;
+            padding: 12px 55px 12px 18px;
           }
 
           .limit-close-btn {

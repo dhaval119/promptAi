@@ -271,6 +271,11 @@ export default function Chat() {
           ''
         ).trim();
         setDisplayRequest(reqText);
+        try {
+          if (typeof window !== 'undefined' && conv.id && reqText) {
+            window.sessionStorage.setItem('pa_req_' + conv.id, reqText);
+          }
+        } catch (e) {}
         // Guarantee user bubble is present in messages
         let finalMsgs = normalized;
         if (reqText && !finalMsgs.some((m) => m.sender === 'user' && (m.text || '').trim())) {
@@ -361,6 +366,11 @@ export default function Chat() {
         ''
       ).trim();
       setDisplayRequest(reqText);
+      try {
+        if (typeof window !== 'undefined' && conv.id && reqText) {
+          window.sessionStorage.setItem('pa_req_' + conv.id, reqText);
+        }
+      } catch (e) {}
       let finalMsgs = normalized;
       if (reqText && !finalMsgs.some((m) => m.sender === 'user' && (m.text || '').trim())) {
         finalMsgs = [{ sender: 'user', text: reqText }, ...finalMsgs];
@@ -500,6 +510,11 @@ export default function Chat() {
 
     setMessages((prev) => [...prev, { sender: 'user', text }]);
     setDisplayRequest(text);
+    try {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem('pa_req_pending', text);
+      }
+    } catch (e) {}
     setInput('');
     // Reset textarea height after clear
     if (inputRef.current) {
@@ -591,6 +606,11 @@ export default function Chat() {
       setMessages(finalMessages);
       setDisplayRequest(text);
       setCurrentChatId(saved.id);
+      try {
+        if (typeof window !== 'undefined' && saved.id) {
+          window.sessionStorage.setItem('pa_req_' + saved.id, text);
+        }
+      } catch (e) {}
       skipNextLoadRef.current = true;
       await refreshChats();
       router.replace(`/chat?chat_id=${saved.id}`, undefined, { shallow: true });
@@ -846,23 +866,64 @@ export default function Chat() {
           </div>
 
           <article className="conversation-thread" ref={threadRef}>
-            {/* ALWAYS show user request above AI — from state, messages, or sidebar title */}
+            {/* ALWAYS show user request — every possible source */}
             {(() => {
+              const chatId =
+                (router.query && router.query.chat_id) || currentChatId || '';
               const fromMsgs = (messages || []).find(
                 (m) => m.sender === 'user' && (m.text || '').trim()
               );
               const fromSidebar = (chats || []).find(
-                (c) => String(c.id) === String(currentChatId)
+                (c) => String(c.id) === String(chatId)
               );
-              const text = (
+              let text = (
                 (fromMsgs && fromMsgs.text) ||
                 displayRequest ||
-                (fromSidebar && (fromSidebar.request || fromSidebar.title)) ||
+                (fromSidebar && fromSidebar.request) ||
+                (fromSidebar && fromSidebar.title) ||
                 ''
-              ).trim();
+              );
+              if (typeof text === 'string') text = text.trim();
+              else text = '';
+              // last resort: sessionStorage cache
+              if (!text && typeof window !== 'undefined' && chatId) {
+                try {
+                  text = (
+                    window.sessionStorage.getItem('pa_req_' + chatId) || ''
+                  ).trim();
+                } catch (e) {}
+              }
               if (!text) return null;
+              // cache for next time
+              if (typeof window !== 'undefined' && chatId) {
+                try {
+                  window.sessionStorage.setItem('pa_req_' + chatId, text);
+                } catch (e) {}
+              }
               return (
-                <div className="user-message" key="user-request-always">
+                <div
+                  className="user-message"
+                  key="user-request-always"
+                  style={{
+                    color: '#ffffff',
+                    display: 'block',
+                    visibility: 'visible',
+                    opacity: 1,
+                    textAlign: 'center',
+                    fontWeight: 600,
+                    fontSize: 16,
+                    lineHeight: 1.55,
+                    maxWidth: 750,
+                    width: '100%',
+                    margin: '0 auto',
+                    padding: '8px 12px',
+                    boxSizing: 'border-box',
+                    wordBreak: 'break-all',
+                    overflowWrap: 'anywhere',
+                    whiteSpace: 'normal',
+                    overflowX: 'hidden',
+                  }}
+                >
                   {text}
                 </div>
               );

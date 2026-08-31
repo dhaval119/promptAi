@@ -54,6 +54,32 @@ function groupChatsByDate(chats) {
   return groups;
 }
 
+
+function normalizeMessages(conv) {
+  if (!conv) return [];
+  let msgs = Array.isArray(conv.messages) ? conv.messages.filter(Boolean) : [];
+  // Drop empty shells
+  msgs = msgs.filter((m) => m && (m.text || m.sender === 'ai'));
+  const hasUser = msgs.some((m) => m.sender === 'user' && (m.text || '').trim());
+  const request = (conv.request || '').trim();
+  const response = (conv.response || '').trim();
+  if (!hasUser && request) {
+    msgs = [{ sender: 'user', text: request }, ...msgs];
+  }
+  const hasAi = msgs.some((m) => m.sender === 'ai' && (m.text || '').trim());
+  if (!hasAi && response) {
+    msgs = [...msgs, { sender: 'ai', text: response }];
+  }
+  // If still empty but have request/response pair
+  if (msgs.length === 0 && request) {
+    msgs = [
+      { sender: 'user', text: request },
+      ...(response ? [{ sender: 'ai', text: response }] : []),
+    ];
+  }
+  return msgs;
+}
+
 async function typeWriter(fullText, onUpdate, signal) {
   // If tab/app is already in background, show full text immediately
   // so generation never "pauses and restarts" when user returns.
@@ -222,14 +248,7 @@ export default function Chat() {
           return;
         }
         setCurrentChatId(conv.id);
-        if (Array.isArray(conv.messages) && conv.messages.length > 0) {
-          setMessages(conv.messages);
-        } else {
-          setMessages([
-            { sender: 'user', text: conv.request },
-            ...(conv.response ? [{ sender: 'ai', text: conv.response }] : []),
-          ]);
-        }
+        setMessages(normalizeMessages(conv));
       } catch (err) {
         console.error('[chat] getConversation failed', err);
         setMessages([]);
@@ -280,14 +299,7 @@ export default function Chat() {
 
       setCurrentChatId(conv.id);
       setMenuOpenId(null);
-      if (Array.isArray(conv.messages) && conv.messages.length > 0) {
-        setMessages(conv.messages);
-      } else {
-        setMessages([
-          { sender: 'user', text: conv.request },
-          ...(conv.response ? [{ sender: 'ai', text: conv.response }] : []),
-        ]);
-      }
+      setMessages(normalizeMessages(conv));
       router.replace(`/chat?chat_id=${conv.id}`, undefined, { shallow: true });
     } catch (err) {
       console.error('[chat] openChat failed', err);
@@ -764,14 +776,14 @@ export default function Chat() {
           <article className="conversation-thread" ref={threadRef}>
             {messages.map((m, i) =>
               m.sender === 'user' ? (
-                <div className="user-message" key={i}>
-                  {m.text}
+                <div className="user-message" key={`u-${i}`}>
+                  {m.text || ''}
                 </div>
               ) : (
-                <section className="ai-group" key={i}>
+                <section className="ai-group" key={`a-${i}`}>
                   <h2 className="ai-heading">Generated Prompt:</h2>
 
-                  <p className="ai-prompt">{m.text}</p>
+                  <p className="ai-prompt">{m.text || ''}</p>
 
                   {m.text ? (
                     <div className="action-row">
@@ -1501,17 +1513,21 @@ export default function Chat() {
 
         .user-message {
           align-self: center;
-          text-align: right;
+          direction: ltr;
+          text-align: left;
+          unicode-bidi: plaintext;
           font-weight: 700;
           color: #fff;
           font-size: 16px;
-          /* Long unbroken strings must break inside the same 750px box */
-          overflow-wrap: anywhere;
+          /* Long unbroken strings break inside the same 750px box — no extra spaces */
+          overflow-wrap: break-word;
           word-wrap: break-word;
           word-break: break-word;
           white-space: pre-wrap;
           overflow-x: hidden;
           box-sizing: border-box;
+          letter-spacing: normal;
+          word-spacing: normal;
         }
 
         .ai-group {
@@ -1540,13 +1556,18 @@ export default function Chat() {
           border-radius: 12px;
           border: 1px solid #222;
           white-space: pre-wrap;
-          overflow-wrap: anywhere;
+          direction: ltr;
+          text-align: left;
+          unicode-bidi: plaintext;
+          overflow-wrap: break-word;
           word-wrap: break-word;
           word-break: break-word;
           min-height: 24px;
           max-width: 100%;
           box-sizing: border-box;
           overflow-x: hidden;
+          letter-spacing: normal;
+          word-spacing: normal;
         }
 
         .action-row {
@@ -1668,11 +1689,20 @@ export default function Chat() {
           outline: none;
           resize: none;
           overflow-y: auto;
+          overflow-x: hidden;
           font-family: inherit;
           box-sizing: border-box;
           vertical-align: middle;
           scrollbar-width: none;
           -ms-overflow-style: none;
+          direction: ltr;
+          text-align: left;
+          unicode-bidi: plaintext;
+          letter-spacing: normal;
+          word-spacing: normal;
+          white-space: pre-wrap;
+          overflow-wrap: break-word;
+          word-break: break-word;
         }
 
         .chat-input::-webkit-scrollbar {
@@ -2158,7 +2188,9 @@ export default function Chat() {
 
           .user-message {
             font-size: 14px;
-            overflow-wrap: anywhere;
+            direction: ltr;
+            text-align: left;
+            overflow-wrap: break-word;
             word-break: break-word;
             white-space: pre-wrap;
             overflow-x: hidden;

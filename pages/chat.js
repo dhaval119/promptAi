@@ -1496,27 +1496,29 @@ export default function Chat() {
           max-width: 750px;
           width: 100%;
           margin: 0 auto;
+          box-sizing: border-box;
         }
 
         .user-message {
-          align-self: flex-end;
+          align-self: center;
           text-align: right;
           font-weight: 700;
           color: #fff;
           font-size: 16px;
-          overflow-wrap: break-word;
+          /* Long unbroken strings must break inside the same 750px box */
+          overflow-wrap: anywhere;
           word-wrap: break-word;
           word-break: break-word;
-          max-width: 100%;
+          white-space: pre-wrap;
+          overflow-x: hidden;
           box-sizing: border-box;
         }
 
         .ai-group {
-          align-self: flex-start;
+          align-self: center;
           display: flex;
           flex-direction: column;
           gap: 8px;
-          max-width: 100%;
           box-sizing: border-box;
         }
 
@@ -1538,7 +1540,7 @@ export default function Chat() {
           border-radius: 12px;
           border: 1px solid #222;
           white-space: pre-wrap;
-          overflow-wrap: break-word;
+          overflow-wrap: anywhere;
           word-wrap: break-word;
           word-break: break-word;
           min-height: 24px;
@@ -2148,15 +2150,18 @@ export default function Chat() {
             overflow-x: hidden;
           }
 
-          .user-message {
-            max-width: 88%;
-            font-size: 14px;
-            overflow-wrap: break-word;
-            word-break: break-word;
-          }
-
+          .user-message,
           .ai-group {
             max-width: 100%;
+            width: 100%;
+          }
+
+          .user-message {
+            font-size: 14px;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            white-space: pre-wrap;
+            overflow-x: hidden;
           }
 
           .ai-heading {
@@ -2167,7 +2172,7 @@ export default function Chat() {
             font-size: 14px;
             line-height: 1.55;
             padding: 16px;
-            overflow-wrap: break-word;
+            overflow-wrap: anywhere;
             word-break: break-word;
             overflow-x: hidden;
           }

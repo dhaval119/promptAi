@@ -1597,6 +1597,7 @@ export default function Chat() {
         .conversation-thread {
           flex: 1;
           width: 100%;
+          max-width: 100%;
           padding: 120px 40px 140px 40px;
           overflow-y: auto;
           overflow-x: hidden;
@@ -1605,6 +1606,7 @@ export default function Chat() {
           flex-direction: column;
           gap: 50px;
           background: #000;
+          box-sizing: border-box;
         }
 
         .user-message,
@@ -1616,23 +1618,26 @@ export default function Chat() {
         }
 
         .user-message {
-          align-self: flex-end;
+          align-self: center;
           width: 100%;
           max-width: 750px;
           margin-left: auto;
           margin-right: auto;
           direction: ltr;
-          text-align: right;
+          text-align: left;
           unicode-bidi: plaintext;
           font-weight: 700;
           color: #ffffff !important;
           font-size: 16px;
-          line-height: 1.5;
-          overflow-wrap: break-word;
+          line-height: 1.55;
+          /* Force wrap even for long strings with ZERO spaces — no horizontal scrollbar */
+          overflow-wrap: anywhere;
           word-wrap: break-word;
           word-break: break-word;
           white-space: pre-wrap;
           overflow-x: hidden;
+          overflow-y: visible;
+          max-width: 100%;
           box-sizing: border-box;
           letter-spacing: normal;
           word-spacing: normal;
@@ -1640,6 +1645,7 @@ export default function Chat() {
           opacity: 1;
           visibility: visible;
           min-height: 1.5em;
+          hyphens: none;
         }
 
         .ai-group {
@@ -2302,10 +2308,13 @@ export default function Chat() {
             font-size: 14px;
             direction: ltr;
             text-align: left;
-            overflow-wrap: break-word;
+            overflow-wrap: anywhere;
             word-break: break-word;
             white-space: pre-wrap;
             overflow-x: hidden;
+            overflow-y: visible;
+            max-width: 100%;
+            width: 100%;
           }
 
           .ai-heading {

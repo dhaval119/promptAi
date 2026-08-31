@@ -146,6 +146,7 @@ export default function Chat() {
   const [chats, setChats] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(0);
   const [messages, setMessages] = useState([]);
+  const [displayRequest, setDisplayRequest] = useState('');
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
@@ -242,6 +243,7 @@ export default function Chat() {
     if (!idParam) {
       setCurrentChatId(0);
       setMessages([]);
+      setDisplayRequest('');
       return;
     }
 
@@ -262,8 +264,26 @@ export default function Chat() {
         }
         setCurrentChatId(conv.id);
         const normalized = normalizeMessages(conv);
-        // Always prefer non-empty normalized list (includes user request)
-        setMessages(normalized.length ? normalized : []);
+        const reqText = (
+          conv.request ||
+          conv.title ||
+          (normalized.find((m) => m.sender === 'user') || {}).text ||
+          ''
+        ).trim();
+        setDisplayRequest(reqText);
+        // Guarantee user bubble is present in messages
+        let finalMsgs = normalized;
+        if (reqText && !finalMsgs.some((m) => m.sender === 'user' && (m.text || '').trim())) {
+          finalMsgs = [{ sender: 'user', text: reqText }, ...finalMsgs];
+        }
+        if (reqText && finalMsgs.some((m) => m.sender === 'user' && !(m.text || '').trim())) {
+          finalMsgs = finalMsgs.map((m) =>
+            m.sender === 'user' && !(m.text || '').trim()
+              ? { ...m, text: reqText }
+              : m
+          );
+        }
+        setMessages(finalMsgs);
       } catch (err) {
         console.error('[chat] getConversation failed', err);
         setMessages([]);
@@ -302,6 +322,7 @@ export default function Chat() {
     if (abortRef.current) abortRef.current.abort();
     setCurrentChatId(0);
     setMessages([]);
+    setDisplayRequest('');
     setMenuOpenId(null);
     router.replace('/chat', undefined, { shallow: true });
     setTimeout(() => inputRef.current?.focus(), 50);
@@ -314,7 +335,26 @@ export default function Chat() {
 
       setCurrentChatId(conv.id);
       setMenuOpenId(null);
-      setMessages(normalizeMessages(conv));
+      const fromList = (chats || []).find((c) => String(c.id) === String(conv.id));
+      const normalized = normalizeMessages({
+        ...conv,
+        request: conv.request || fromList?.request || '',
+        title: conv.title || fromList?.title || '',
+        response: conv.response || fromList?.response || '',
+      });
+      const reqText = (
+        conv.request ||
+        fromList?.request ||
+        conv.title ||
+        fromList?.title ||
+        ''
+      ).trim();
+      setDisplayRequest(reqText);
+      let finalMsgs = normalized;
+      if (reqText && !finalMsgs.some((m) => m.sender === 'user' && (m.text || '').trim())) {
+        finalMsgs = [{ sender: 'user', text: reqText }, ...finalMsgs];
+      }
+      setMessages(finalMsgs);
       router.replace(`/chat?chat_id=${conv.id}`, undefined, { shallow: true });
     } catch (err) {
       console.error('[chat] openChat failed', err);
@@ -447,6 +487,7 @@ export default function Chat() {
     const prevMessagesSnapshot = messages;
 
     setMessages((prev) => [...prev, { sender: 'user', text }]);
+    setDisplayRequest(text);
     setInput('');
     // Reset textarea height after clear
     if (inputRef.current) {
@@ -536,6 +577,7 @@ export default function Chat() {
 
       // Keep local messages (with user request visible) — don't let route reload wipe them
       setMessages(finalMessages);
+      setDisplayRequest(text);
       setCurrentChatId(saved.id);
       skipNextLoadRef.current = true;
       await refreshChats();
@@ -792,13 +834,41 @@ export default function Chat() {
           </div>
 
           <article className="conversation-thread" ref={threadRef}>
-            {messages.map((m, i) =>
-              m.sender === 'user' ? (
-                <div className="user-message" key={`u-${i}`}>
-                  {m.text || ''}
-                </div>
-              ) : (
-                <section className="ai-group" key={`a-${i}`}>
+            {(() => {
+              // Build a guaranteed display list: user request always first if present
+              const hasUser = messages.some(
+                (m) => m.sender === 'user' && (m.text || '').trim()
+              );
+              const req =
+                (hasUser
+                  ? ''
+                  : (displayRequest || '').trim()) ||
+                '';
+              const list = [];
+              if (!hasUser && req) {
+                list.push({ sender: 'user', text: req, _key: 'req' });
+              }
+              messages.forEach((m, i) => {
+                list.push({ ...m, _key: `${m.sender}-${i}` });
+              });
+              // If still no user but displayRequest exists, force it
+              if (
+                !list.some((m) => m.sender === 'user' && (m.text || '').trim()) &&
+                (displayRequest || '').trim()
+              ) {
+                list.unshift({
+                  sender: 'user',
+                  text: displayRequest.trim(),
+                  _key: 'req-fallback',
+                });
+              }
+              return list.map((m, i) =>
+                m.sender === 'user' ? (
+                  <div className="user-message" key={m._key}>
+                    {m.text}
+                  </div>
+                ) : (
+                <section className="ai-group" key={m._key}>
                   <h2 className="ai-heading">Generated Prompt:</h2>
 
                   <p className="ai-prompt">{m.text || ''}</p>
@@ -866,7 +936,8 @@ export default function Chat() {
                   ) : null}
                 </section>
               )
-            )}
+              );
+            })()}
 
             {loading ? (
               <div className="ai-group skeleton-group">

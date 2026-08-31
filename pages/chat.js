@@ -1617,34 +1617,34 @@ export default function Chat() {
           box-sizing: border-box;
         }
 
+        /* User request — centered block, wraps like reference SS, no side scroll */
         .user-message {
           align-self: center;
           width: 100%;
           max-width: 750px;
-          margin-left: auto;
-          margin-right: auto;
+          margin: 0 auto;
+          padding: 0 8px;
+          box-sizing: border-box;
           direction: ltr;
-          text-align: left;
+          text-align: center;
           unicode-bidi: plaintext;
-          font-weight: 700;
+          font-weight: 600;
           color: #ffffff !important;
           font-size: 16px;
           line-height: 1.55;
-          /* Force wrap even for long strings with ZERO spaces — no horizontal scrollbar */
+          /* Break continuous strings (bbbb…) onto next lines */
           overflow-wrap: anywhere;
           word-wrap: break-word;
-          word-break: break-word;
-          white-space: pre-wrap;
+          word-break: break-all;
+          white-space: normal;
           overflow-x: hidden;
           overflow-y: visible;
-          max-width: 100%;
-          box-sizing: border-box;
           letter-spacing: normal;
           word-spacing: normal;
           display: block;
           opacity: 1;
           visibility: visible;
-          min-height: 1.5em;
+          min-width: 0;
           hyphens: none;
         }
 
@@ -2307,14 +2307,16 @@ export default function Chat() {
           .user-message {
             font-size: 14px;
             direction: ltr;
-            text-align: left;
+            text-align: center;
             overflow-wrap: anywhere;
-            word-break: break-word;
-            white-space: pre-wrap;
+            word-break: break-all;
+            white-space: normal;
             overflow-x: hidden;
             overflow-y: visible;
             max-width: 100%;
             width: 100%;
+            min-width: 0;
+            padding: 0 4px;
           }
 
           .ai-heading {

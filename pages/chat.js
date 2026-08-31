@@ -1504,9 +1504,11 @@ export default function Chat() {
           font-weight: 700;
           color: #fff;
           font-size: 16px;
-          overflow-wrap: anywhere;
+          overflow-wrap: break-word;
+          word-wrap: break-word;
           word-break: break-word;
           max-width: 100%;
+          box-sizing: border-box;
         }
 
         .ai-group {
@@ -1515,6 +1517,7 @@ export default function Chat() {
           flex-direction: column;
           gap: 8px;
           max-width: 100%;
+          box-sizing: border-box;
         }
 
         .ai-heading {
@@ -1535,11 +1538,13 @@ export default function Chat() {
           border-radius: 12px;
           border: 1px solid #222;
           white-space: pre-wrap;
-          overflow-wrap: anywhere;
+          overflow-wrap: break-word;
+          word-wrap: break-word;
           word-break: break-word;
           min-height: 24px;
           max-width: 100%;
           box-sizing: border-box;
+          overflow-x: hidden;
         }
 
         .action-row {
@@ -2140,11 +2145,14 @@ export default function Chat() {
 
           .conversation-thread {
             padding: 80px 14px 100px;
+            overflow-x: hidden;
           }
 
           .user-message {
             max-width: 88%;
             font-size: 14px;
+            overflow-wrap: break-word;
+            word-break: break-word;
           }
 
           .ai-group {
@@ -2159,6 +2167,9 @@ export default function Chat() {
             font-size: 14px;
             line-height: 1.55;
             padding: 16px;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            overflow-x: hidden;
           }
 
           .action-row {

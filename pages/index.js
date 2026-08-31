@@ -107,7 +107,12 @@ export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const [mobileRedirecting, setMobileRedirecting] = useState(false);
 
+  const row1Ref = useRef(null);
+  const row2Ref = useRef(null);
+  const featuresWrapRef = useRef(null);
+
   // Mobile: never show index — login if guest, chat if logged in
+  // All hooks must run every render (no early return before hooks).
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (window.innerWidth > 900) return;
@@ -117,40 +122,8 @@ export default function Home() {
     else router.replace('/login');
   }, [user, authLoading, router]);
 
-  // Avoid flash of desktop landing on mobile while redirect runs
-  if (mobileRedirecting) {
-    return (
-      <>
-        <Head>
-          <title>PromptAI</title>
-          <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
-          />
-        </Head>
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: '#020202',
-            zIndex: 99999,
-          }}
-        />
-      </>
-    );
-  }
-
-  function goChat() {
-    if (authLoading) return;
-    if (user) router.push('/chat');
-    else router.push('/login');
-  }
-
-  const row1Ref = useRef(null);
-  const row2Ref = useRef(null);
-  const featuresWrapRef = useRef(null);
-
   useEffect(() => {
+    if (mobileRedirecting) return;
     function onScroll() {
       const wrap = featuresWrapRef.current;
       const row1 = row1Ref.current;
@@ -169,10 +142,11 @@ export default function Home() {
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [mobileRedirecting]);
 
   // Reliable hash scroll that works with ScaleFit
   useEffect(() => {
+    if (mobileRedirecting) return;
     function scrollToHash() {
       if (typeof window === 'undefined') return;
       const hash = window.location.hash;
@@ -204,7 +178,36 @@ export default function Home() {
     scrollToHash();
     window.addEventListener('hashchange', scrollToHash);
     return () => window.removeEventListener('hashchange', scrollToHash);
-  }, []);
+  }, [mobileRedirecting]);
+
+  function goChat() {
+    if (authLoading) return;
+    if (user) router.push('/chat');
+    else router.push('/login');
+  }
+
+  // Avoid flash of desktop landing on mobile while redirect runs
+  if (mobileRedirecting) {
+    return (
+      <>
+        <Head>
+          <title>PromptAI</title>
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+          />
+        </Head>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: '#020202',
+            zIndex: 99999,
+          }}
+        />
+      </>
+    );
+  }
 
   return (
     <>

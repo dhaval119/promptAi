@@ -62,19 +62,20 @@ async function typeWriter(fullText, onUpdate, signal) {
     return;
   }
 
-  const words = fullText.split(/(\s+)/);
+  // Fast animation: reveal in small chunks instead of slow word-by-word
+  const chunkSize = 12;
   let current = '';
-  for (let i = 0; i < words.length; i++) {
+  for (let i = 0; i < fullText.length; i += chunkSize) {
     if (signal?.aborted) return;
-    // Jump to full text if user backgrounds the tab mid-animation
     if (typeof document !== 'undefined' && document.hidden) {
       onUpdate(fullText);
       return;
     }
-    current += words[i];
+    current = fullText.slice(0, i + chunkSize);
     onUpdate(current);
-    await new Promise((r) => setTimeout(r, words[i].trim() ? 28 : 8));
+    await new Promise((r) => setTimeout(r, 4));
   }
+  onUpdate(fullText);
 }
 
 function PinIcon({ size = 14, filled = false }) {
@@ -118,6 +119,7 @@ export default function Chat() {
   const [copiedIdx, setCopiedIdx] = useState(-1);
   const [chatsReady, setChatsReady] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showContactPopup, setShowContactPopup] = useState(false);
   const [todayUsage, setTodayUsage] = useState(0);
   const [kbOffset, setKbOffset] = useState(0);
   const [sharedIdx, setSharedIdx] = useState(-1);
@@ -947,12 +949,7 @@ export default function Chat() {
 
                 <button
                   className="limit-btn"
-                  onClick={() => {
-                    window.open(
-                      'mailto:dev@example.com?subject=Bypass%20Code%20Please',
-                      '_blank'
-                    );
-                  }}
+                  onClick={() => setShowContactPopup(true)}
                 >
                   Wake the Dev
                 </button>
@@ -990,17 +987,77 @@ export default function Chat() {
 
                 <button
                   className="limit-mobile-btn"
-                  onClick={() => {
-                    window.open(
-                      'mailto:dev@example.com?subject=Bypass%20Code%20Please',
-                      '_blank'
-                    );
-                  }}
+                  onClick={() => setShowContactPopup(true)}
                 >
                   Wake the Dev
                 </button>
               </div>
             </div>
+
+            {showContactPopup && (
+              <div
+                className="contact-popup-overlay"
+                onClick={() => setShowContactPopup(false)}
+              >
+                <div
+                  className="contact-popup"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    className="contact-popup-close"
+                    onClick={() => setShowContactPopup(false)}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                  <p className="contact-popup-title">Contact Dev</p>
+                  <button
+                    type="button"
+                    className="contact-popup-item"
+                    onClick={() => {
+                      const name = [profile?.firstName, profile?.lastName]
+                        .filter(Boolean)
+                        .join(' ')
+                        .trim() || user?.displayName || 'User';
+                      const method =
+                        profile?.signupMethod ||
+                        profile?.signup_method ||
+                        (user?.providerData?.[0]?.providerId === 'google.com'
+                          ? 'google'
+                          : 'email') ||
+                        'unknown';
+                      const body = [
+                        `User ID: ${user?.uid || 'guest'}`,
+                        `Name: ${name}`,
+                        `Email: ${user?.email || email || 'n/a'}`,
+                        `Signup method: ${method}`,
+                      ].join('\n');
+                      const mailto =
+                        'mailto:sonidhaval2468@gmail.com' +
+                        '?subject=' +
+                        encodeURIComponent('user from promptai') +
+                        '&body=' +
+                        encodeURIComponent(body);
+                      window.location.href = mailto;
+                    }}
+                  >
+                    📧 Email
+                    <span className="contact-popup-sub">
+                      sonidhaval2468@gmail.com
+                    </span>
+                  </button>
+                  <a
+                    className="contact-popup-item"
+                    href="https://www.instagram.com/dhaval._.119?igsh=dW9kMDE3Z2NqMmFx"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    📸 Instagram
+                    <span className="contact-popup-sub">@dhaval._.119</span>
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1447,6 +1504,9 @@ export default function Chat() {
           font-weight: 700;
           color: #fff;
           font-size: 16px;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+          max-width: 100%;
         }
 
         .ai-group {
@@ -1454,6 +1514,7 @@ export default function Chat() {
           display: flex;
           flex-direction: column;
           gap: 8px;
+          max-width: 100%;
         }
 
         .ai-heading {
@@ -1474,7 +1535,11 @@ export default function Chat() {
           border-radius: 12px;
           border: 1px solid #222;
           white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          word-break: break-word;
           min-height: 24px;
+          max-width: 100%;
+          box-sizing: border-box;
         }
 
         .action-row {
@@ -1599,6 +1664,14 @@ export default function Chat() {
           font-family: inherit;
           box-sizing: border-box;
           vertical-align: middle;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .chat-input::-webkit-scrollbar {
+          display: none;
+          width: 0;
+          height: 0;
         }
 
         .chat-input::placeholder {
@@ -1798,6 +1871,86 @@ export default function Chat() {
 
         .limit-content-mobile {
           display: none;
+        }
+
+        .contact-popup-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.65);
+          z-index: 100000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+        }
+
+        .contact-popup {
+          position: relative;
+          width: 100%;
+          max-width: 320px;
+          background: #121212;
+          border: 1px solid #2a2a2a;
+          border-radius: 16px;
+          padding: 22px 18px 16px;
+          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+        }
+
+        .contact-popup-close {
+          position: absolute;
+          top: 8px;
+          right: 10px;
+          background: transparent;
+          border: none;
+          color: #888;
+          font-size: 24px;
+          line-height: 1;
+          cursor: pointer;
+          padding: 4px 8px;
+        }
+
+        .contact-popup-title {
+          color: #fff;
+          font-size: 15px;
+          font-weight: 700;
+          margin: 0 0 14px;
+          text-align: center;
+        }
+
+        .contact-popup-item {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+          width: 100%;
+          text-align: left;
+          background: #1a1a1a;
+          border: 1px solid #2e2e2e;
+          border-radius: 12px;
+          color: #fff;
+          font-size: 14px;
+          font-weight: 600;
+          padding: 12px 14px;
+          margin-bottom: 10px;
+          cursor: pointer;
+          text-decoration: none;
+          font-family: inherit;
+          box-sizing: border-box;
+        }
+
+        .contact-popup-item:last-child {
+          margin-bottom: 0;
+        }
+
+        .contact-popup-item:hover {
+          border-color: #555;
+          background: #222;
+        }
+
+        .contact-popup-sub {
+          font-size: 12px;
+          font-weight: 400;
+          color: #9a9a9a;
+          word-break: break-all;
         }
 
         @media (max-width: 900px) {

@@ -58,26 +58,33 @@ function groupChatsByDate(chats) {
 function normalizeMessages(conv) {
   if (!conv) return [];
   let msgs = Array.isArray(conv.messages) ? conv.messages.filter(Boolean) : [];
-  // Drop empty shells
-  msgs = msgs.filter((m) => m && (m.text || m.sender === 'ai'));
-  const hasUser = msgs.some((m) => m.sender === 'user' && (m.text || '').trim());
-  const request = (conv.request || '').trim();
+  msgs = msgs
+    .filter((m) => m && m.sender)
+    .map((m) => ({
+      sender: m.sender === 'user' ? 'user' : 'ai',
+      text: typeof m.text === 'string' ? m.text : '',
+    }));
+
+  const request = (conv.request || conv.title || '').trim();
   const response = (conv.response || '').trim();
+
+  const hasUser = msgs.some((m) => m.sender === 'user' && m.text.trim());
+  const hasAi = msgs.some((m) => m.sender === 'ai' && m.text.trim());
+
   if (!hasUser && request) {
-    msgs = [{ sender: 'user', text: request }, ...msgs];
+    msgs = [{ sender: 'user', text: request }, ...msgs.filter((m) => m.sender !== 'user')];
   }
-  const hasAi = msgs.some((m) => m.sender === 'ai' && (m.text || '').trim());
   if (!hasAi && response) {
-    msgs = [...msgs, { sender: 'ai', text: response }];
+    msgs = [...msgs.filter((m) => m.sender !== 'ai'), { sender: 'ai', text: response }];
   }
-  // If still empty but have request/response pair
   if (msgs.length === 0 && request) {
     msgs = [
       { sender: 'user', text: request },
       ...(response ? [{ sender: 'ai', text: response }] : []),
     ];
   }
-  return msgs;
+  // Drop pure-empty AI shells unless it's the only item while loading
+  return msgs.filter((m) => m.sender === 'user' || (m.text && m.text.length > 0) || m.sender === 'ai');
 }
 
 async function typeWriter(fullText, onUpdate, signal) {
@@ -165,6 +172,7 @@ export default function Chat() {
   const inputRef = useRef(null);
   const abortRef = useRef(null);
   const menuRef = useRef(null);
+  const skipNextLoadRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.visualViewport) return;
@@ -237,6 +245,11 @@ export default function Chat() {
       return;
     }
 
+    if (skipNextLoadRef.current) {
+      skipNextLoadRef.current = false;
+      return;
+    }
+
     let cancelled = false;
     (async () => {
       try {
@@ -248,7 +261,9 @@ export default function Chat() {
           return;
         }
         setCurrentChatId(conv.id);
-        setMessages(normalizeMessages(conv));
+        const normalized = normalizeMessages(conv);
+        // Always prefer non-empty normalized list (includes user request)
+        setMessages(normalized.length ? normalized : []);
       } catch (err) {
         console.error('[chat] getConversation failed', err);
         setMessages([]);
@@ -519,7 +534,10 @@ export default function Chat() {
         email
       );
 
+      // Keep local messages (with user request visible) — don't let route reload wipe them
+      setMessages(finalMessages);
       setCurrentChatId(saved.id);
+      skipNextLoadRef.current = true;
       await refreshChats();
       router.replace(`/chat?chat_id=${saved.id}`, undefined, { shallow: true });
     } catch (err) {

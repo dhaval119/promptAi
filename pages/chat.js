@@ -391,9 +391,10 @@ export default function Chat() {
     setRenamingId(null);
     if (!title) return;
     try {
+      // Only update title — never wipe request/response
       await upsertConversation(
         uid,
-        { id, title, request: '', response: '' },
+        { id, title },
         email
       );
       await refreshChats();
@@ -839,11 +840,20 @@ export default function Chat() {
               const hasUser = messages.some(
                 (m) => m.sender === 'user' && (m.text || '').trim()
               );
-              const req =
-                (hasUser
-                  ? ''
-                  : (displayRequest || '').trim()) ||
-                '';
+              const fromSidebar = (chats || []).find(
+                (c) => String(c.id) === String(currentChatId)
+              );
+              const req = (
+                (hasUser ? '' : (displayRequest || '').trim()) ||
+                (!hasUser
+                  ? (
+                      fromSidebar?.request ||
+                      fromSidebar?.title ||
+                      ''
+                    ).trim()
+                  : '') ||
+                ''
+              );
               const list = [];
               if (!hasUser && req) {
                 list.push({ sender: 'user', text: req, _key: 'req' });
@@ -851,16 +861,21 @@ export default function Chat() {
               messages.forEach((m, i) => {
                 list.push({ ...m, _key: `${m.sender}-${i}` });
               });
-              // If still no user but displayRequest exists, force it
-              if (
-                !list.some((m) => m.sender === 'user' && (m.text || '').trim()) &&
-                (displayRequest || '').trim()
-              ) {
-                list.unshift({
-                  sender: 'user',
-                  text: displayRequest.trim(),
-                  _key: 'req-fallback',
-                });
+              // Force user bubble from any known source
+              if (!list.some((m) => m.sender === 'user' && (m.text || '').trim())) {
+                const fallback = (
+                  displayRequest ||
+                  fromSidebar?.request ||
+                  fromSidebar?.title ||
+                  ''
+                ).trim();
+                if (fallback) {
+                  list.unshift({
+                    sender: 'user',
+                    text: fallback,
+                    _key: 'req-fallback',
+                  });
+                }
               }
               return list.map((m, i) =>
                 m.sender === 'user' ? (
@@ -1601,14 +1616,18 @@ export default function Chat() {
         }
 
         .user-message {
-          align-self: center;
+          align-self: flex-end;
+          width: 100%;
+          max-width: 750px;
+          margin-left: auto;
+          margin-right: auto;
           direction: ltr;
-          text-align: left;
+          text-align: right;
           unicode-bidi: plaintext;
           font-weight: 700;
-          color: #fff;
+          color: #ffffff !important;
           font-size: 16px;
-          /* Long unbroken strings break inside the same 750px box — no extra spaces */
+          line-height: 1.5;
           overflow-wrap: break-word;
           word-wrap: break-word;
           word-break: break-word;
@@ -1617,6 +1636,10 @@ export default function Chat() {
           box-sizing: border-box;
           letter-spacing: normal;
           word-spacing: normal;
+          display: block;
+          opacity: 1;
+          visibility: visible;
+          min-height: 1.5em;
         }
 
         .ai-group {

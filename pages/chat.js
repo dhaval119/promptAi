@@ -308,6 +308,17 @@ export default function Chat() {
     }
   }, [showLimitModal]);
 
+  // Keep user request text filled from sidebar title if state lost it
+  useEffect(() => {
+    if ((displayRequest || '').trim()) return;
+    if (!currentChatId) return;
+    const fromSidebar = (chats || []).find(
+      (c) => String(c.id) === String(currentChatId)
+    );
+    const t = (fromSidebar?.request || fromSidebar?.title || '').trim();
+    if (t) setDisplayRequest(t);
+  }, [chats, currentChatId, displayRequest]);
+
   useEffect(() => {
     function handleClick(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -835,55 +846,31 @@ export default function Chat() {
           </div>
 
           <article className="conversation-thread" ref={threadRef}>
+            {/* ALWAYS show user request above AI — from state, messages, or sidebar title */}
             {(() => {
-              // Build a guaranteed display list: user request always first if present
-              const hasUser = messages.some(
+              const fromMsgs = (messages || []).find(
                 (m) => m.sender === 'user' && (m.text || '').trim()
               );
               const fromSidebar = (chats || []).find(
                 (c) => String(c.id) === String(currentChatId)
               );
-              const req = (
-                (hasUser ? '' : (displayRequest || '').trim()) ||
-                (!hasUser
-                  ? (
-                      fromSidebar?.request ||
-                      fromSidebar?.title ||
-                      ''
-                    ).trim()
-                  : '') ||
+              const text = (
+                (fromMsgs && fromMsgs.text) ||
+                displayRequest ||
+                (fromSidebar && (fromSidebar.request || fromSidebar.title)) ||
                 ''
+              ).trim();
+              if (!text) return null;
+              return (
+                <div className="user-message" key="user-request-always">
+                  {text}
+                </div>
               );
-              const list = [];
-              if (!hasUser && req) {
-                list.push({ sender: 'user', text: req, _key: 'req' });
-              }
-              messages.forEach((m, i) => {
-                list.push({ ...m, _key: `${m.sender}-${i}` });
-              });
-              // Force user bubble from any known source
-              if (!list.some((m) => m.sender === 'user' && (m.text || '').trim())) {
-                const fallback = (
-                  displayRequest ||
-                  fromSidebar?.request ||
-                  fromSidebar?.title ||
-                  ''
-                ).trim();
-                if (fallback) {
-                  list.unshift({
-                    sender: 'user',
-                    text: fallback,
-                    _key: 'req-fallback',
-                  });
-                }
-              }
-              return list.map((m, i) =>
-                m.sender === 'user' ? (
-                  <div className="user-message" key={m._key}>
-                    {m.text}
-                  </div>
-                ) : (
-                <section className="ai-group" key={m._key}>
+            })()}
+
+            {messages.map((m, i) =>
+              m.sender === 'user' ? null : (
+                <section className="ai-group" key={`a-${i}`}>
                   <h2 className="ai-heading">Generated Prompt:</h2>
 
                   <p className="ai-prompt">{m.text || ''}</p>
@@ -951,8 +938,7 @@ export default function Chat() {
                   ) : null}
                 </section>
               )
-              );
-            })()}
+            )}
 
             {loading ? (
               <div className="ai-group skeleton-group">

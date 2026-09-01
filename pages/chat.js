@@ -866,71 +866,14 @@ export default function Chat() {
           </div>
 
           <article className="conversation-thread" ref={threadRef}>
-            {/* ALWAYS show user request — every possible source */}
-            {(() => {
-              const chatId =
-                (router.query && router.query.chat_id) || currentChatId || '';
-              const fromMsgs = (messages || []).find(
-                (m) => m.sender === 'user' && (m.text || '').trim()
-              );
-              const fromSidebar = (chats || []).find(
-                (c) => String(c.id) === String(chatId)
-              );
-              let text = (
-                (fromMsgs && fromMsgs.text) ||
-                displayRequest ||
-                (fromSidebar && fromSidebar.request) ||
-                (fromSidebar && fromSidebar.title) ||
-                ''
-              );
-              if (typeof text === 'string') text = text.trim();
-              else text = '';
-              // last resort: sessionStorage cache
-              if (!text && typeof window !== 'undefined' && chatId) {
-                try {
-                  text = (
-                    window.sessionStorage.getItem('pa_req_' + chatId) || ''
-                  ).trim();
-                } catch (e) {}
-              }
-              if (!text) return null;
-              // cache for next time
-              if (typeof window !== 'undefined' && chatId) {
-                try {
-                  window.sessionStorage.setItem('pa_req_' + chatId, text);
-                } catch (e) {}
-              }
-              return (
-                <div
-                  className="user-message"
-                  key="user-request-always"
-                  style={{
-                    color: '#ffffff',
-                    display: 'block',
-                    visibility: 'visible',
-                    opacity: 1,
-                    textAlign: 'center',
-                    fontWeight: 600,
-                    fontSize: 16,
-                    lineHeight: 1.55,
-                    maxWidth: 750,
-                    width: '100%',
-                    margin: '0 auto',
-                    padding: '8px 12px',
-                    boxSizing: 'border-box',
-                    wordBreak: 'break-all',
-                    overflowWrap: 'anywhere',
-                    whiteSpace: 'normal',
-                    overflowX: 'hidden',
-                  }}
-                >
-                  {text}
-                </div>
-              );
-            })()}
-
             {messages.map((m, i) =>
-              m.sender === 'user' ? null : (
+              m.sender === 'user' ? (
+                (m.text || '').trim() ? (
+                  <div className="user-message" key={`u-${i}`}>
+                    {m.text}
+                  </div>
+                ) : null
+              ) : (
                 <section className="ai-group" key={`a-${i}`}>
                   <h2 className="ai-heading">Generated Prompt:</h2>
 
@@ -1664,26 +1607,29 @@ export default function Chat() {
           box-sizing: border-box;
         }
 
-        /* User request — centered block, wraps like reference SS, no side scroll */
+        /* User message — right-aligned chat bubble, like ChatGPT/Claude/Gemini */
         .user-message {
-          align-self: center;
-          width: 100%;
-          max-width: 750px;
-          margin: 0 auto;
-          padding: 0 8px;
+          align-self: flex-end;
+          width: fit-content;
+          max-width: 75%;
+          margin: 0;
+          padding: 12px 16px;
           box-sizing: border-box;
           direction: ltr;
-          text-align: center;
+          text-align: left;
           unicode-bidi: plaintext;
-          font-weight: 600;
+          font-weight: 500;
           color: #ffffff !important;
-          font-size: 16px;
-          line-height: 1.55;
+          font-size: 15px;
+          line-height: 1.5;
+          background-color: #1f1f1f;
+          border: 1px solid #2a2a2a;
+          border-radius: 18px;
           /* Break continuous strings (bbbb…) onto next lines */
           overflow-wrap: anywhere;
           word-wrap: break-word;
-          word-break: break-all;
-          white-space: normal;
+          word-break: break-word;
+          white-space: pre-wrap;
           overflow-x: hidden;
           overflow-y: visible;
           letter-spacing: normal;
@@ -2354,16 +2300,20 @@ export default function Chat() {
           .user-message {
             font-size: 14px;
             direction: ltr;
-            text-align: center;
+            text-align: left;
             overflow-wrap: anywhere;
-            word-break: break-all;
-            white-space: normal;
+            word-break: break-word;
+            white-space: pre-wrap;
             overflow-x: hidden;
             overflow-y: visible;
-            max-width: 100%;
-            width: 100%;
+            align-self: flex-end;
+            max-width: 85%;
+            width: fit-content;
             min-width: 0;
-            padding: 0 4px;
+            padding: 10px 14px;
+            background-color: #1f1f1f;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
           }
 
           .ai-heading {

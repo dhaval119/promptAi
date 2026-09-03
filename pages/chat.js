@@ -55,6 +55,34 @@ function groupChatsByDate(chats) {
 }
 
 
+function getRelativeTime(ts) {
+  if (!ts) return 'Just now';
+
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return 'Just now';
+
+  const diffSeconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+  if (diffSeconds < 60) return 'Just now';
+
+  const minutes = Math.floor(diffSeconds / 60);
+  if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`;
+
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} ${months === 1 ? 'month' : 'months'} ago`;
+
+  const years = Math.floor(days / 365);
+  return `${years} ${years === 1 ? 'year' : 'years'} ago`;
+}
+
 function normalizeMessages(conv) {
   if (!conv) return [];
   let msgs = Array.isArray(conv.messages) ? conv.messages.filter(Boolean) : [];
@@ -151,6 +179,7 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState(-1);
+  const [copiedUserIdx, setCopiedUserIdx] = useState(-1);
   const [chatsReady, setChatsReady] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showContactPopup, setShowContactPopup] = useState(false);
@@ -636,6 +665,33 @@ export default function Chat() {
     });
   }
 
+  function copyUserRequest(text, idx) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedUserIdx(idx);
+      setTimeout(() => setCopiedUserIdx(-1), 2000);
+    });
+  }
+
+  function editUserRequest(text) {
+    setInput(text || '');
+    setTimeout(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      el.focus();
+      el.style.height = 'auto';
+      const next = Math.min(el.scrollHeight, 160);
+      el.style.height = `${Math.max(next, 50)}px`;
+      el.setSelectionRange(el.value.length, el.value.length);
+    }, 0);
+  }
+
+  const getCurrentChatUpdatedAt = useCallback(() => {
+    const current = (chats || []).find(
+      (c) => String(c.id) === String(currentChatId)
+    );
+    return current?.updatedAt || current?.createdAt || current?.timestamp || current?.date || null;
+  }, [chats, currentChatId]);
+
   const isLanding = messages.length === 0;
 
   const sortedChats = [...chats].sort((a, b) => {
@@ -869,8 +925,60 @@ export default function Chat() {
             {messages.map((m, i) =>
               m.sender === 'user' ? (
                 (m.text || '').trim() ? (
-                  <div className="user-message" key={`u-${i}`}>
-                    {m.text}
+                  <div className="user-message-wrap" key={`u-${i}`}>
+                    <div className="user-message">
+                      {m.text}
+                    </div>
+
+                    <div className="user-action-row" aria-label="Request actions">
+                      <span className="user-request-time">
+                        {getRelativeTime(getCurrentChatUpdatedAt())}
+                      </span>
+
+                      <button
+                        className="user-action-btn"
+                        type="button"
+                        title="Retry request"
+                        aria-label="Retry request"
+                        onClick={() => sendMessage(m.text)}
+                        disabled={loading}
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M20 11a8 8 0 1 0 2 5.3" />
+                          <path d="M20 4v7h-7" />
+                        </svg>
+                      </button>
+
+                      <button
+                        className="user-action-btn"
+                        type="button"
+                        title="Edit request"
+                        aria-label="Edit request"
+                        onClick={() => editUserRequest(m.text)}
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M4 20h4L19 9l-4-4L4 16v4z" />
+                          <path d="M13.5 6.5l4 4" />
+                        </svg>
+                      </button>
+
+                      <button
+                        className="user-action-btn"
+                        type="button"
+                        title="Copy request"
+                        aria-label="Copy request"
+                        onClick={() => copyUserRequest(m.text, i)}
+                      >
+                        {copiedUserIdx === i ? (
+                          <span className="user-copy-done">Copied!</span>
+                        ) : (
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="8" y="8" width="11" height="11" rx="1.5" />
+                            <path d="M5 16H4.5A1.5 1.5 0 0 1 3 14.5v-10A1.5 1.5 0 0 1 4.5 3h10A1.5 1.5 0 0 1 16 4.5V5" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 ) : null
               ) : (
@@ -1599,7 +1707,7 @@ export default function Chat() {
           box-sizing: border-box;
         }
 
-        .user-message,
+        .user-message-wrap,
         .ai-group {
           max-width: 750px;
           width: 100%;
@@ -1607,13 +1715,19 @@ export default function Chat() {
           box-sizing: border-box;
         }
 
-        /* User message — right-aligned chat bubble, like ChatGPT/Claude/Gemini */
+        /* User request — plain left-aligned text, no bubble, with hover actions */
+        .user-message-wrap {
+          align-self: center;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          min-width: 0;
+        }
+
         .user-message {
-          align-self: flex-end;
-          width: fit-content;
-          max-width: 75%;
+          width: 100%;
           margin: 0;
-          padding: 12px 16px;
+          padding: 0;
           box-sizing: border-box;
           direction: ltr;
           text-align: left;
@@ -1622,16 +1736,14 @@ export default function Chat() {
           color: #ffffff !important;
           font-size: 15px;
           line-height: 1.5;
-          background-color: #1f1f1f;
-          border: 1px solid #2a2a2a;
-          border-radius: 18px;
-          /* Break continuous strings (bbbb…) onto next lines */
+          background: transparent;
+          border: 0;
+          border-radius: 0;
           overflow-wrap: anywhere;
           word-wrap: break-word;
           word-break: break-word;
           white-space: pre-wrap;
-          overflow-x: hidden;
-          overflow-y: visible;
+          overflow: visible;
           letter-spacing: normal;
           word-spacing: normal;
           display: block;
@@ -1639,6 +1751,73 @@ export default function Chat() {
           visibility: visible;
           min-width: 0;
           hyphens: none;
+        }
+
+        .user-action-row {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 10px;
+          min-height: 18px;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.15s ease;
+        }
+
+        .user-message-wrap:hover .user-action-row,
+        .user-message-wrap:focus-within .user-action-row {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .user-request-time {
+          color: #8a8a8a;
+          font-size: 12px;
+          font-weight: 500;
+          white-space: nowrap;
+        }
+
+        .user-action-btn {
+          width: 22px;
+          height: 22px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          color: #8a8a8a;
+          cursor: pointer;
+          border-radius: 5px;
+          transition: color 0.15s ease, background 0.15s ease;
+        }
+
+        .user-action-btn:hover:not(:disabled) {
+          color: #fff;
+          background: #171717;
+        }
+
+        .user-action-btn:disabled {
+          cursor: default;
+          opacity: 0.4;
+        }
+
+        .user-action-btn svg {
+          width: 15px;
+          height: 15px;
+          display: block;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 1.9;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
+        .user-copy-done {
+          color: #fff;
+          font-size: 11px;
+          font-weight: 600;
+          white-space: nowrap;
         }
 
         .ai-group {
@@ -2291,29 +2470,40 @@ export default function Chat() {
             overflow-x: hidden;
           }
 
-          .user-message,
+          .user-message-wrap,
           .ai-group {
             max-width: 100%;
             width: 100%;
           }
 
+          .user-message-wrap {
+            align-self: center;
+            gap: 8px;
+          }
+
           .user-message {
+            width: 100%;
             font-size: 14px;
             direction: ltr;
             text-align: left;
             overflow-wrap: anywhere;
             word-break: break-word;
             white-space: pre-wrap;
-            overflow-x: hidden;
-            overflow-y: visible;
-            align-self: flex-end;
-            max-width: 85%;
-            width: fit-content;
+            overflow: visible;
+            align-self: center;
+            max-width: 100%;
             min-width: 0;
-            padding: 10px 14px;
-            background-color: #1f1f1f;
-            border: 1px solid #2a2a2a;
-            border-radius: 16px;
+            padding: 0;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+          }
+
+          .user-action-row {
+            opacity: 1;
+            pointer-events: auto;
+            justify-content: flex-end;
+            gap: 9px;
           }
 
           .ai-heading {

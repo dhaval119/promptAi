@@ -20,13 +20,26 @@ function getDateLabel(ts) {
   if (!ts) return 'Recent';
   const d = new Date(ts);
   if (isNaN(d.getTime())) return 'Recent';
+
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  const day = new Date(
+    d.getFullYear(),
+    d.getMonth(),
+    d.getDate()
+  );
+
   if (day.getTime() === today.getTime()) return 'Today';
   if (day.getTime() === yesterday.getTime()) return 'Yesterday';
+
   return 'Earlier';
 }
 
@@ -39,120 +52,268 @@ function groupChatsByDate(chats) {
   };
 
   (chats || []).forEach((c) => {
-    const ts = c.updatedAt || c.createdAt || c.timestamp || c.date || null;
+    const ts =
+      c.updatedAt ||
+      c.createdAt ||
+      c.timestamp ||
+      c.date ||
+      null;
+
     const label = getDateLabel(ts);
-    if (!groups[label]) groups[label] = [];
+
+    if (!groups[label]) {
+      groups[label] = [];
+    }
+
     groups[label].push(c);
   });
 
   const totalDated =
-    groups.Today.length + groups.Yesterday.length + groups.Earlier.length;
-  if (totalDated === 0 && groups.Recent.length === 0 && chats?.length) {
+    groups.Today.length +
+    groups.Yesterday.length +
+    groups.Earlier.length;
+
+  if (
+    totalDated === 0 &&
+    groups.Recent.length === 0 &&
+    chats?.length
+  ) {
     groups.Recent = [...chats];
   }
 
   return groups;
 }
 
-
 function getRelativeTime(ts) {
   if (!ts) return 'Just now';
 
   const date = new Date(ts);
-  if (Number.isNaN(date.getTime())) return 'Just now';
 
-  const diffSeconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
-  if (diffSeconds < 60) return 'Just now';
+  if (Number.isNaN(date.getTime())) {
+    return 'Just now';
+  }
+
+  const diffSeconds = Math.max(
+    0,
+    Math.floor((Date.now() - date.getTime()) / 1000)
+  );
+
+  if (diffSeconds < 60) {
+    return 'Just now';
+  }
 
   const minutes = Math.floor(diffSeconds / 60);
-  if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+
+  if (minutes < 60) {
+    return `${minutes} ${
+      minutes === 1 ? 'minute' : 'minutes'
+    } ago`;
+  }
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+
+  if (hours < 24) {
+    return `${hours} ${
+      hours === 1 ? 'hour' : 'hours'
+    } ago`;
+  }
 
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+
+  if (days < 7) {
+    return `${days} ${
+      days === 1 ? 'day' : 'days'
+    } ago`;
+  }
 
   const weeks = Math.floor(days / 7);
-  if (weeks < 5) return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`;
+
+  if (weeks < 5) {
+    return `${weeks} ${
+      weeks === 1 ? 'week' : 'weeks'
+    } ago`;
+  }
 
   const months = Math.floor(days / 30);
-  if (months < 12) return `${months} ${months === 1 ? 'month' : 'months'} ago`;
+
+  if (months < 12) {
+    return `${months} ${
+      months === 1 ? 'month' : 'months'
+    } ago`;
+  }
 
   const years = Math.floor(days / 365);
-  return `${years} ${years === 1 ? 'year' : 'years'} ago`;
+
+  return `${years} ${
+    years === 1 ? 'year' : 'years'
+  } ago`;
 }
 
 function normalizeMessages(conv) {
   if (!conv) return [];
-  let msgs = Array.isArray(conv.messages) ? conv.messages.filter(Boolean) : [];
+
+  let msgs = Array.isArray(conv.messages)
+    ? conv.messages.filter(Boolean)
+    : [];
+
   msgs = msgs
     .filter((m) => m && m.sender)
     .map((m) => ({
-      sender: m.sender === 'user' ? 'user' : 'ai',
-      text: typeof m.text === 'string' ? m.text : '',
+      sender:
+        m.sender === 'user'
+          ? 'user'
+          : 'ai',
+      text:
+        typeof m.text === 'string'
+          ? m.text
+          : '',
     }));
 
-  const request = (conv.request || conv.title || '').trim();
-  const response = (conv.response || '').trim();
+  const request =
+    (
+      conv.request ||
+      conv.title ||
+      ''
+    ).trim();
 
-  const hasUser = msgs.some((m) => m.sender === 'user' && m.text.trim());
-  const hasAi = msgs.some((m) => m.sender === 'ai' && m.text.trim());
+  const response =
+    (
+      conv.response ||
+      ''
+    ).trim();
+
+  const hasUser = msgs.some(
+    (m) =>
+      m.sender === 'user' &&
+      m.text.trim()
+  );
+
+  const hasAi = msgs.some(
+    (m) =>
+      m.sender === 'ai' &&
+      m.text.trim()
+  );
 
   if (!hasUser && request) {
-    msgs = [{ sender: 'user', text: request }, ...msgs.filter((m) => m.sender !== 'user')];
-  }
-  if (!hasAi && response) {
-    msgs = [...msgs.filter((m) => m.sender !== 'ai'), { sender: 'ai', text: response }];
-  }
-  if (msgs.length === 0 && request) {
     msgs = [
-      { sender: 'user', text: request },
-      ...(response ? [{ sender: 'ai', text: response }] : []),
+      {
+        sender: 'user',
+        text: request,
+      },
+      ...msgs.filter(
+        (m) => m.sender !== 'user'
+      ),
     ];
   }
-  // Drop pure-empty AI shells unless it's the only item while loading
-  return msgs.filter((m) => m.sender === 'user' || (m.text && m.text.length > 0) || m.sender === 'ai');
+
+  if (!hasAi && response) {
+    msgs = [
+      ...msgs.filter(
+        (m) => m.sender !== 'ai'
+      ),
+      {
+        sender: 'ai',
+        text: response,
+      },
+    ];
+  }
+
+  if (msgs.length === 0 && request) {
+    msgs = [
+      {
+        sender: 'user',
+        text: request,
+      },
+      ...(response
+        ? [
+            {
+              sender: 'ai',
+              text: response,
+            },
+          ]
+        : []),
+    ];
+  }
+
+  return msgs.filter(
+    (m) =>
+      m.sender === 'user' ||
+      (m.text && m.text.length > 0) ||
+      m.sender === 'ai'
+  );
 }
 
-async function typeWriter(fullText, onUpdate, signal) {
-  // If tab/app is already in background, show full text immediately
-  // so generation never "pauses and restarts" when user returns.
-  if (typeof document !== 'undefined' && document.hidden) {
+async function typeWriter(
+  fullText,
+  onUpdate,
+  signal
+) {
+  if (
+    typeof document !== 'undefined' &&
+    document.hidden
+  ) {
     onUpdate(fullText);
     return;
   }
 
-  // Fast animation: reveal in small chunks instead of slow word-by-word
   const chunkSize = 12;
+
   let current = '';
-  for (let i = 0; i < fullText.length; i += chunkSize) {
+
+  for (
+    let i = 0;
+    i < fullText.length;
+    i += chunkSize
+  ) {
     if (signal?.aborted) return;
-    if (typeof document !== 'undefined' && document.hidden) {
+
+    if (
+      typeof document !== 'undefined' &&
+      document.hidden
+    ) {
       onUpdate(fullText);
       return;
     }
-    current = fullText.slice(0, i + chunkSize);
+
+    current = fullText.slice(
+      0,
+      i + chunkSize
+    );
+
     onUpdate(current);
-    await new Promise((r) => setTimeout(r, 4));
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, 4)
+    );
   }
+
   onUpdate(fullText);
 }
 
-function PinIcon({ size = 14, filled = false }) {
+function PinIcon({
+  size = 14,
+  filled = false,
+}) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill={filled ? 'currentColor' : 'none'}
+      fill={
+        filled
+          ? 'currentColor'
+          : 'none'
+      }
       stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={{ flexShrink: 0 }}
+      style={{
+        flexShrink: 0,
+      }}
     >
       <path d="M12 17v5" />
+
       <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
     </svg>
   );
@@ -160,10 +321,22 @@ function PinIcon({ size = 14, filled = false }) {
 
 export default function Chat() {
   const router = useRouter();
-  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
+
+  const {
+    user,
+    profile,
+    loading: authLoading,
+    refreshProfile,
+  } = useAuth();
+
   const uid = user?.uid ?? null;
   const email = user?.email ?? null;
-  const isPremium = !!(profile?.is_premium || profile?.isPremium);
+
+  const isPremium = !!(
+    profile?.is_premium ||
+    profile?.isPremium
+  );
+
   const isBlocked = !!(
     profile?.is_blocked ||
     profile?.isBlocked ||
@@ -172,103 +345,230 @@ export default function Chat() {
   );
 
   const [chats, setChats] = useState([]);
-  const [currentChatId, setCurrentChatId] = useState(0);
-  const [messages, setMessages] = useState([]);
-  const [displayRequest, setDisplayRequest] = useState('');
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [sidebarHidden, setSidebarHidden] = useState(false);
-  const [copiedIdx, setCopiedIdx] = useState(-1);
-  const [copiedUserIdx, setCopiedUserIdx] = useState(-1);
-  const [chatsReady, setChatsReady] = useState(false);
-  const [showLimitModal, setShowLimitModal] = useState(false);
-  const [showContactPopup, setShowContactPopup] = useState(false);
-  const [todayUsage, setTodayUsage] = useState(0);
-  const [kbOffset, setKbOffset] = useState(0);
-  const [sharedIdx, setSharedIdx] = useState(-1);
-  const [menuOpenId, setMenuOpenId] = useState(null);
-  const [renamingId, setRenamingId] = useState(null);
-  const [renameValue, setRenameValue] = useState('');
-  const [pinnedIds, setPinnedIds] = useState(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      return JSON.parse(localStorage.getItem('chat_pinned') || '[]');
-    } catch {
-      return [];
-    }
-  });
+  const [currentChatId, setCurrentChatId] =
+    useState(0);
+
+  const [messages, setMessages] =
+    useState([]);
+
+  const [displayRequest, setDisplayRequest] =
+    useState('');
+
+  const [input, setInput] =
+    useState('');
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [sidebarHidden, setSidebarHidden] =
+    useState(false);
+
+  const [copiedIdx, setCopiedIdx] =
+    useState(-1);
+
+  const [copiedUserIdx, setCopiedUserIdx] =
+    useState(-1);
+
+  const [chatsReady, setChatsReady] =
+    useState(false);
+
+  const [showLimitModal, setShowLimitModal] =
+    useState(false);
+
+  const [showContactPopup, setShowContactPopup] =
+    useState(false);
+
+  const [todayUsage, setTodayUsage] =
+    useState(0);
+
+  const [kbOffset, setKbOffset] =
+    useState(0);
+
+  const [sharedIdx, setSharedIdx] =
+    useState(-1);
+
+  const [menuOpenId, setMenuOpenId] =
+    useState(null);
+
+  const [renamingId, setRenamingId] =
+    useState(null);
+
+  const [renameValue, setRenameValue] =
+    useState('');
+
+  const [pinnedIds, setPinnedIds] =
+    useState(() => {
+      if (
+        typeof window === 'undefined'
+      ) {
+        return [];
+      }
+
+      try {
+        return JSON.parse(
+          localStorage.getItem(
+            'chat_pinned'
+          ) || '[]'
+        );
+      } catch {
+        return [];
+      }
+    });
 
   const threadRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
   const menuRef = useRef(null);
-  const skipNextLoadRef = useRef(false);
+
+  const skipNextLoadRef =
+    useRef(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.visualViewport) return;
+    if (
+      typeof window === 'undefined' ||
+      !window.visualViewport
+    ) {
+      return;
+    }
+
     const vv = window.visualViewport;
+
     const update = () => {
       const offset = Math.max(
         0,
-        window.innerHeight - vv.height - (vv.offsetTop || 0)
+        window.innerHeight -
+          vv.height -
+          (vv.offsetTop || 0)
       );
-      setKbOffset(offset > 40 ? offset : 0);
+
+      setKbOffset(
+        offset > 40 ? offset : 0
+      );
     };
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
+
+    vv.addEventListener(
+      'resize',
+      update
+    );
+
+    vv.addEventListener(
+      'scroll',
+      update
+    );
+
     update();
+
     return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
+      vv.removeEventListener(
+        'resize',
+        update
+      );
+
+      vv.removeEventListener(
+        'scroll',
+        update
+      );
     };
   }, []);
 
   useEffect(() => {
     if (authLoading) return;
+
     let cancelled = false;
+
     (async () => {
-      const count = await getTodayUsage(uid);
-      if (!cancelled) setTodayUsage(count);
+      const count =
+        await getTodayUsage(uid);
+
+      if (!cancelled) {
+        setTodayUsage(count);
+      }
     })();
+
     return () => {
       cancelled = true;
     };
   }, [uid, authLoading]);
 
-  // When user returns to tab, refresh profile (premium/block may have changed in admin)
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (
+      typeof window === 'undefined'
+    ) {
+      return;
+    }
+
     const onFocus = () => {
-      refreshProfile().catch(() => {});
+      refreshProfile().catch(
+        () => {}
+      );
     };
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
+
+    window.addEventListener(
+      'focus',
+      onFocus
+    );
+
+    return () => {
+      window.removeEventListener(
+        'focus',
+        onFocus
+      );
+    };
   }, [refreshProfile]);
 
-  const refreshChats = useCallback(async () => {
-    try {
-      const list = await listConversations(uid, email);
-      setChats(Array.isArray(list) ? list : []);
-    } catch (err) {
-      console.error('[chat] listConversations failed', err);
-      setChats([]);
-    } finally {
-      setChatsReady(true);
-    }
-  }, [uid, email]);
+  const refreshChats =
+    useCallback(async () => {
+      try {
+        const list =
+          await listConversations(
+            uid,
+            email
+          );
+
+        setChats(
+          Array.isArray(list)
+            ? list
+            : []
+        );
+      } catch (err) {
+        console.error(
+          '[chat] listConversations failed',
+          err
+        );
+
+        setChats([]);
+      } finally {
+        setChatsReady(true);
+      }
+    }, [uid, email]);
 
   useEffect(() => {
     if (authLoading) return;
+
     refreshChats();
-    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+
+    if (
+      typeof window !== 'undefined' &&
+      window.innerWidth <= 900
+    ) {
       setSidebarHidden(true);
     }
-  }, [authLoading, refreshChats]);
+  }, [
+    authLoading,
+    refreshChats,
+  ]);
 
   useEffect(() => {
-    if (!router.isReady || authLoading) return;
+    if (
+      !router.isReady ||
+      authLoading
+    ) {
+      return;
+    }
 
-    const idParam = router.query.chat_id;
+    const idParam =
+      router.query.chat_id;
+
     if (!idParam) {
       setCurrentChatId(0);
       setMessages([]);
@@ -276,50 +576,114 @@ export default function Chat() {
       return;
     }
 
-    if (skipNextLoadRef.current) {
-      skipNextLoadRef.current = false;
+    if (
+      skipNextLoadRef.current
+    ) {
+      skipNextLoadRef.current =
+        false;
       return;
     }
 
     let cancelled = false;
+
     (async () => {
       try {
-        const conv = await getConversation(uid, idParam, email);
+        const conv =
+          await getConversation(
+            uid,
+            idParam,
+            email
+          );
+
         if (cancelled) return;
+
         if (!conv) {
           setCurrentChatId(0);
           setMessages([]);
           return;
         }
+
         setCurrentChatId(conv.id);
-        const normalized = normalizeMessages(conv);
+
+        const normalized =
+          normalizeMessages(conv);
+
         const reqText = (
           conv.request ||
           conv.title ||
-          (normalized.find((m) => m.sender === 'user') || {}).text ||
+          (
+            normalized.find(
+              (m) =>
+                m.sender === 'user'
+            ) || {}
+          ).text ||
           ''
         ).trim();
+
         setDisplayRequest(reqText);
+
         try {
-          if (typeof window !== 'undefined' && conv.id && reqText) {
-            window.sessionStorage.setItem('pa_req_' + conv.id, reqText);
+          if (
+            typeof window !==
+              'undefined' &&
+            conv.id &&
+            reqText
+          ) {
+            window.sessionStorage.setItem(
+              'pa_req_' + conv.id,
+              reqText
+            );
           }
         } catch (e) {}
-        // Guarantee user bubble is present in messages
-        let finalMsgs = normalized;
-        if (reqText && !finalMsgs.some((m) => m.sender === 'user' && (m.text || '').trim())) {
-          finalMsgs = [{ sender: 'user', text: reqText }, ...finalMsgs];
+
+        let finalMsgs =
+          normalized;
+
+        if (
+          reqText &&
+          !finalMsgs.some(
+            (m) =>
+              m.sender === 'user' &&
+              (m.text || '').trim()
+          )
+        ) {
+          finalMsgs = [
+            {
+              sender: 'user',
+              text: reqText,
+            },
+            ...finalMsgs,
+          ];
         }
-        if (reqText && finalMsgs.some((m) => m.sender === 'user' && !(m.text || '').trim())) {
-          finalMsgs = finalMsgs.map((m) =>
-            m.sender === 'user' && !(m.text || '').trim()
-              ? { ...m, text: reqText }
-              : m
-          );
+
+        if (
+          reqText &&
+          finalMsgs.some(
+            (m) =>
+              m.sender === 'user' &&
+              !(m.text || '').trim()
+          )
+        ) {
+          finalMsgs =
+            finalMsgs.map(
+              (m) =>
+                m.sender === 'user' &&
+                !(m.text || '').trim()
+                  ? {
+                      ...m,
+                      text: reqText,
+                    }
+                  : m
+            );
         }
+
         setMessages(finalMsgs);
       } catch (err) {
-        console.error('[chat] getConversation failed', err);
+        console.error(
+          '[chat] getConversation failed',
+          err
+        );
+
         setMessages([]);
       }
     })();
@@ -327,13 +691,25 @@ export default function Chat() {
     return () => {
       cancelled = true;
     };
-  }, [router.isReady, router.query.chat_id, uid, email, authLoading]);
+  }, [
+    router.isReady,
+    router.query.chat_id,
+    uid,
+    email,
+    authLoading,
+  ]);
 
   useEffect(() => {
-    if (threadRef.current) {
-      threadRef.current.scrollTop = threadRef.current.scrollHeight;
+    if (
+      threadRef.current
+    ) {
+      threadRef.current.scrollTop =
+        threadRef.current.scrollHeight;
     }
-  }, [messages, loading]);
+  }, [
+    messages,
+    loading,
+  ]);
 
   useEffect(() => {
     if (showLimitModal) {
@@ -342,51 +718,129 @@ export default function Chat() {
     }
   }, [showLimitModal]);
 
-  // Keep user request text filled from sidebar title if state lost it
   useEffect(() => {
-    if ((displayRequest || '').trim()) return;
-    if (!currentChatId) return;
-    const fromSidebar = (chats || []).find(
-      (c) => String(c.id) === String(currentChatId)
-    );
-    const t = (fromSidebar?.request || fromSidebar?.title || '').trim();
-    if (t) setDisplayRequest(t);
-  }, [chats, currentChatId, displayRequest]);
+    if (
+      (
+        displayRequest || ''
+      ).trim()
+    ) {
+      return;
+    }
+
+    if (!currentChatId) {
+      return;
+    }
+
+    const fromSidebar =
+      (chats || []).find(
+        (c) =>
+          String(c.id) ===
+          String(currentChatId)
+      );
+
+    const t = (
+      fromSidebar?.request ||
+      fromSidebar?.title ||
+      ''
+    ).trim();
+
+    if (t) {
+      setDisplayRequest(t);
+    }
+  }, [
+    chats,
+    currentChatId,
+    displayRequest,
+  ]);
 
   useEffect(() => {
     function handleClick(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(
+          e.target
+        )
+      ) {
         setMenuOpenId(null);
       }
     }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+
+    document.addEventListener(
+      'mousedown',
+      handleClick
+    );
+
+    return () =>
+      document.removeEventListener(
+        'mousedown',
+        handleClick
+      );
   }, []);
 
   function startNewChat() {
-    if (abortRef.current) abortRef.current.abort();
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+
     setCurrentChatId(0);
     setMessages([]);
     setDisplayRequest('');
     setMenuOpenId(null);
-    router.replace('/chat', undefined, { shallow: true });
-    setTimeout(() => inputRef.current?.focus(), 50);
+
+    router.replace(
+      '/chat',
+      undefined,
+      {
+        shallow: true,
+      }
+    );
+
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
   }
 
   async function openChat(id) {
     try {
-      const conv = await getConversation(uid, id, email);
+      const conv =
+        await getConversation(
+          uid,
+          id,
+          email
+        );
+
       if (!conv) return;
 
-      setCurrentChatId(conv.id);
+      setCurrentChatId(
+        conv.id
+      );
+
       setMenuOpenId(null);
-      const fromList = (chats || []).find((c) => String(c.id) === String(conv.id));
-      const normalized = normalizeMessages({
-        ...conv,
-        request: conv.request || fromList?.request || '',
-        title: conv.title || fromList?.title || '',
-        response: conv.response || fromList?.response || '',
-      });
+
+      const fromList =
+        (chats || []).find(
+          (c) =>
+            String(c.id) ===
+            String(conv.id)
+        );
+
+      const normalized =
+        normalizeMessages({
+          ...conv,
+          request:
+            conv.request ||
+            fromList?.request ||
+            '',
+          title:
+            conv.title ||
+            fromList?.title ||
+            '',
+          response:
+            conv.response ||
+            fromList?.response ||
+            '',
+        });
+
       const reqText = (
         conv.request ||
         fromList?.request ||
@@ -394,120 +848,279 @@ export default function Chat() {
         fromList?.title ||
         ''
       ).trim();
-      setDisplayRequest(reqText);
+
+      setDisplayRequest(
+        reqText
+      );
+
       try {
-        if (typeof window !== 'undefined' && conv.id && reqText) {
-          window.sessionStorage.setItem('pa_req_' + conv.id, reqText);
+        if (
+          typeof window !==
+            'undefined' &&
+          conv.id &&
+          reqText
+        ) {
+          window.sessionStorage.setItem(
+            'pa_req_' + conv.id,
+            reqText
+          );
         }
       } catch (e) {}
-      let finalMsgs = normalized;
-      if (reqText && !finalMsgs.some((m) => m.sender === 'user' && (m.text || '').trim())) {
-        finalMsgs = [{ sender: 'user', text: reqText }, ...finalMsgs];
+
+      let finalMsgs =
+        normalized;
+
+      if (
+        reqText &&
+        !finalMsgs.some(
+          (m) =>
+            m.sender === 'user' &&
+            (m.text || '').trim()
+        )
+      ) {
+        finalMsgs = [
+          {
+            sender: 'user',
+            text: reqText,
+          },
+          ...finalMsgs,
+        ];
       }
+
       setMessages(finalMsgs);
-      router.replace(`/chat?chat_id=${conv.id}`, undefined, { shallow: true });
+
+      router.replace(
+        `/chat?chat_id=${conv.id}`,
+        undefined,
+        {
+          shallow: true,
+        }
+      );
     } catch (err) {
-      console.error('[chat] openChat failed', err);
+      console.error(
+        '[chat] openChat failed',
+        err
+      );
     }
   }
 
-  async function handleDeleteChat(id) {
+  async function handleDeleteChat(
+    id
+  ) {
     setMenuOpenId(null);
-    if (!window.confirm('Delete this chat?')) return;
-    try {
-      await deleteConversation(uid, id, email);
-      if (String(currentChatId) === String(id)) {
-        startNewChat();
-      }
-      await refreshChats();
-    } catch (err) {
-      console.error('[chat] delete failed', err);
+
+    if (
+      !window.confirm(
+        'Delete this chat?'
+      )
+    ) {
+      return;
     }
-  }
 
-  function handleOpenNewTab(id) {
-    setMenuOpenId(null);
-    window.open(`/chat?chat_id=${id}`, '_blank', 'noopener,noreferrer');
-  }
-
-  function handleStartRename(c) {
-    setMenuOpenId(null);
-    setRenamingId(c.id);
-    setRenameValue(c.title || '');
-  }
-
-  async function handleFinishRename(id) {
-    const title = renameValue.trim().slice(0, 60);
-    setRenamingId(null);
-    if (!title) return;
     try {
-      // Only update title — never wipe request/response
-      await upsertConversation(
+      await deleteConversation(
         uid,
-        { id, title },
+        id,
         email
       );
+
+      if (
+        String(currentChatId) ===
+        String(id)
+      ) {
+        startNewChat();
+      }
+
       await refreshChats();
     } catch (err) {
-      console.error('[chat] rename failed', err);
+      console.error(
+        '[chat] delete failed',
+        err
+      );
+    }
+  }
+
+  function handleOpenNewTab(
+    id
+  ) {
+    setMenuOpenId(null);
+
+    window.open(
+      `/chat?chat_id=${id}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  }
+
+  function handleStartRename(
+    c
+  ) {
+    setMenuOpenId(null);
+    setRenamingId(c.id);
+    setRenameValue(
+      c.title || ''
+    );
+  }
+
+  async function handleFinishRename(
+    id
+  ) {
+    const title =
+      renameValue
+        .trim()
+        .slice(0, 60);
+
+    setRenamingId(null);
+
+    if (!title) return;
+
+    try {
+      await upsertConversation(
+        uid,
+        {
+          id,
+          title,
+        },
+        email
+      );
+
+      await refreshChats();
+    } catch (err) {
+      console.error(
+        '[chat] rename failed',
+        err
+      );
     }
   }
 
   function handlePin(id) {
     setMenuOpenId(null);
+
     setPinnedIds((prev) => {
-      const next = prev.includes(id)
-        ? prev.filter((x) => x !== id)
-        : [...prev, id];
+      const next =
+        prev.includes(id)
+          ? prev.filter(
+              (x) => x !== id
+            )
+          : [
+              ...prev,
+              id,
+            ];
+
       try {
-        localStorage.setItem('chat_pinned', JSON.stringify(next));
+        localStorage.setItem(
+          'chat_pinned',
+          JSON.stringify(next)
+        );
       } catch {}
+
       return next;
     });
   }
 
-  function sharePrompt(text, idx) {
-    // Text-only share — never attach files/screenshot. URL is plain text only.
+  function sharePrompt(
+    text,
+    idx
+  ) {
     const url =
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/chat?chat_id=${currentChatId || ''}`
+      typeof window !==
+      'undefined'
+        ? `${window.location.origin}/chat?chat_id=${
+            currentChatId || ''
+          }`
         : '';
-    const shareText = (text || '').trim() + (url ? `\n\n${url}` : '');
-    const doClipboard = () => {
-      navigator.clipboard.writeText(shareText).then(() => {
-        setSharedIdx(idx);
-        setTimeout(() => setSharedIdx(-1), 2000);
-      }).catch(() => {});
-    };
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      // Explicitly omit `files` and use only text so OS share sheet does not
-      // attach a page screenshot / media preview on mobile.
+
+    const shareText =
+      (text || '').trim() +
+      (
+        url
+          ? `\n\n${url}`
+          : ''
+      );
+
+    const doClipboard =
+      () => {
+        navigator.clipboard
+          .writeText(shareText)
+          .then(() => {
+            setSharedIdx(idx);
+
+            setTimeout(
+              () =>
+                setSharedIdx(-1),
+              2000
+            );
+          })
+          .catch(() => {});
+      };
+
+    if (
+      typeof navigator !==
+        'undefined' &&
+      navigator.share
+    ) {
       navigator
-        .share({ title: 'PromptAI', text: shareText })
+        .share({
+          title:
+            'PromptAI',
+          text:
+            shareText,
+        })
         .then(() => {
           setSharedIdx(idx);
-          setTimeout(() => setSharedIdx(-1), 2000);
+
+          setTimeout(
+            () =>
+              setSharedIdx(-1),
+            2000
+          );
         })
         .catch((err) => {
-          // User cancelled or share failed → fall back to clipboard
-          if (err && err.name !== 'AbortError') doClipboard();
+          if (
+            err &&
+            err.name !==
+              'AbortError'
+          ) {
+            doClipboard();
+          }
         });
     } else {
       doClipboard();
     }
   }
 
-  const MAX_MESSAGE_LENGTH = 8000;
+  const MAX_MESSAGE_LENGTH =
+    8000;
 
-  async function sendMessage(overrideText) {
-    const text = (overrideText ?? input).trim().slice(0, MAX_MESSAGE_LENGTH);
-    if (!text || loading) return;
+  async function sendMessage(
+    overrideText
+  ) {
+    const text = (
+      overrideText ??
+      input
+    )
+      .trim()
+      .slice(
+        0,
+        MAX_MESSAGE_LENGTH
+      );
 
-    // Always re-fetch profile so admin Premium/Block applies immediately
+    if (
+      !text ||
+      loading
+    ) {
+      return;
+    }
+
     let latest = profile;
+
     try {
-      const fresh = await refreshProfile();
-      if (fresh) latest = fresh;
+      const fresh =
+        await refreshProfile();
+
+      if (fresh) {
+        latest = fresh;
+      }
     } catch {}
 
     const blockedNow = !!(
@@ -516,202 +1129,497 @@ export default function Chat() {
       latest?.soft_deleted ||
       latest?.softDeleted
     );
+
     if (blockedNow) {
-      alert('Your account is blocked or deleted. Contact support.');
+      alert(
+        'Your account is blocked or deleted. Contact support.'
+      );
       return;
     }
 
-    // Premium users have no daily free limit
-    const premiumNow = !!(latest?.is_premium || latest?.isPremium);
-    const skipUsageIncrement = premiumNow;
+    const premiumNow = !!(
+      latest?.is_premium ||
+      latest?.isPremium
+    );
+
+    const skipUsageIncrement =
+      premiumNow;
+
     if (!premiumNow) {
-      const used = await getTodayUsage(uid);
-      setTodayUsage(used);
-      if (isOverLimit(used)) {
+      const used =
+        await getTodayUsage(
+          uid
+        );
+
+      setTodayUsage(
+        used
+      );
+
+      if (
+        isOverLimit(used)
+      ) {
         inputRef.current?.blur();
-        setShowLimitModal(true);
+        setShowLimitModal(
+          true
+        );
         return;
       }
     }
 
-    // Snapshot previous messages so we don't use a stale closure later
-    const prevMessagesSnapshot = messages;
+    const prevMessagesSnapshot =
+      messages;
 
-    setMessages((prev) => [...prev, { sender: 'user', text }]);
+    setMessages((prev) => [
+      ...prev,
+      {
+        sender: 'user',
+        text,
+      },
+    ]);
+
     setDisplayRequest(text);
+
     try {
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.setItem('pa_req_pending', text);
+      if (
+        typeof window !==
+        'undefined'
+      ) {
+        window.sessionStorage.setItem(
+          'pa_req_pending',
+          text
+        );
       }
     } catch (e) {}
+
     setInput('');
-    // Reset textarea height after clear
+
     if (inputRef.current) {
-      inputRef.current.style.height = '';
+      inputRef.current.style.height =
+        '';
     }
+
     setLoading(true);
+
     inputRef.current?.blur();
 
-    if (abortRef.current) abortRef.current.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
 
-    // Track in-flight full text so visibilitychange can complete it
-    let resolvedAiText = null;
+    const controller =
+      new AbortController();
 
-    const onVisibility = () => {
-      if (document.hidden && resolvedAiText && !controller.signal.aborted) {
-        // Force full text into the last AI bubble immediately
-        setMessages((prev) => {
-          const next = [...prev];
-          const last = next[next.length - 1];
-          if (last && last.sender === 'ai') {
-            next[next.length - 1] = { ...last, text: resolvedAiText };
-          }
-          return next;
-        });
-      }
-    };
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', onVisibility);
+    abortRef.current =
+      controller;
+
+    let resolvedAiText =
+      null;
+
+    const onVisibility =
+      () => {
+        if (
+          document.hidden &&
+          resolvedAiText &&
+          !controller.signal
+            .aborted
+        ) {
+          setMessages((prev) => {
+            const next = [
+              ...prev,
+            ];
+
+            const last =
+              next[
+                next.length -
+                  1
+              ];
+
+            if (
+              last &&
+              last.sender ===
+                'ai'
+            ) {
+              next[
+                next.length - 1
+              ] = {
+                ...last,
+                text:
+                  resolvedAiText,
+              };
+            }
+
+            return next;
+          });
+        }
+      };
+
+    if (
+      typeof document !==
+      'undefined'
+    ) {
+      document.addEventListener(
+        'visibilitychange',
+        onVisibility
+      );
     }
 
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ msg: text }),
-        signal: controller.signal,
-      });
+      const res =
+        await fetch(
+          '/api/chat',
+          {
+            method:
+              'POST',
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
+            body:
+              JSON.stringify({
+                msg: text,
+              }),
+            signal:
+              controller.signal,
+          }
+        );
 
-      const data = await res.json();
-      const aiText = data.text || 'Something went wrong. Please try again.';
-      resolvedAiText = aiText;
+      const data =
+        await res.json();
 
-      setMessages((prev) => [...prev, { sender: 'ai', text: '' }]);
+      const aiText =
+        data.text ||
+        'Something went wrong. Please try again.';
+
+      resolvedAiText =
+        aiText;
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: 'ai',
+          text: '',
+        },
+      ]);
+
       setLoading(false);
 
       await typeWriter(
         aiText,
         (partial) => {
-          setMessages((prev) => {
-            const next = [...prev];
-            const last = next[next.length - 1];
-            if (last && last.sender === 'ai') {
-              next[next.length - 1] = { ...last, text: partial };
+          setMessages(
+            (prev) => {
+              const next =
+                [...prev];
+
+              const last =
+                next[
+                  next.length -
+                    1
+                ];
+
+              if (
+                last &&
+                last.sender ===
+                  'ai'
+              ) {
+                next[
+                  next.length - 1
+                ] = {
+                  ...last,
+                  text:
+                    partial,
+                };
+              }
+
+              return next;
             }
-            return next;
-          });
+          );
         },
         controller.signal
       );
 
-      if (controller.signal.aborted) return;
-
-      if (!skipUsageIncrement) {
-        const newCount = await incrementTodayUsage(uid);
-        setTodayUsage(newCount);
+      if (
+        controller.signal
+          .aborted
+      ) {
+        return;
       }
 
-      const finalMessages = [
-        ...prevMessagesSnapshot,
-        { sender: 'user', text },
-        { sender: 'ai', text: aiText },
-      ];
+      if (
+        !skipUsageIncrement
+      ) {
+        const newCount =
+          await incrementTodayUsage(
+            uid
+          );
 
-      const saved = await upsertConversation(
-        uid,
-        {
-          id: currentChatId || null,
-          title: data.title || text.slice(0, 45),
-          request: text,
-          response: aiText,
-          messages: finalMessages,
-        },
-        email
+        setTodayUsage(
+          newCount
+        );
+      }
+
+      const finalMessages =
+        [
+          ...prevMessagesSnapshot,
+          {
+            sender: 'user',
+            text,
+          },
+          {
+            sender: 'ai',
+            text: aiText,
+          },
+        ];
+
+      const saved =
+        await upsertConversation(
+          uid,
+          {
+            id:
+              currentChatId ||
+              null,
+            title:
+              data.title ||
+              text.slice(0, 45),
+            request:
+              text,
+            response:
+              aiText,
+            messages:
+              finalMessages,
+          },
+          email
+        );
+
+      setMessages(
+        finalMessages
       );
 
-      // Keep local messages (with user request visible) — don't let route reload wipe them
-      setMessages(finalMessages);
-      setDisplayRequest(text);
-      setCurrentChatId(saved.id);
+      setDisplayRequest(
+        text
+      );
+
+      setCurrentChatId(
+        saved.id
+      );
+
       try {
-        if (typeof window !== 'undefined' && saved.id) {
-          window.sessionStorage.setItem('pa_req_' + saved.id, text);
+        if (
+          typeof window !==
+            'undefined' &&
+          saved.id
+        ) {
+          window.sessionStorage.setItem(
+            'pa_req_' +
+              saved.id,
+            text
+          );
         }
       } catch (e) {}
-      skipNextLoadRef.current = true;
+
+      skipNextLoadRef.current =
+        true;
+
       await refreshChats();
-      router.replace(`/chat?chat_id=${saved.id}`, undefined, { shallow: true });
+
+      router.replace(
+        `/chat?chat_id=${saved.id}`,
+        undefined,
+        {
+          shallow: true,
+        }
+      );
     } catch (err) {
-      if (err.name === 'AbortError') return;
-      console.error('[chat] sendMessage failed', err);
+      if (
+        err.name ===
+        'AbortError'
+      ) {
+        return;
+      }
+
+      console.error(
+        '[chat] sendMessage failed',
+        err
+      );
+
       setMessages((prev) => [
         ...prev,
-        { sender: 'ai', text: 'Network error. Please try again.' },
+        {
+          sender: 'ai',
+          text:
+            'Network error. Please try again.',
+        },
       ]);
+
       setLoading(false);
     } finally {
-      if (typeof document !== 'undefined') {
-        document.removeEventListener('visibilitychange', onVisibility);
+      if (
+        typeof document !==
+        'undefined'
+      ) {
+        document.removeEventListener(
+          'visibilitychange',
+          onVisibility
+        );
       }
     }
   }
 
-  function copyPrompt(text, idx) {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedIdx(idx);
-      setTimeout(() => setCopiedIdx(-1), 2000);
-    });
+  function copyPrompt(
+    text,
+    idx
+  ) {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopiedIdx(idx);
+
+        setTimeout(
+          () =>
+            setCopiedIdx(-1),
+          2000
+        );
+      });
   }
 
-  function copyUserRequest(text, idx) {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedUserIdx(idx);
-      setTimeout(() => setCopiedUserIdx(-1), 2000);
-    });
+  function copyUserRequest(
+    text,
+    idx
+  ) {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopiedUserIdx(
+          idx
+        );
+
+        setTimeout(
+          () =>
+            setCopiedUserIdx(
+              -1
+            ),
+          2000
+        );
+      });
   }
 
-  function editUserRequest(text) {
-    setInput(text || '');
+  function editUserRequest(
+    text
+  ) {
+    setInput(
+      text || ''
+    );
+
     setTimeout(() => {
-      const el = inputRef.current;
+      const el =
+        inputRef.current;
+
       if (!el) return;
+
       el.focus();
-      el.style.height = 'auto';
-      const next = Math.min(el.scrollHeight, 160);
-      el.style.height = `${Math.max(next, 50)}px`;
-      el.setSelectionRange(el.value.length, el.value.length);
+
+      el.style.height =
+        'auto';
+
+      const next =
+        Math.min(
+          el.scrollHeight,
+          160
+        );
+
+      el.style.height =
+        `${Math.max(
+          next,
+          50
+        )}px`;
+
+      el.setSelectionRange(
+        el.value.length,
+        el.value.length
+      );
     }, 0);
   }
 
-  const getCurrentChatUpdatedAt = useCallback(() => {
-    const current = (chats || []).find(
-      (c) => String(c.id) === String(currentChatId)
+  const getCurrentChatUpdatedAt =
+    useCallback(
+      () => {
+        const current =
+          (chats || []).find(
+            (c) =>
+              String(c.id) ===
+              String(
+                currentChatId
+              )
+          );
+
+        return (
+          current?.updatedAt ||
+          current?.createdAt ||
+          current?.timestamp ||
+          current?.date ||
+          null
+        );
+      },
+      [
+        chats,
+        currentChatId,
+      ]
     );
-    return current?.updatedAt || current?.createdAt || current?.timestamp || current?.date || null;
-  }, [chats, currentChatId]);
 
-  const isLanding = messages.length === 0;
+  const isLanding =
+    messages.length === 0;
 
-  const sortedChats = [...chats].sort((a, b) => {
-    const ap = pinnedIds.includes(a.id) ? 0 : 1;
-    const bp = pinnedIds.includes(b.id) ? 0 : 1;
-    if (ap !== bp) return ap - bp;
-    return 0;
-  });
-  const grouped = groupChatsByDate(sortedChats);
+  const sortedChats =
+    [...chats].sort(
+      (a, b) => {
+        const ap =
+          pinnedIds.includes(
+            a.id
+          )
+            ? 0
+            : 1;
+
+        const bp =
+          pinnedIds.includes(
+            b.id
+          )
+            ? 0
+            : 1;
+
+        if (ap !== bp) {
+          return ap - bp;
+        }
+
+        return 0;
+      }
+    );
+
+  const grouped =
+    groupChatsByDate(
+      sortedChats
+    );
 
   return (
     <>
       <Head>
-        <title>PromptAI – Chat</title>
+        <title>
+          PromptAI – Chat
+        </title>
+
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
         />
-        <meta name="theme-color" content="#020202" />
-        <link rel="manifest" href="/manifest.json" />
+
+        <meta
+          name="theme-color"
+          content="#020202"
+        />
+
+        <link
+          rel="manifest"
+          href="/manifest.json"
+        />
       </Head>
 
       <div className="desktop">
@@ -723,21 +1631,38 @@ export default function Chat() {
           src="/assets/ailogo.png"
           alt="AI Logo"
           className="logo-main"
-          onClick={() => setSidebarHidden((h) => !h)}
+          onClick={() =>
+            setSidebarHidden(
+              (h) => !h
+            )
+          }
         />
 
         <img
           src="/assets/login.png"
           alt="Profile"
           className="login-icon-mobile"
-          onClick={() => router.push('/details')}
+          onClick={() =>
+            router.push(
+              '/details'
+            )
+          }
         />
 
-        <aside className={`sidebar ${sidebarHidden ? 'hide' : ''}`}>
-          {/* Collapse button « */}
+        <aside
+          className={`sidebar ${
+            sidebarHidden
+              ? 'hide'
+              : ''
+          }`}
+        >
           <button
             className="sidebar-collapse-btn"
-            onClick={() => setSidebarHidden(true)}
+            onClick={() =>
+              setSidebarHidden(
+                true
+              )
+            }
             title="Close sidebar"
             aria-label="Close sidebar"
           >
@@ -745,139 +1670,298 @@ export default function Chat() {
           </button>
 
           <nav className="sidebar-nav">
-            <button className="new-chat" onClick={startNewChat}>
+            <button
+              className="new-chat"
+              onClick={
+                startNewChat
+              }
+            >
               New chat
             </button>
 
             {!chatsReady ? (
-              <p className="sidebar-item empty">Loading...</p>
-            ) : chats.length === 0 ? (
-              <p className="sidebar-item empty">No recent chats</p>
+              <p className="sidebar-item empty">
+                Loading...
+              </p>
+            ) : chats.length ===
+              0 ? (
+              <p className="sidebar-item empty">
+                No recent chats
+              </p>
             ) : (
-              ['Today', 'Yesterday', 'Earlier', 'Recent'].map((label) => {
-                const items = grouped[label] || [];
-                if (items.length === 0) return null;
-                return (
-                  <div key={label} className="sidebar-group">
-                    <h2 className="chats-heading">{label}</h2>
-                    <ul className="sidebar-list">
-                      {items.map((c) => (
-                        <li className="sidebar-item" key={c.id}>
-                          {renamingId === c.id ? (
-                            <input
-                              className="sidebar-rename-input"
-                              value={renameValue}
-                              autoFocus
-                              onChange={(e) => setRenameValue(e.target.value)}
-                              onBlur={() => handleFinishRename(c.id)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleFinishRename(c.id);
-                                if (e.key === 'Escape') setRenamingId(null);
-                              }}
-                            />
-                          ) : (
-                            <div
-                              className={`sidebar-link-wrap ${
-                                String(currentChatId) === String(c.id)
-                                  ? 'active'
-                                  : ''
-                              }`}
+              [
+                'Today',
+                'Yesterday',
+                'Earlier',
+                'Recent',
+              ].map(
+                (label) => {
+                  const items =
+                    grouped[
+                      label
+                    ] || [];
+
+                  if (
+                    items.length ===
+                    0
+                  ) {
+                    return null;
+                  }
+
+                  return (
+                    <div
+                      key={label}
+                      className="sidebar-group"
+                    >
+                      <h2 className="chats-heading">
+                        {label}
+                      </h2>
+
+                      <ul className="sidebar-list">
+                        {items.map(
+                          (c) => (
+                            <li
+                              className="sidebar-item"
+                              key={
+                                c.id
+                              }
                             >
-                              <a
-                                className="sidebar-link"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  openChat(c.id);
-                                }}
-                                href={`/chat?chat_id=${c.id}`}
-                              >
-                                {pinnedIds.includes(c.id) && (
-                                  <span className="pin-mark">
-                                    <PinIcon size={12} filled />
-                                  </span>
-                                )}
-                                <span className="sidebar-title">{c.title}</span>
-                              </a>
+                              {renamingId ===
+                              c.id ? (
+                                <input
+                                  className="sidebar-rename-input"
+                                  value={
+                                    renameValue
+                                  }
+                                  autoFocus
+                                  onChange={(
+                                    e
+                                  ) =>
+                                    setRenameValue(
+                                      e
+                                        .target
+                                        .value
+                                    )
+                                  }
+                                  onBlur={() =>
+                                    handleFinishRename(
+                                      c.id
+                                    )
+                                  }
+                                  onKeyDown={(
+                                    e
+                                  ) => {
+                                    if (
+                                      e.key ===
+                                      'Enter'
+                                    ) {
+                                      handleFinishRename(
+                                        c.id
+                                      );
+                                    }
 
-                              <button
-                                className="sidebar-more"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setMenuOpenId(
-                                    menuOpenId === c.id ? null : c.id
-                                  );
-                                }}
-                                title="More"
-                              >
-                                ···
-                              </button>
+                                    if (
+                                      e.key ===
+                                      'Escape'
+                                    ) {
+                                      setRenamingId(
+                                        null
+                                      );
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <div
+                                  className={`sidebar-link-wrap ${
+                                    String(
+                                      currentChatId
+                                    ) ===
+                                    String(
+                                      c.id
+                                    )
+                                      ? 'active'
+                                      : ''
+                                  }`}
+                                >
+                                  <a
+                                    className="sidebar-link"
+                                    onClick={(
+                                      e
+                                    ) => {
+                                      e.preventDefault();
+                                      openChat(
+                                        c.id
+                                      );
+                                    }}
+                                    href={`/chat?chat_id=${c.id}`}
+                                  >
+                                    {pinnedIds.includes(
+                                      c.id
+                                    ) && (
+                                      <span className="pin-mark">
+                                        <PinIcon
+                                          size={
+                                            12
+                                          }
+                                          filled
+                                        />
+                                      </span>
+                                    )}
 
-                              {menuOpenId === c.id && (
-                                <div className="sidebar-menu" ref={menuRef}>
-                                  <button
-                                    onClick={() => handleOpenNewTab(c.id)}
-                                  >
-                                    <span className="menu-icon">↗</span>
-                                    Open new tab
-                                  </button>
-                                  <button
-                                    onClick={() => handleStartRename(c)}
-                                  >
-                                    <span className="menu-icon">✎</span>
-                                    Rename
-                                  </button>
-                                  <button onClick={() => handlePin(c.id)}>
-                                    <span className="menu-icon">
-                                      <PinIcon
-                                        size={14}
-                                        filled={pinnedIds.includes(c.id)}
-                                      />
+                                    <span className="sidebar-title">
+                                      {
+                                        c.title
+                                      }
                                     </span>
-                                    {pinnedIds.includes(c.id)
-                                      ? 'Unpin'
-                                      : 'Pin'}
-                                  </button>
+                                  </a>
+
                                   <button
-                                    className="menu-delete"
-                                    onClick={() => handleDeleteChat(c.id)}
+                                    className="sidebar-more"
+                                    onClick={(
+                                      e
+                                    ) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+
+                                      setMenuOpenId(
+                                        menuOpenId ===
+                                          c.id
+                                          ? null
+                                          : c.id
+                                      );
+                                    }}
+                                    title="More"
                                   >
-                                    <span className="menu-icon">🗑</span>
-                                    Delete
+                                    ···
                                   </button>
+
+                                  {menuOpenId ===
+                                    c.id && (
+                                    <div
+                                      className="sidebar-menu"
+                                      ref={
+                                        menuRef
+                                      }
+                                    >
+                                      <button
+                                        onClick={() =>
+                                          handleOpenNewTab(
+                                            c.id
+                                          )
+                                        }
+                                      >
+                                        <span className="menu-icon">
+                                          ↗
+                                        </span>
+
+                                        Open new
+                                        tab
+                                      </button>
+
+                                      <button
+                                        onClick={() =>
+                                          handleStartRename(
+                                            c
+                                          )
+                                        }
+                                      >
+                                        <span className="menu-icon">
+                                          ✎
+                                        </span>
+
+                                        Rename
+                                      </button>
+
+                                      <button
+                                        onClick={() =>
+                                          handlePin(
+                                            c.id
+                                          )
+                                        }
+                                      >
+                                        <span className="menu-icon">
+                                          <PinIcon
+                                            size={
+                                              14
+                                            }
+                                            filled={pinnedIds.includes(
+                                              c.id
+                                            )}
+                                          />
+                                        </span>
+
+                                        {pinnedIds.includes(
+                                          c.id
+                                        )
+                                          ? 'Unpin'
+                                          : 'Pin'}
+                                      </button>
+
+                                      <button
+                                        className="menu-delete"
+                                        onClick={() =>
+                                          handleDeleteChat(
+                                            c.id
+                                          )
+                                        }
+                                      >
+                                        <span className="menu-icon">
+                                          🗑
+                                        </span>
+
+                                        Delete
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               )}
-                            </div>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  );
+                }
+              )
             )}
           </nav>
         </aside>
 
         <main
           className={`main-content ${
-            isLanding ? 'view-landing' : 'view-chat'
-          } ${sidebarHidden ? 'no-sidebar' : ''}`}
+            isLanding
+              ? 'view-landing'
+              : 'view-chat'
+          } ${
+            sidebarHidden
+              ? 'no-sidebar'
+              : ''
+          }`}
         >
           <div className="landing-content">
-            <h1 className="main-heading">Where should we begin?</h1>
+            <h1 className="main-heading">
+              Where should we begin?
+            </h1>
 
             <div className="suggestion-buttons">
               <button
                 className="suggestion-button"
-                onClick={() => sendMessage('Leave application email')}
+                onClick={() =>
+                  sendMessage(
+                    'Leave application email'
+                  )
+                }
               >
-                <span>Leave application email</span>
+                <span>
+                  Leave application email
+                </span>
+
                 <img
                   src="/assets/arrow2.png"
                   className="suggestion-arrow arrow-normal"
                   alt=""
                 />
+
                 <img
                   src="/assets/arrow.png"
                   className="suggestion-arrow arrow-hover"
@@ -887,14 +1971,22 @@ export default function Chat() {
 
               <button
                 className="suggestion-button suggestion-middle"
-                onClick={() => sendMessage('Professional resume for')}
+                onClick={() =>
+                  sendMessage(
+                    'Professional resume for'
+                  )
+                }
               >
-                <span>Professional resume for</span>
+                <span>
+                  Professional resume for
+                </span>
+
                 <img
                   src="/assets/arrow2.png"
                   className="suggestion-arrow arrow-normal"
                   alt=""
                 />
+
                 <img
                   src="/assets/arrow.png"
                   className="suggestion-arrow arrow-hover"
@@ -904,14 +1996,22 @@ export default function Chat() {
 
               <button
                 className="suggestion-button"
-                onClick={() => sendMessage('Make website for Store')}
+                onClick={() =>
+                  sendMessage(
+                    'Make website for Store'
+                  )
+                }
               >
-                <span>Make website for Store</span>
+                <span>
+                  Make website for Store
+                </span>
+
                 <img
                   src="/assets/arrow2.png"
                   className="suggestion-arrow arrow-normal"
                   alt=""
                 />
+
                 <img
                   src="/assets/arrow.png"
                   className="suggestion-arrow arrow-hover"
@@ -921,140 +2021,259 @@ export default function Chat() {
             </div>
           </div>
 
-          <article className="conversation-thread" ref={threadRef}>
-            {messages.map((m, i) =>
-              m.sender === 'user' ? (
-                (m.text || '').trim() ? (
-                  <div className="user-message-wrap" key={`u-${i}`}>
-                    <div className="user-message">
-                      {m.text}
-                    </div>
+          <article
+            className="conversation-thread"
+            ref={threadRef}
+          >
+            {messages.map(
+              (m, i) =>
+                m.sender ===
+                'user' ? (
+                  (m.text || '')
+                    .trim() ? (
+                    <div
+                      className="user-message-wrap"
+                      key={`u-${i}`}
+                    >
+                      <div className="user-message">
+                        {
+                          m.text
+                        }
+                      </div>
 
-                    <div className="user-action-row" aria-label="Request actions">
-                      <span className="user-request-time">
-                        {getRelativeTime(getCurrentChatUpdatedAt())}
-                      </span>
-
-                      <button
-                        className="user-action-btn"
-                        type="button"
-                        title="Retry request"
-                        aria-label="Retry request"
-                        onClick={() => sendMessage(m.text)}
-                        disabled={loading}
+                      <div
+                        className="user-action-row"
+                        aria-label="Request actions"
                       >
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M20 11a8 8 0 1 0 2 5.3" />
-                          <path d="M20 4v7h-7" />
-                        </svg>
-                      </button>
-
-                      <button
-                        className="user-action-btn"
-                        type="button"
-                        title="Edit request"
-                        aria-label="Edit request"
-                        onClick={() => editUserRequest(m.text)}
-                      >
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M4 20h4L19 9l-4-4L4 16v4z" />
-                          <path d="M13.5 6.5l4 4" />
-                        </svg>
-                      </button>
-
-                      <button
-                        className="user-action-btn"
-                        type="button"
-                        title="Copy request"
-                        aria-label="Copy request"
-                        onClick={() => copyUserRequest(m.text, i)}
-                      >
-                        {copiedUserIdx === i ? (
-                          <span className="user-copy-done">Copied!</span>
-                        ) : (
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <rect x="8" y="8" width="11" height="11" rx="1.5" />
-                            <path d="M5 16H4.5A1.5 1.5 0 0 1 3 14.5v-10A1.5 1.5 0 0 1 4.5 3h10A1.5 1.5 0 0 1 16 4.5V5" />
-                          </svg>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ) : null
-              ) : (
-                <section className="ai-group" key={`a-${i}`}>
-                  <h2 className="ai-heading">Generated Prompt:</h2>
-
-                  <p className="ai-prompt">{m.text || ''}</p>
-
-                  {m.text ? (
-                    <div className="action-row">
-                      <button
-                        className="action-btn"
-                        onClick={() => copyPrompt(m.text, i)}
-                        title="Copy Prompt"
-                      >
-                        <span className="action-text">
-                          {copiedIdx === i ? 'Copied!' : 'copy'}
+                        <span className="user-request-time">
+                          {getRelativeTime(
+                            getCurrentChatUpdatedAt()
+                          )}
                         </span>
-                        <img
-                          src="/assets/copy.png"
-                          className="action-icon"
-                          alt="copy"
-                        />
-                      </button>
 
-                      <button
-                        className="action-btn"
-                        title="Share prompt"
-                        onClick={() => sharePrompt(m.text, i)}
-                      >
-                        <span className="action-text">
-                          {sharedIdx === i ? 'Shared!' : 'share'}
-                        </span>
-                        <svg
-                          className="action-icon share-icon"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
+                        <button
+                          className="user-action-btn"
+                          type="button"
+                          title="Retry request"
+                          aria-label="Retry request"
+                          onClick={() =>
+                            sendMessage(
+                              m.text
+                            )
+                          }
+                          disabled={
+                            loading
+                          }
                         >
-                          <circle cx="18" cy="5" r="3" />
-                          <circle cx="6" cy="12" r="3" />
-                          <circle cx="18" cy="19" r="3" />
-                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                        </svg>
-                      </button>
+                          <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <path d="M20 11a8 8 0 1 0 2 5.3" />
+                            <path d="M20 4v7h-7" />
+                          </svg>
+                        </button>
 
-                      <button
-                        className="action-btn"
-                        title="Open in ChatGPT"
-                        onClick={() => {
-                          navigator.clipboard.writeText(m.text).then(() => {
-                            const url =
-                              'https://chatgpt.com/?q=' +
-                              encodeURIComponent(m.text);
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                          });
-                        }}
-                      >
-                        <span className="action-text">Open in</span>
-                        <img
-                          src="/assets/chatgpt.png"
-                          className="action-icon"
-                          alt="ChatGPT"
-                        />
-                      </button>
+                        <button
+                          className="user-action-btn"
+                          type="button"
+                          title="Edit request"
+                          aria-label="Edit request"
+                          onClick={() =>
+                            editUserRequest(
+                              m.text
+                            )
+                          }
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <path d="M4 20h4L19 9l-4-4L4 16v4z" />
+                            <path d="M13.5 6.5l4 4" />
+                          </svg>
+                        </button>
+
+                        <button
+                          className="user-action-btn"
+                          type="button"
+                          title="Copy request"
+                          aria-label="Copy request"
+                          onClick={() =>
+                            copyUserRequest(
+                              m.text,
+                              i
+                            )
+                          }
+                        >
+                          {copiedUserIdx ===
+                          i ? (
+                            <span className="user-copy-done">
+                              Copied!
+                            </span>
+                          ) : (
+                            <svg
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                            >
+                              <rect
+                                x="8"
+                                y="8"
+                                width="11"
+                                height="11"
+                                rx="1.5"
+                              />
+
+                              <path d="M5 16H4.5A1.5 1.5 0 0 1 3 14.5v-10A1.5 1.5 0 0 1 4.5 3h10A1.5 1.5 0 0 1 16 4.5V5" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  ) : null}
-                </section>
-              )
+                  ) : null
+                ) : (
+                  <section
+                    className="ai-group"
+                    key={`a-${i}`}
+                  >
+                    <h2 className="ai-heading">
+                      Generated Prompt:
+                    </h2>
+
+                    <p className="ai-prompt">
+                      {
+                        m.text ||
+                        ''
+                      }
+                    </p>
+
+                    {m.text ? (
+                      <div className="action-row">
+                        <button
+                          className="action-btn"
+                          onClick={() =>
+                            copyPrompt(
+                              m.text,
+                              i
+                            )
+                          }
+                          title="Copy Prompt"
+                        >
+                          <span className="action-text">
+                            {copiedIdx ===
+                            i
+                              ? 'Copied!'
+                              : 'copy'}
+                          </span>
+
+                          <img
+                            src="/assets/copy.png"
+                            className="action-icon"
+                            alt="copy"
+                          />
+                        </button>
+
+                        <button
+                          className="action-btn"
+                          title="Share prompt"
+                          onClick={() =>
+                            sharePrompt(
+                              m.text,
+                              i
+                            )
+                          }
+                        >
+                          <span className="action-text">
+                            {sharedIdx ===
+                            i
+                              ? 'Shared!'
+                              : 'share'}
+                          </span>
+
+                          <svg
+                            className="action-icon share-icon"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <circle
+                              cx="18"
+                              cy="5"
+                              r="3"
+                            />
+
+                            <circle
+                              cx="6"
+                              cy="12"
+                              r="3"
+                            />
+
+                            <circle
+                              cx="18"
+                              cy="19"
+                              r="3"
+                            />
+
+                            <line
+                              x1="8.59"
+                              y1="13.51"
+                              x2="15.42"
+                              y2="17.49"
+                            />
+
+                            <line
+                              x1="15.41"
+                              y1="6.51"
+                              x2="8.59"
+                              y2="10.49"
+                            />
+                          </svg>
+                        </button>
+
+                        <button
+                          className="action-btn"
+                          title="Open in ChatGPT"
+                          onClick={() => {
+                            navigator.clipboard
+                              .writeText(
+                                m.text
+                              )
+                              .then(() => {
+                                const url =
+                                  'https://chatgpt.com/?q=' +
+                                  encodeURIComponent(
+                                    m.text
+                                  );
+
+                                window.open(
+                                  url,
+                                  '_blank',
+                                  'noopener,noreferrer'
+                                );
+                              });
+                          }}
+                        >
+                          <span className="action-text">
+                            Open in
+                          </span>
+
+                          <img
+                            src="/assets/chatgpt.png"
+                            className="action-icon"
+                            alt="ChatGPT"
+                          />
+                        </button>
+                      </div>
+                    ) : null}
+                  </section>
+                )
             )}
 
             {loading ? (
               <div className="ai-group skeleton-group">
                 <div className="skeleton-line sk-title" />
+
                 <div className="skeleton-box">
                   <div className="skeleton-line" />
                   <div className="skeleton-line" />
@@ -1068,7 +2287,13 @@ export default function Chat() {
             className="chat-input-form"
             style={
               kbOffset > 0
-                ? { bottom: `${kbOffset + 6}px`, top: 'auto' }
+                ? {
+                    bottom: `${
+                      kbOffset +
+                      6
+                    }px`,
+                    top: 'auto',
+                  }
                 : undefined
             }
           >
@@ -1079,20 +2304,41 @@ export default function Chat() {
                 autoComplete="off"
                 ref={inputRef}
                 value={input}
-                maxLength={MAX_MESSAGE_LENGTH}
+                maxLength={
+                  MAX_MESSAGE_LENGTH
+                }
                 rows={1}
                 onChange={(e) => {
-                  setInput(e.target.value);
-                  // Auto-grow like ChatGPT/Claude — lines expand upward
-                  const el = e.target;
-                  el.style.height = 'auto';
-                  const next = Math.min(el.scrollHeight, 160);
-                  el.style.height = `${Math.max(next, 50)}px`;
+                  setInput(
+                    e.target.value
+                  );
+
+                  const el =
+                    e.target;
+
+                  el.style.height =
+                    'auto';
+
+                  const next =
+                    Math.min(
+                      el.scrollHeight,
+                      160
+                    );
+
+                  el.style.height =
+                    `${Math.max(
+                      next,
+                      50
+                    )}px`;
                 }}
                 onKeyDown={(e) => {
-                  // Enter sends; Shift+Enter inserts newline
-                  if (e.key === 'Enter' && !e.shiftKey) {
+                  if (
+                    e.key ===
+                      'Enter' &&
+                    !e.shiftKey
+                  ) {
                     e.preventDefault();
+
                     sendMessage();
                   }
                 }}
@@ -1101,7 +2347,9 @@ export default function Chat() {
 
               <button
                 className="chat-submit-button"
-                onClick={() => sendMessage()}
+                onClick={() =>
+                  sendMessage()
+                }
                 type="button"
               >
                 <img
@@ -1118,7 +2366,11 @@ export default function Chat() {
           <div className="limit-fullscreen">
             <button
               className="limit-close-btn"
-              onClick={() => setShowLimitModal(false)}
+              onClick={() =>
+                setShowLimitModal(
+                  false
+                )
+              }
               aria-label="Close"
             >
               ×
@@ -1126,8 +2378,17 @@ export default function Chat() {
 
             <div className="limit-badge">
               <span className="limit-red-dot" />
+
               <span className="limit-badge-text">
-                Free Limit Exhausted ({DAILY_FREE_LIMIT}/{DAILY_FREE_LIMIT})
+                Free Limit Exhausted (
+                {
+                  DAILY_FREE_LIMIT
+                }
+                /
+                {
+                  DAILY_FREE_LIMIT
+                }
+                )
               </span>
             </div>
 
@@ -1163,7 +2424,11 @@ export default function Chat() {
 
                 <button
                   className="limit-btn"
-                  onClick={() => setShowContactPopup(true)}
+                  onClick={() =>
+                    setShowContactPopup(
+                      true
+                    )
+                  }
                 >
                   Wake the Dev
                 </button>
@@ -1201,7 +2466,11 @@ export default function Chat() {
 
                 <button
                   className="limit-mobile-btn"
-                  onClick={() => setShowContactPopup(true)}
+                  onClick={() =>
+                    setShowContactPopup(
+                      true
+                    )
+                  }
                 >
                   Wake the Dev
                 </button>
@@ -1211,55 +2480,103 @@ export default function Chat() {
             {showContactPopup && (
               <div
                 className="contact-popup-overlay"
-                onClick={() => setShowContactPopup(false)}
+                onClick={() =>
+                  setShowContactPopup(
+                    false
+                  )
+                }
               >
                 <div
                   className="contact-popup"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) =>
+                    e.stopPropagation()
+                  }
                 >
                   <button
                     className="contact-popup-close"
-                    onClick={() => setShowContactPopup(false)}
+                    onClick={() =>
+                      setShowContactPopup(
+                        false
+                      )
+                    }
                     aria-label="Close"
                   >
                     ×
                   </button>
-                  <p className="contact-popup-title">Contact Dev</p>
+
+                  <p className="contact-popup-title">
+                    Contact Dev
+                  </p>
+
                   <button
                     type="button"
                     className="contact-popup-item"
                     onClick={() => {
-                      const name = [profile?.firstName, profile?.lastName]
-                        .filter(Boolean)
-                        .join(' ')
-                        .trim() || user?.displayName || 'User';
+                      const name =
+                        [
+                          profile?.firstName,
+                          profile?.lastName,
+                        ]
+                          .filter(
+                            Boolean
+                          )
+                          .join(' ')
+                          .trim() ||
+                        user?.displayName ||
+                        'User';
+
                       const method =
                         profile?.signupMethod ||
                         profile?.signup_method ||
-                        (user?.providerData?.[0]?.providerId === 'google.com'
-                          ? 'google'
-                          : 'email') ||
+                        (
+                          user
+                            ?.providerData?.[0]
+                            ?.providerId ===
+                          'google.com'
+                            ? 'google'
+                            : 'email'
+                        ) ||
                         'unknown';
-                      const body = [
-                        `User ID: ${user?.uid || 'guest'}`,
-                        `Name: ${name}`,
-                        `Email: ${user?.email || email || 'n/a'}`,
-                        `Signup method: ${method}`,
-                      ].join('\n');
+
+                      const body =
+                        [
+                          `User ID: ${
+                            user?.uid ||
+                            'guest'
+                          }`,
+                          `Name: ${name}`,
+                          `Email: ${
+                            user?.email ||
+                            email ||
+                            'n/a'
+                          }`,
+                          `Signup method: ${method}`,
+                        ].join(
+                          '\n'
+                        );
+
                       const mailto =
                         'mailto:sonidhaval2468@gmail.com' +
                         '?subject=' +
-                        encodeURIComponent('user from promptai') +
+                        encodeURIComponent(
+                          'user from promptai'
+                        ) +
                         '&body=' +
-                        encodeURIComponent(body);
-                      window.location.href = mailto;
+                        encodeURIComponent(
+                          body
+                        );
+
+                      window.location.href =
+                        mailto;
                     }}
                   >
                     📧 Email
+
                     <span className="contact-popup-sub">
                       sonidhaval2468@gmail.com
                     </span>
                   </button>
+
                   <a
                     className="contact-popup-item"
                     href="https://www.instagram.com/dhaval._.119?igsh=dW9kMDE3Z2NqMmFx"
@@ -1267,7 +2584,10 @@ export default function Chat() {
                     rel="noopener noreferrer"
                   >
                     📸 Instagram
-                    <span className="contact-popup-sub">@dhaval._.119</span>
+
+                    <span className="contact-popup-sub">
+                      @dhaval._.119
+                    </span>
                   </a>
                 </div>
               </div>
@@ -1330,7 +2650,6 @@ export default function Chat() {
           transform: translateX(-250px);
         }
 
-        /* « collapse button */
         .sidebar-collapse-btn {
           position: absolute;
           top: 22px;
@@ -1345,7 +2664,8 @@ export default function Chat() {
           padding: 4px 8px;
           z-index: 10;
           opacity: 0.7;
-          transition: opacity 0.2s, color 0.2s;
+          transition: opacity 0.2s,
+            color 0.2s;
         }
 
         .sidebar-collapse-btn:hover {
@@ -1462,11 +2782,15 @@ export default function Chat() {
           padding: 2px 6px;
           border-radius: 6px;
           opacity: 0;
-          transition: opacity 0.15s, background 0.15s, color 0.15s;
+          transition: opacity 0.15s,
+            background 0.15s,
+            color 0.15s;
         }
 
-        .sidebar-link-wrap:hover .sidebar-more,
-        .sidebar-link-wrap.active .sidebar-more {
+        .sidebar-link-wrap:hover
+          .sidebar-more,
+        .sidebar-link-wrap.active
+          .sidebar-more {
           opacity: 1;
         }
 
@@ -1486,7 +2810,8 @@ export default function Chat() {
           padding: 6px;
           min-width: 160px;
           z-index: 50;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+          box-shadow: 0 8px 24px
+            rgba(0, 0, 0, 0.5);
         }
 
         .sidebar-menu button {
@@ -1504,16 +2829,25 @@ export default function Chat() {
           text-align: left;
         }
 
-        .sidebar-menu button:hover {
+        .sidebar-menu
+          button:hover {
           background: #3a3a3a;
         }
 
-        .sidebar-menu .menu-delete {
+        .sidebar-menu
+          .menu-delete {
           color: #ff6b6b;
         }
 
-        .sidebar-menu .menu-delete:hover {
-          background: rgba(255, 80, 80, 0.15);
+        .sidebar-menu
+          .menu-delete:hover {
+          background:
+            rgba(
+              255,
+              80,
+              80,
+              0.15
+            );
         }
 
         .menu-icon {
@@ -1545,7 +2879,8 @@ export default function Chat() {
           height: 100dvh;
           display: flex;
           flex-direction: column;
-          transition: transform 0.4s ease, width 0.4s ease;
+          transition: transform 0.4s ease,
+            width 0.4s ease;
           transform: translateX(250px);
           background: #000;
           overflow: hidden;
@@ -1557,11 +2892,13 @@ export default function Chat() {
           width: 100%;
         }
 
-        .view-landing .conversation-thread {
+        .view-landing
+          .conversation-thread {
           display: none;
         }
 
-        .view-landing .chat-input-form {
+        .view-landing
+          .chat-input-form {
           position: absolute;
           top: 58%;
           left: 50%;
@@ -1573,15 +2910,18 @@ export default function Chat() {
           bottom: auto;
         }
 
-        .view-landing .landing-content {
+        .view-landing
+          .landing-content {
           display: block;
         }
 
-        .view-chat .conversation-thread {
+        .view-chat
+          .conversation-thread {
           display: flex;
         }
 
-        .view-chat .chat-input-form {
+        .view-chat
+          .chat-input-form {
           position: fixed;
           bottom: 30px;
           left: 50%;
@@ -1591,17 +2931,24 @@ export default function Chat() {
           z-index: 40;
         }
 
-        .main-content:not(.no-sidebar) .view-chat .chat-input-form {
+        .main-content:not(
+            .no-sidebar
+          )
+          .view-chat
+          .chat-input-form {
           left: calc(50% + 125px);
           transform: translateX(-50%);
         }
 
-        .main-content.no-sidebar .view-chat .chat-input-form {
+        .main-content.no-sidebar
+          .view-chat
+          .chat-input-form {
           left: 50%;
           transform: translateX(-50%);
         }
 
-        .view-chat .landing-content {
+        .view-chat
+          .landing-content {
           display: none;
         }
 
@@ -1609,7 +2956,10 @@ export default function Chat() {
           position: absolute;
           top: 42%;
           left: 50%;
-          transform: translate(-50%, -50%);
+          transform: translate(
+            -50%,
+            -50%
+          );
           width: 700px;
           max-width: 90%;
           text-align: center;
@@ -1664,31 +3014,41 @@ export default function Chat() {
           max-width: 80%;
         }
 
-        .suggestion-button :global(.suggestion-arrow) {
+        .suggestion-button
+          :global(
+            .suggestion-arrow
+          ) {
           position: absolute;
           right: 10px;
           width: 10px;
           height: 9px;
-          transition: opacity 0.3s ease;
+          transition: opacity
+            0.3s ease;
         }
 
-        .suggestion-button :global(.arrow-normal) {
+        .suggestion-button
+          :global(.arrow-normal) {
           opacity: 1;
         }
 
-        .suggestion-button :global(.arrow-hover) {
+        .suggestion-button
+          :global(.arrow-hover) {
           opacity: 0;
           position: absolute;
           top: 50%;
           right: 10px;
-          transform: translateY(-50%);
+          transform: translateY(
+            -50%
+          );
         }
 
-        .suggestion-button:hover :global(.arrow-normal) {
+        .suggestion-button:hover
+          :global(.arrow-normal) {
           opacity: 0;
         }
 
-        .suggestion-button:hover :global(.arrow-hover) {
+        .suggestion-button:hover
+          :global(.arrow-hover) {
           opacity: 1;
         }
 
@@ -1696,7 +3056,8 @@ export default function Chat() {
           flex: 1;
           width: 100%;
           max-width: 100%;
-          padding: 120px 40px 140px 40px;
+          padding: 120px 40px
+            140px 40px;
           overflow-y: auto;
           overflow-x: hidden;
           -webkit-overflow-scrolling: touch;
@@ -1715,40 +3076,58 @@ export default function Chat() {
           box-sizing: border-box;
         }
 
-        /* User request — plain left-aligned text, no bubble, with hover actions */
+        /* Claude-style user request */
         .user-message-wrap {
           align-self: center;
           display: flex;
           flex-direction: column;
+          align-items: flex-end;
           gap: 8px;
           min-width: 0;
         }
 
         .user-message {
-          width: 100%;
+          align-self: flex-end;
+          width: fit-content;
+          max-width: min(
+            100%,
+            620px
+          );
+
           margin: 0;
-          padding: 0;
+          padding: 16px 18px;
           box-sizing: border-box;
+
           direction: ltr;
           text-align: left;
           unicode-bidi: plaintext;
+
           font-weight: 500;
           color: #ffffff !important;
           font-size: 15px;
           line-height: 1.5;
-          background: transparent;
+
+          background: #2b2b2b;
           border: 0;
-          border-radius: 0;
+          border-radius: 12px;
+
           overflow-wrap: anywhere;
           word-wrap: break-word;
           word-break: break-word;
+
           white-space: pre-wrap;
-          overflow: visible;
+
+          overflow-x: hidden;
+          overflow-y: visible;
+
           letter-spacing: normal;
           word-spacing: normal;
+
           display: block;
+
           opacity: 1;
           visibility: visible;
+
           min-width: 0;
           hyphens: none;
         }
@@ -1756,17 +3135,25 @@ export default function Chat() {
         .user-action-row {
           display: flex;
           align-items: center;
-          justify-content: flex-start;
+          justify-content: flex-end;
           gap: 10px;
           min-height: 18px;
+
           opacity: 0;
+          visibility: hidden;
           pointer-events: none;
-          transition: opacity 0.15s ease;
+
+          transition:
+            opacity 0.15s ease,
+            visibility 0.15s ease;
         }
 
-        .user-message-wrap:hover .user-action-row,
-        .user-message-wrap:focus-within .user-action-row {
+        .user-message-wrap:hover
+          .user-action-row,
+        .user-message-wrap:focus-within
+          .user-action-row {
           opacity: 1;
+          visibility: visible;
           pointer-events: auto;
         }
 
@@ -1789,10 +3176,14 @@ export default function Chat() {
           color: #8a8a8a;
           cursor: pointer;
           border-radius: 5px;
-          transition: color 0.15s ease, background 0.15s ease;
+          transition:
+            color 0.15s ease,
+            background 0.15s ease;
         }
 
-        .user-action-btn:hover:not(:disabled) {
+        .user-action-btn:hover:not(
+            :disabled
+          ) {
           color: #fff;
           background: #171717;
         }
@@ -1866,14 +3257,20 @@ export default function Chat() {
           gap: 18px;
           flex-wrap: wrap;
           margin-top: 10px;
+
           opacity: 0;
           visibility: hidden;
           pointer-events: none;
-          transition: opacity 0.15s ease, visibility 0.15s ease;
+
+          transition:
+            opacity 0.15s ease,
+            visibility 0.15s ease;
         }
 
-        .ai-group:hover .action-row,
-        .ai-group:focus-within .action-row {
+        .ai-group:hover
+          .action-row,
+        .ai-group:focus-within
+          .action-row {
           opacity: 1;
           visibility: visible;
           pointer-events: auto;
@@ -1896,7 +3293,8 @@ export default function Chat() {
           font-size: 12px;
           font-weight: 700;
           opacity: 0.7;
-          transition: opacity 0.2s ease;
+          transition: opacity
+            0.2s ease;
           font-family: inherit;
         }
 
@@ -1913,9 +3311,12 @@ export default function Chat() {
           opacity: 0.85;
         }
 
-        .action-btn:hover .action-text,
-        .action-btn:hover .action-icon,
-        .action-btn:hover .share-icon {
+        .action-btn:hover
+          .action-text,
+        .action-btn:hover
+          .action-icon,
+        .action-btn:hover
+          .share-icon {
           opacity: 1;
         }
 
@@ -1943,7 +3344,9 @@ export default function Chat() {
             #1a1a1a 75%
           );
           background-size: 200% 100%;
-          animation: skeletonShimmer 1.4s ease-in-out infinite;
+          animation: skeletonShimmer
+            1.4s ease-in-out
+            infinite;
         }
 
         .skeleton-line.sk-title {
@@ -1958,16 +3361,20 @@ export default function Chat() {
 
         @keyframes skeletonShimmer {
           0% {
-            background-position: 200% 0;
+            background-position: 200%
+              0;
           }
+
           100% {
-            background-position: -200% 0;
+            background-position: -200%
+              0;
           }
         }
 
         .chat-input-form {
           z-index: 40;
-          transition: bottom 0.12s ease;
+          transition: bottom
+            0.12s ease;
         }
 
         .chat-input-wrapper {
@@ -1983,7 +3390,8 @@ export default function Chat() {
           background: #0e0e0e;
           border-radius: 25px;
           border: none;
-          padding: 14px 65px 14px 35px;
+          padding: 14px 65px
+            14px 35px;
           font-size: 18px;
           line-height: 1.35;
           color: #fff;
@@ -2085,9 +3493,16 @@ export default function Chat() {
           border: 1.5px solid #ffffff;
           border-radius: 100px;
           padding: 10px 22px 10px 16px;
-          background: rgba(0, 0, 0, 0.6);
+          background: rgba(
+            0,
+            0,
+            0,
+            0.6
+          );
           backdrop-filter: blur(6px);
-          -webkit-backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(
+            6px
+          );
           white-space: nowrap;
           z-index: 15;
         }
@@ -2098,18 +3513,33 @@ export default function Chat() {
           border-radius: 50%;
           background: #ff2d2d;
           flex-shrink: 0;
-          animation: redDotBlink 2.4s ease-in-out infinite;
+          animation: redDotBlink
+            2.4s ease-in-out
+            infinite;
         }
 
         @keyframes redDotBlink {
           0%,
           100% {
             opacity: 1;
-            box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.55);
+            box-shadow: 0 0 0 0
+              rgba(
+                255,
+                45,
+                45,
+                0.55
+              );
           }
+
           50% {
             opacity: 0.25;
-            box-shadow: 0 0 0 8px rgba(255, 45, 45, 0);
+            box-shadow: 0 0 0 8px
+              rgba(
+                255,
+                45,
+                45,
+                0
+              );
           }
         }
 
@@ -2200,7 +3630,13 @@ export default function Chat() {
         .limit-btn:hover {
           background: #ffffff;
           transform: translateY(-1px);
-          box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
+          box-shadow: 0 8px 24px
+            rgba(
+              255,
+              255,
+              255,
+              0.15
+            );
         }
 
         .limit-btn:active {
@@ -2214,7 +3650,12 @@ export default function Chat() {
         .contact-popup-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.65);
+          background: rgba(
+            0,
+            0,
+            0,
+            0.65
+          );
           z-index: 100000;
           display: flex;
           align-items: center;
@@ -2230,7 +3671,13 @@ export default function Chat() {
           border: 1px solid #2a2a2a;
           border-radius: 16px;
           padding: 22px 18px 16px;
-          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+          box-shadow: 0 16px 40px
+            rgba(
+              0,
+              0,
+              0,
+              0.55
+            );
         }
 
         .contact-popup-close {
@@ -2319,12 +3766,20 @@ export default function Chat() {
           .sidebar {
             width: 82vw;
             max-width: 300px;
-            box-shadow: 4px 0 30px rgba(0, 0, 0, 0.6);
+            box-shadow: 4px 0 30px
+              rgba(
+                0,
+                0,
+                0,
+                0.6
+              );
             z-index: 90;
           }
 
           .sidebar.hide {
-            transform: translateX(-105%);
+            transform: translateX(
+              -105%
+            );
           }
 
           .sidebar-collapse-btn {
@@ -2339,11 +3794,17 @@ export default function Chat() {
 
           .main-content {
             width: 100% !important;
-            transform: translateX(0) !important;
+            transform: translateX(
+              0
+            ) !important;
             left: 0 !important;
           }
 
-          .main-content:not(.no-sidebar) .view-chat .chat-input-form {
+          .main-content:not(
+              .no-sidebar
+            )
+            .view-chat
+            .chat-input-form {
             left: 50%;
           }
 
@@ -2351,7 +3812,10 @@ export default function Chat() {
             position: absolute;
             top: 42%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(
+              -50%,
+              -50%
+            );
             width: 100%;
             max-width: 100%;
             padding: 0 20px;
@@ -2396,7 +3860,8 @@ export default function Chat() {
             font-weight: 600;
             justify-content: center;
             gap: 6px;
-            box-shadow: 0px 4px 4px #00000040;
+            box-shadow: 0px 4px
+              4px #00000040;
             border-radius: 50px;
           }
 
@@ -2409,7 +3874,10 @@ export default function Chat() {
             font-weight: 600;
           }
 
-          .suggestion-button :global(.suggestion-arrow) {
+          .suggestion-button
+            :global(
+              .suggestion-arrow
+            ) {
             position: static;
             width: 10px;
             height: 8px;
@@ -2419,7 +3887,10 @@ export default function Chat() {
             flex-shrink: 0;
           }
 
-          .suggestion-button :global(.arrow-hover) {
+          .suggestion-button
+            :global(
+              .arrow-hover
+            ) {
             display: none;
           }
 
@@ -2428,31 +3899,42 @@ export default function Chat() {
             color: #fff;
           }
 
-          .view-landing .chat-input-form {
+          .view-landing
+            .chat-input-form {
             position: absolute;
-            top: calc(42% + 78px);
+            top: calc(
+              42% + 78px
+            );
             left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 40px);
+            transform: translateX(
+              -50%
+            );
+            width: calc(
+              100% - 40px
+            );
             max-width: 100%;
             z-index: 30;
             bottom: auto;
           }
 
-          .view-landing .chat-input-form[style*='bottom'] {
+          .view-landing
+            .chat-input-form[style*='bottom'] {
             top: auto !important;
           }
 
-          .view-landing .chat-input {
+          .view-landing
+            .chat-input {
             min-height: 46px;
             height: 46px;
             max-height: 140px;
-            padding: 12px 48px 12px 18px;
+            padding: 12px 48px
+              12px 18px;
             font-size: 16px;
             border-radius: 23px;
           }
 
-          .view-landing .chat-submit-button {
+          .view-landing
+            .chat-submit-button {
             width: 40px;
             height: 40px;
             right: 4px;
@@ -2461,23 +3943,36 @@ export default function Chat() {
             transform: none;
           }
 
-          .view-landing .chat-submit-icon {
+          .view-landing
+            .chat-submit-icon {
             width: 24px;
             height: 24px;
           }
 
-          .view-chat .chat-input-form {
+          .view-chat
+            .chat-input-form {
             position: fixed;
-            bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+            bottom: calc(
+              12px +
+                env(
+                  safe-area-inset-bottom,
+                  0px
+                )
+            );
             left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 24px);
+            transform: translateX(
+              -50%
+            );
+            width: calc(
+              100% - 24px
+            );
             max-width: 100%;
             z-index: 50;
           }
 
           .conversation-thread {
-            padding: 80px 14px 100px;
+            padding: 80px 14px
+              100px;
             overflow-x: hidden;
           }
 
@@ -2489,31 +3984,38 @@ export default function Chat() {
 
           .user-message-wrap {
             align-self: center;
+            align-items: flex-end;
             gap: 8px;
           }
 
           .user-message {
-            width: 100%;
+            align-self: flex-end;
+            width: fit-content;
+            max-width: min(
+              100%,
+              92%
+            );
             font-size: 14px;
             direction: ltr;
             text-align: left;
             overflow-wrap: anywhere;
             word-break: break-word;
             white-space: pre-wrap;
-            overflow: visible;
-            align-self: center;
-            max-width: 100%;
+            overflow-x: hidden;
+            overflow-y: visible;
             min-width: 0;
-            padding: 0;
-            background: transparent;
+            padding: 14px 16px;
+            background: #2b2b2b;
             border: 0;
-            border-radius: 0;
+            border-radius: 12px;
+            box-sizing: border-box;
           }
 
           .user-action-row {
             opacity: 1;
+            visibility: visible;
             pointer-events: auto;
-            justify-content: flex-start;
+            justify-content: flex-end;
             gap: 9px;
           }
 
@@ -2549,7 +4051,8 @@ export default function Chat() {
             min-height: 48px;
             height: 48px;
             max-height: 140px;
-            padding: 12px 55px 12px 18px;
+            padding: 12px 55px
+              12px 18px;
           }
 
           .limit-close-btn {
@@ -2561,7 +4064,8 @@ export default function Chat() {
 
           .limit-badge {
             top: 48px;
-            padding: 7px 14px 7px 11px;
+            padding: 7px 14px
+              7px 11px;
           }
 
           .limit-badge-text {
@@ -2596,7 +4100,8 @@ export default function Chat() {
             flex-direction: column;
             align-items: center;
             width: 100%;
-            padding: 0 22px 16px;
+            padding: 0 22px
+              16px;
             box-sizing: border-box;
           }
 
@@ -2689,7 +4194,8 @@ export default function Chat() {
           }
 
           .conversation-thread {
-            padding: 72px 12px 90px;
+            padding: 72px 12px
+              90px;
           }
 
           .limit-mobile-dog {

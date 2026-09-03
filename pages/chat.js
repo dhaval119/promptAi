@@ -1756,7 +1756,7 @@ export default function Chat() {
         .user-action-row {
           display: flex;
           align-items: center;
-          justify-content: flex-end;
+          justify-content: flex-start;
           gap: 10px;
           min-height: 18px;
           opacity: 0;
@@ -1866,6 +1866,17 @@ export default function Chat() {
           gap: 18px;
           flex-wrap: wrap;
           margin-top: 10px;
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transition: opacity 0.15s ease, visibility 0.15s ease;
+        }
+
+        .ai-group:hover .action-row,
+        .ai-group:focus-within .action-row {
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
         }
 
         .action-btn {
@@ -2502,7 +2513,7 @@ export default function Chat() {
           .user-action-row {
             opacity: 1;
             pointer-events: auto;
-            justify-content: flex-end;
+            justify-content: flex-start;
             gap: 9px;
           }
 

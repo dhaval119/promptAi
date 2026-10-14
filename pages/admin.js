@@ -8,6 +8,7 @@ import {
   getDocs,
   doc,
   updateDoc,
+  deleteDoc,
   query,
   orderBy,
   limit,
@@ -72,8 +73,19 @@ function flagEmoji(code) {
 }
 
 function deviceLabel(d) {
-  if (d === 'mobile') return '📱 Mobile';
-  if (d === 'pc') return '💻 PC';
+  if (d === 'mobile') return 'Mobile';
+  if (d === 'pc') return 'PC';
+  return '—';
+}
+
+/** City + country text, no emoji */
+function locationLabel(u) {
+  const city = String(u.last_city || '').trim();
+  const code = String(u.last_country || '').toUpperCase();
+  const country = /^[A-Z]{2}$/.test(code) ? countryName(code) : '';
+  if (city && country) return `${city}, ${country}`;
+  if (city) return city;
+  if (country) return country;
   return '—';
 }
 
@@ -307,25 +319,24 @@ export default function AdminPage() {
     }
   }
 
-  async function softDeleteUser(uid, current) {
+  async function deleteUser(uid, email) {
     if (!db || busy) return;
+    const ok = window.confirm(
+      `Permanently delete this user?\n\n${email || uid}\n\nThis cannot be undone.`
+    );
+    if (!ok) return;
     setBusy(true);
     try {
-      const next = !current;
-      await updateDoc(doc(db, 'users', uid), {
-        soft_deleted: next,
-        is_blocked: next ? true : false,
-      });
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === uid
-            ? { ...u, soft_deleted: next, is_blocked: next ? true : u.is_blocked }
-            : u
-        )
-      );
+      await deleteDoc(doc(db, 'users', uid));
+      setUsers((prev) => prev.filter((u) => u.id !== uid));
+      setStats((s) => ({
+        ...s,
+        totalUsers: Math.max(0, (s.totalUsers || 1) - 1),
+        active: Math.max(0, (s.active || 1) - 1),
+      }));
     } catch (e) {
       console.error(e);
-      alert('Soft-delete failed. Check Firestore rules.');
+      alert('Delete failed. Check Firestore rules (admin must be allowed to delete users/{uid}).');
     } finally {
       setBusy(false);
     }
@@ -512,7 +523,7 @@ export default function AdminPage() {
                       <div className="country-labels">
                         {topCountries.map(([code]) => (
                           <span key={code} title={countryName(code)}>
-                            {flagEmoji(code)} {code}
+                            {code}
                           </span>
                         ))}
                       </div>
@@ -675,7 +686,7 @@ export default function AdminPage() {
                     <th>Status</th>
                     <th>Usage</th>
                     <th>Device</th>
-                    <th>Country</th>
+                    <th>Location</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -709,11 +720,7 @@ export default function AdminPage() {
                           </td>
                           <td>{u.usage_count ?? u.usageCount ?? 0}</td>
                           <td>{deviceLabel(u.last_device)}</td>
-                          <td>
-                            {u.last_country
-                              ? `${flagEmoji(u.last_country)} ${countryName(u.last_country)}`
-                              : '—'}
-                          </td>
+                          <td>{locationLabel(u)}</td>
                           <td className="actions">
                             <button
                               type="button"
@@ -735,11 +742,9 @@ export default function AdminPage() {
                               type="button"
                               disabled={busy}
                               className="btn btn-delete"
-                              onClick={() =>
-                                softDeleteUser(u.id, !!(u.soft_deleted || u.softDeleted))
-                              }
+                              onClick={() => deleteUser(u.id, u.email)}
                             >
-                              {u.soft_deleted || u.softDeleted ? 'Restore' : 'Delete'}
+                              Delete
                             </button>
                           </td>
                         </tr>

@@ -125,7 +125,11 @@ export default function Login() {
         );
       }
 
-      // Send email to user's email ID
+      // Retry a previously failed welcome email after the user signs in.
+      // sendWelcomeEmail skips accounts already marked as sent.
+      sendWelcomeEmail(cred.user);
+
+      // Firebase verification email (separate from the branded welcome email).
       await sendLoginEmailIfNeeded(cred.user);
 
       router.push(getTargetRoute());
@@ -150,10 +154,11 @@ export default function Login() {
       }
 
       const result = await signInWithPopup(auth, googleProvider);
-      const isNewUser = await ensureUserDoc(result.user);
-      if (isNewUser) sendWelcomeEmail(result.user);
+      await ensureUserDoc(result.user);
+      // If an earlier welcome send failed, retry now. Already-sent users are skipped.
+      sendWelcomeEmail(result.user);
 
-      // Send email to user's email ID
+      // Firebase verification email (separate from the branded welcome email).
       await sendLoginEmailIfNeeded(result.user);
 
       router.push(getTargetRoute());

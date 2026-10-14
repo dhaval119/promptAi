@@ -6,16 +6,14 @@
 //  - the user's real name is read from THEIR OWN users/{uid} Firestore document
 //  - the email goes out through Brevo or Resend (see lib/sendEmail.js)
 //
-// Env: NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_PROJECT_ID, EMAIL_FROM, BREVO_API_KEY or RESEND_API_KEY
+// Env: NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_PROJECT_ID, EMAIL_FROM, RESEND_API_KEY
 // Optional: NEXT_PUBLIC_SITE_URL
 
 import { renderWelcomeEmail } from '../../lib/welcomeEmailTemplate';
-import { sendEmail, emailConfigured } from '../../lib/sendEmail';
-import { readUserDoc, namesFromDoc } from '../../lib/firestoreRest';
+import { sendEmailDetailed, emailConfigured } from '../../lib/sendEmail';
+import { fv, readUserDoc, namesFromDoc } from '../../lib/firestoreRest';
 
 const DEFAULT_SITE_URL = 'https://prompt-ai-teal.vercel.app';
-const NEW_ACCOUNT_WINDOW_MS = 15 * 60 * 1000; // only accounts created in the last 15 min get a welcome mail
-
 const ipHits = new Map();
 const sentUids = new Map();
 const IP_WINDOW_MS = 10 * 60 * 1000;
@@ -74,26 +72,37 @@ export default async function handler(req, res) {
     const user = (await lookup.json())?.users?.[0];
     if (!user || !user.email) return res.status(400).json({ error: 'no_email' });
 
-    // 2) Only brand-new accounts, and only once
-    const createdAt = Number(user.createdAt);
-    if (!createdAt || Date.now() - createdAt > NEW_ACCOUNT_WINDOW_MS) {
-      return res.status(409).json({ error: 'account_not_new' });
+    // 2) Retry-safe delivery. Do not reject an older account just because its
+    // first send happened before Resend was configured. Persisted client marker
+    // + this short-lived guard prevent duplicate sends after successful calls.
+    const profile = projectId ? await readUserDoc(projectId, user.localId, idToken) : null;
+    if (fv(profile, 'welcome_email_sent') === true || sentUids.has(user.localId)) {
+      return res.status(409).json({ error: 'already_sent' });
     }
-    if (sentUids.has(user.localId)) return res.status(409).json({ error: 'already_sent' });
 
     // 3) The name that is saved on the user's account (users/{uid}.first_name / last_name)
-    const doc = projectId ? await readUserDoc(projectId, user.localId, idToken) : null;
-    const { firstName, fullName } = namesFromDoc(doc, user);
+    const { firstName, fullName } = namesFromDoc(profile, user);
 
-    // 4) Build + send
+    // 4) Build + send. The welcome email template and its content are unchanged.
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL;
     const { subject, html, text } = renderWelcomeEmail({ firstName, fullName, siteUrl });
-    const ok = await sendEmail({ to: user.email, toName: fullName, subject, html, text });
-    if (!ok) return res.status(502).json({ error: 'send_failed' });
+    const result = await sendEmailDetailed({ to: user.email, subject, html, text });
+    if (!result.ok) {
+      console.error('[welcome-email] Delivery failed.', {
+        status: result.status,
+        code: result.code,
+        message: result.message,
+      });
+      if (result.code === 'missing_configuration') {
+        return res.status(503).json({ error: 'email_not_configured' });
+      }
+      return res.status(502).json({ error: 'send_failed', reason: result.code || 'provider_error' });
+    }
 
     sentUids.set(user.localId, Date.now());
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true, emailId: result.id || undefined });
   } catch (err) {
+    console.error('[welcome-email] Handler failed.', { errorName: err?.name || 'Error' });
     return res.status(500).json({ error: 'server_error' });
   }
 }

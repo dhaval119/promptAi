@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useAuth } from '../lib/AuthContext';
+import { sendPremiumEmail } from '../lib/premiumEmail';
 import {
   collection,
   getDocs,
@@ -42,6 +43,42 @@ function formatDate(ts) {
   }
 }
 
+
+/** Date of a user's account / last activity (used by the calendar) */
+function userDate(u) {
+  const ts = u.created_at || u.createdAt || u.last_login_at || u.lastLoginAt;
+  if (!ts) return null;
+  try {
+    const d = typeof ts?.toDate === 'function' ? ts.toDate() : new Date(ts);
+    return Number.isNaN(d.getTime()) ? null : d;
+  } catch {
+    return null;
+  }
+}
+
+/** "IN" -> "India" */
+function countryName(code) {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code;
+  } catch {
+    return code;
+  }
+}
+
+/** "IN" -> flag emoji (shows as letters on Windows, that is fine) */
+function flagEmoji(code) {
+  if (!code || code.length !== 2) return '';
+  return String.fromCodePoint(...code.toUpperCase().split('').map((c) => 127397 + c.charCodeAt(0)));
+}
+
+function deviceLabel(d) {
+  if (d === 'mobile') return '📱 Mobile';
+  if (d === 'pc') return '💻 PC';
+  return '—';
+}
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
 export default function AdminPage() {
   const router = useRouter();
   const { user, profile, loading, isAdmin } = useAuth();
@@ -58,7 +95,12 @@ export default function AdminPage() {
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [sidebarHidden, setSidebarHidden] = useState(false);
-  const [selectedDay, setSelectedDay] = useState(null); // 1-31 of current month
+  const [selectedDay, setSelectedDay] = useState(null); // 1-31 of the month shown in the calendar
+  const [calMonth, setCalMonth] = useState(() => {
+    const n = new Date();
+    return { y: n.getFullYear(), m: n.getMonth() };
+  });
+  const [selectedChat, setSelectedChat] = useState(null); // chat opened in the detail popup
 
   useEffect(() => {
     if (loading) return;
@@ -187,6 +229,16 @@ export default function AdminPage() {
     loadData();
   }, [loadData]);
 
+  // Close the chat popup with Escape
+  useEffect(() => {
+    if (!selectedChat) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setSelectedChat(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedChat]);
+
   async function toggleBlock(uid, current) {
     if (!db || busy) return;
     setBusy(true);
@@ -212,7 +264,14 @@ export default function AdminPage() {
     if (!db || busy) return;
     setBusy(true);
     try {
-      await updateDoc(doc(db, 'users', uid), { is_premium: !current });
+      await updateDoc(
+        doc(db, 'users', uid),
+        current
+          ? { is_premium: false }
+          : { is_premium: true, premium_granted_at: serverTimestamp(), premium_source: 'admin' }
+      );
+      // Granting Premium -> tell the user (fire-and-forget)
+      if (!current) sendPremiumEmail(user, uid);
       setUsers((prev) =>
         prev.map((u) => (u.id === uid ? { ...u, is_premium: !current } : u))
       );
@@ -326,6 +385,18 @@ export default function AdminPage() {
     gap: 12,
   };
 
+  // Country graph data (from users.last_country, saved by lib/geoDevice.js)
+  const countryCounts = {};
+  let countryUnknown = 0;
+  users.forEach((u) => {
+    const c = String(u.last_country || '').toUpperCase();
+    if (/^[A-Z]{2}$/.test(c)) countryCounts[c] = (countryCounts[c] || 0) + 1;
+    else countryUnknown += 1;
+  });
+  const countryList = Object.entries(countryCounts).sort((a, b) => b[1] - a[1]);
+  const topCountries = countryList.slice(0, 6);
+  const maxCountry = topCountries.length ? topCountries[0][1] : 1;
+
   return (
     <>
       <Head>
@@ -416,127 +487,177 @@ export default function AdminPage() {
 
               <div className="bottom-row">
                 <div className="revenue-card">
-                  <span className="section-title">Total Revenue</span>
-                  <div className="revenue-amount">${stats.revenue.toFixed(2)}</div>
-                  <p className="muted">Based on premium users × $9.99</p>
-                  <div className="bar-chart">
-                    {[244, 170, 271, 79, 134, 170].map((h, i) => (
-                      <div key={i} className="bar" style={{ height: Math.max(40, h * 0.45) }} />
-                    ))}
+                  <span className="section-title">Visitors by Country</span>
+                  <div className="revenue-amount">
+                    {countryList.length} {countryList.length === 1 ? 'country' : 'countries'}
                   </div>
-                  <div className="bar-labels">
-                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map((m) => (
-                      <span key={m}>{m}</span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="calendar-card">
-                  <span className="section-title center">
-                    {new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}
-                  </span>
-                  <div className="cal-days">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-                      <span key={d} className="cal-head">{d}</span>
-                    ))}
-                    {(() => {
-                      const now = new Date();
-                      const year = now.getFullYear();
-                      const month = now.getMonth();
-                      const daysInMonth = new Date(year, month + 1, 0).getDate();
-                      const firstDow = new Date(year, month, 1).getDay();
-                      const today = now.getDate();
-                      // Count users active/created per day this month
-                      const counts = {};
-                      users.forEach((u) => {
-                        const ts = u.created_at || u.createdAt || u.last_login_at || u.lastLoginAt;
-                        if (!ts) return;
-                        let d;
-                        try {
-                          d = typeof ts?.toDate === 'function' ? ts.toDate() : new Date(ts);
-                        } catch { return; }
-                        if (Number.isNaN(d.getTime())) return;
-                        if (d.getFullYear() !== year || d.getMonth() !== month) return;
-                        const day = d.getDate();
-                        counts[day] = (counts[day] || 0) + 1;
-                      });
-                      const cells = [];
-                      for (let i = 0; i < firstDow; i++) {
-                        cells.push(<span key={'e' + i} className="cal-cell empty" />);
-                      }
-                      for (let d = 1; d <= daysInMonth; d++) {
-                        const c = counts[d] || 0;
-                        const active = selectedDay === d;
-                        cells.push(
-                          <button
-                            type="button"
-                            key={d}
-                            className={`cal-cell ${d === today ? 'today' : ''} ${active ? 'selected' : ''}`}
-                            onClick={() => setSelectedDay(active ? null : d)}
-                            title={c ? c + ' user(s)' : 'No users'}
-                          >
-                            <span className="cal-num">{d}</span>
-                            {c > 0 && <span className="cal-count">{c}</span>}
-                          </button>
-                        );
-                      }
-                      return cells;
-                    })()}
-                  </div>
-                  {selectedDay != null && (
-                    <div className="cal-day-detail">
-                      <strong>Day {selectedDay}</strong>
-                      <span>
-                        {' '}
-                        —{' '}
-                        {users.filter((u) => {
-                          const ts = u.created_at || u.createdAt || u.last_login_at || u.lastLoginAt;
-                          if (!ts) return false;
-                          let d;
-                          try {
-                            d = typeof ts?.toDate === 'function' ? ts.toDate() : new Date(ts);
-                          } catch { return false; }
-                          if (Number.isNaN(d.getTime())) return false;
-                          const now = new Date();
-                          return (
-                            d.getFullYear() === now.getFullYear() &&
-                            d.getMonth() === now.getMonth() &&
-                            d.getDate() === selectedDay
-                          );
-                        }).length}{' '}
-                        user(s)
-                      </span>
-                      <ul className="cal-user-list">
-                        {users
-                          .filter((u) => {
-                            const ts = u.created_at || u.createdAt || u.last_login_at || u.lastLoginAt;
-                            if (!ts) return false;
-                            let d;
-                            try {
-                              d = typeof ts?.toDate === 'function' ? ts.toDate() : new Date(ts);
-                            } catch { return false; }
-                            if (Number.isNaN(d.getTime())) return false;
-                            const now = new Date();
-                            return (
-                              d.getFullYear() === now.getFullYear() &&
-                              d.getMonth() === now.getMonth() &&
-                              d.getDate() === selectedDay
-                            );
-                          })
-                          .map((u) => (
-                            <li key={u.id}>
-                              {safeStr(
-                                [u.first_name || u.firstName, u.last_name || u.lastName]
-                                  .filter(Boolean)
-                                  .join(' ') || u.email,
-                                u.email || u.id
-                              )}
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
+                  <p className="muted">
+                    Based on where users last opened PromptAI from
+                    {countryUnknown > 0 ? ` · ${countryUnknown} not tracked yet` : ''}
+                  </p>
+                  {topCountries.length === 0 ? (
+                    <p className="muted" style={{ marginTop: 28 }}>
+                      No country data yet. It fills in as users open the site.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="bar-chart">
+                        {topCountries.map(([code, count]) => (
+                          <div key={code} className="bar-col" title={countryName(code) + ': ' + count}>
+                            <span className="bar-count">{count}</span>
+                            <div className="bar" style={{ height: Math.max(40, (count / maxCountry) * 120) }} />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="country-labels">
+                        {topCountries.map(([code]) => (
+                          <span key={code} title={countryName(code)}>
+                            {flagEmoji(code)} {code}
+                          </span>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
+
+                {(() => {
+                  const now = new Date();
+                  const curY = now.getFullYear();
+                  const curM = now.getMonth();
+                  const year = calMonth.y;
+                  const month = calMonth.m;
+                  const isCurrent = year === curY && month === curM;
+                  const daysInMonth = new Date(year, month + 1, 0).getDate();
+                  const firstDow = new Date(year, month, 1).getDay();
+                  const today = isCurrent ? now.getDate() : -1;
+
+                  // oldest year that has any user (so you can jump back to it)
+                  let minYear = curY - 1;
+                  users.forEach((u) => {
+                    const d = userDate(u);
+                    if (d && d.getFullYear() < minYear) minYear = d.getFullYear();
+                  });
+                  const years = [];
+                  for (let y = curY; y >= minYear; y--) years.push(y);
+
+                  const counts = {};
+                  users.forEach((u) => {
+                    const d = userDate(u);
+                    if (!d || d.getFullYear() !== year || d.getMonth() !== month) return;
+                    counts[d.getDate()] = (counts[d.getDate()] || 0) + 1;
+                  });
+                  const dayUsers =
+                    selectedDay != null
+                      ? users.filter((u) => {
+                          const d = userDate(u);
+                          return d && d.getFullYear() === year && d.getMonth() === month && d.getDate() === selectedDay;
+                        })
+                      : [];
+
+                  const goPrev = () => {
+                    setSelectedDay(null);
+                    setCalMonth((c) => (c.m === 0 ? { y: c.y - 1, m: 11 } : { y: c.y, m: c.m - 1 }));
+                  };
+                  const goNext = () => {
+                    if (isCurrent) return; // past months only - no future
+                    setSelectedDay(null);
+                    setCalMonth((c) => (c.m === 11 ? { y: c.y + 1, m: 0 } : { y: c.y, m: c.m + 1 }));
+                  };
+                  const pickMonth = (m) => {
+                    setSelectedDay(null);
+                    setCalMonth((c) => ({ y: c.y, m }));
+                  };
+                  const pickYear = (y) => {
+                    setSelectedDay(null);
+                    setCalMonth((c) => ({ y, m: y === curY && c.m > curM ? curM : c.m }));
+                  };
+
+                  const cells = [];
+                  for (let i = 0; i < firstDow; i++) {
+                    cells.push(<span key={'e' + i} className="cal-cell empty" />);
+                  }
+                  for (let d = 1; d <= daysInMonth; d++) {
+                    const c = counts[d] || 0;
+                    const active = selectedDay === d;
+                    cells.push(
+                      <button
+                        type="button"
+                        key={d}
+                        className={`cal-cell ${d === today ? 'today' : ''} ${active ? 'selected' : ''}`}
+                        onClick={() => setSelectedDay(active ? null : d)}
+                        title={c ? c + ' user(s)' : 'No users'}
+                      >
+                        <span className="cal-num">{d}</span>
+                        {c > 0 && <span className="cal-count">{c}</span>}
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <div className="calendar-card">
+                      <div className="cal-nav">
+                        <button type="button" className="cal-arrow" onClick={goPrev} aria-label="Previous month">
+                          &#8249;
+                        </button>
+                        <div className="cal-title-wrap">
+                          <select className="cal-select" value={month} onChange={(e) => pickMonth(Number(e.target.value))} aria-label="Month">
+                            {MONTH_NAMES.map((n, i) => (
+                              <option key={n} value={i} disabled={year === curY && i > curM}>
+                                {n}
+                              </option>
+                            ))}
+                          </select>
+                          <select className="cal-select" value={year} onChange={(e) => pickYear(Number(e.target.value))} aria-label="Year">
+                            {years.map((y) => (
+                              <option key={y} value={y}>
+                                {y}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <button type="button" className="cal-arrow" onClick={goNext} disabled={isCurrent} aria-label="Next month">
+                          &#8250;
+                        </button>
+                      </div>
+                      {!isCurrent && (
+                        <button
+                          type="button"
+                          className="cal-today"
+                          onClick={() => {
+                            setSelectedDay(null);
+                            setCalMonth({ y: curY, m: curM });
+                          }}
+                        >
+                          Back to this month
+                        </button>
+                      )}
+                      <div className="cal-days">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                          <span key={d} className="cal-head">{d}</span>
+                        ))}
+                        {cells}
+                      </div>
+                      {selectedDay != null && (
+                        <div className="cal-day-detail">
+                          <strong>
+                            {selectedDay} {MONTH_NAMES[month]} {year}
+                          </strong>
+                          <span> — {dayUsers.length} user(s)</span>
+                          <ul className="cal-user-list">
+                            {dayUsers.map((u) => (
+                              <li key={u.id}>
+                                {safeStr(
+                                  [u.first_name || u.firstName, u.last_name || u.lastName].filter(Boolean).join(' ') || u.email,
+                                  u.email || u.id
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </>
           )}
@@ -553,13 +674,15 @@ export default function AdminPage() {
                     <th>Premium</th>
                     <th>Status</th>
                     <th>Usage</th>
+                    <th>Device</th>
+                    <th>Country</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="empty">No users found</td>
+                      <td colSpan={9} className="empty">No users found</td>
                     </tr>
                   ) : (
                     users.map((u) => {
@@ -585,6 +708,12 @@ export default function AdminPage() {
                             </span>
                           </td>
                           <td>{u.usage_count ?? u.usageCount ?? 0}</td>
+                          <td>{deviceLabel(u.last_device)}</td>
+                          <td>
+                            {u.last_country
+                              ? `${flagEmoji(u.last_country)} ${countryName(u.last_country)}`
+                              : '—'}
+                          </td>
                           <td className="actions">
                             <button
                               type="button"
@@ -625,6 +754,7 @@ export default function AdminPage() {
           {tab === 'chats' && (
             <div className="table-wrap">
               <p className="scroll-hint">Swipe to see more →</p>
+              <p className="muted" style={{ margin: '4px 12px 10px' }}>Click any chat to see the full request and response.</p>
               <table>
                 <thead>
                   <tr>
@@ -651,7 +781,12 @@ export default function AdminPage() {
                         c.userName ||
                         (c.uid ? String(c.uid).slice(0, 8) : '—');
                       return (
-                        <tr key={(c.path || '') + c.id}>
+                        <tr
+                          key={(c.path || '') + c.id}
+                          className="row-click"
+                          onClick={() => setSelectedChat(c)}
+                          title="Click to open the full chat"
+                        >
                           <td>{safeStr(userLabel)}</td>
                           <td>{safeStr(c.title)}</td>
                           <td className="clip">{safeStr(c.request).slice(0, 80)}</td>
@@ -665,6 +800,67 @@ export default function AdminPage() {
               </table>
             </div>
           )}
+
+
+          {selectedChat &&
+            (() => {
+              const c = selectedChat;
+              const msgs = Array.isArray(c.messages) ? c.messages.filter((m) => m && (m.text || '').trim()) : [];
+              const lastUser = [...msgs].reverse().find((m) => m.sender === 'user');
+              const lastAi = [...msgs].reverse().find((m) => m.sender === 'ai');
+              const reqText = (c.request || (lastUser && lastUser.text) || c.title || '').toString();
+              const resText = (c.response || (lastAi && lastAi.text) || '').toString();
+              const who = c.userEmail || c.ownerEmail || c.email || c.userName || (c.uid ? String(c.uid).slice(0, 8) : '—');
+              const copy = (t) => {
+                try {
+                  navigator.clipboard.writeText(t);
+                } catch {}
+              };
+              return (
+                <div className="modal-back" onClick={() => setSelectedChat(null)}>
+                  <div className="modal-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+                    <div className="modal-head">
+                      <div style={{ minWidth: 0 }}>
+                        <div className="modal-title">{safeStr(c.title, 'Untitled chat')}</div>
+                        <div className="modal-sub">
+                          {who} · {formatDate(c.updatedAt || c.createdAt)}
+                        </div>
+                      </div>
+                      <button type="button" className="modal-x" onClick={() => setSelectedChat(null)} aria-label="Close">
+                        &times;
+                      </button>
+                    </div>
+                    <div className="modal-body">
+                      <div className="modal-label">
+                        <span>Request</span>
+                        <button type="button" className="copy-btn" onClick={() => copy(reqText)}>Copy</button>
+                      </div>
+                      <pre className="modal-pre">{reqText || '—'}</pre>
+
+                      <div className="modal-label">
+                        <span>Response</span>
+                        <button type="button" className="copy-btn" onClick={() => copy(resText)}>Copy</button>
+                      </div>
+                      <pre className="modal-pre">{resText || '—'}</pre>
+
+                      {msgs.length > 2 && (
+                        <>
+                          <div className="modal-label">
+                            <span>Full conversation ({msgs.length} messages)</span>
+                          </div>
+                          {msgs.map((m, i) => (
+                            <div key={i} className={`modal-msg ${m.sender === 'user' ? 'from-user' : 'from-ai'}`}>
+                              <span className="modal-who">{m.sender === 'user' ? 'USER' : 'AI'}</span>
+                              <pre className="modal-pre small">{m.text}</pre>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
           {tab === 'payments' && (
             <div className="table-wrap">
@@ -980,6 +1176,229 @@ export default function AdminPage() {
         .cal-cell.today {
           background: #333;
           outline: 1px solid #fff;
+        }
+        .bar-col {
+          flex: 1;
+          min-width: 28px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-end;
+        }
+        .bar-col .bar {
+          width: 100%;
+          flex: none;
+        }
+        .bar-count {
+          color: #fff;
+          font-size: 13px;
+          font-weight: 800;
+          margin-bottom: 6px;
+        }
+        .country-labels {
+          display: flex;
+          gap: 18px;
+          color: #fff;
+          font-size: 13px;
+          font-weight: 700;
+        }
+        .country-labels span {
+          flex: 1;
+          min-width: 28px;
+          text-align: center;
+          white-space: nowrap;
+        }
+        .cal-nav {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 14px;
+        }
+        .cal-title-wrap {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+        .cal-select {
+          background: transparent;
+          color: #fff;
+          border: 0;
+          font-size: 22px;
+          font-weight: 800;
+          font-family: inherit;
+          cursor: pointer;
+          outline: none;
+          appearance: none;
+          -webkit-appearance: none;
+          padding: 2px 2px;
+        }
+        .cal-select option {
+          background: #141414;
+          color: #fff;
+          font-size: 15px;
+        }
+        .cal-select option:disabled {
+          color: #555;
+        }
+        .cal-arrow {
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          border: 1px solid #333;
+          background: #1d1d1d;
+          color: #fff;
+          font-size: 22px;
+          line-height: 1;
+          cursor: pointer;
+          flex: none;
+        }
+        .cal-arrow:hover:not(:disabled) {
+          background: #fff;
+          color: #000;
+        }
+        .cal-arrow:disabled {
+          opacity: 0.25;
+          cursor: not-allowed;
+        }
+        .cal-today {
+          display: block;
+          margin: -4px auto 12px;
+          background: transparent;
+          border: 1px solid #333;
+          color: #ccc;
+          font-size: 12px;
+          font-weight: 700;
+          border-radius: 50px;
+          padding: 6px 14px;
+          cursor: pointer;
+        }
+        .cal-today:hover {
+          background: #fff;
+          color: #000;
+        }
+        tr.row-click {
+          cursor: pointer;
+        }
+        tr.row-click:hover td {
+          background: #1b1b1b;
+        }
+        .modal-back {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          background: rgba(0, 0, 0, 0.72);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+        .modal-card {
+          width: 760px;
+          max-width: 100%;
+          max-height: 88vh;
+          display: flex;
+          flex-direction: column;
+          background: #141414;
+          border: 1px solid #2a2a2a;
+          border-radius: 24px;
+          overflow: hidden;
+        }
+        .modal-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 16px;
+          padding: 22px 26px 16px;
+          border-bottom: 1px solid #2a2a2a;
+        }
+        .modal-title {
+          font-size: 22px;
+          font-weight: 800;
+          color: #fff;
+          word-break: break-word;
+        }
+        .modal-sub {
+          margin-top: 4px;
+          font-size: 13px;
+          color: #888;
+          word-break: break-all;
+        }
+        .modal-x {
+          background: #1d1d1d;
+          border: 1px solid #333;
+          color: #fff;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          font-size: 22px;
+          line-height: 1;
+          cursor: pointer;
+          flex: none;
+        }
+        .modal-body {
+          padding: 18px 26px 26px;
+          overflow: auto;
+        }
+        .modal-label {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin: 16px 0 8px;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: #a78bfa;
+        }
+        .copy-btn {
+          background: transparent;
+          border: 1px solid #333;
+          color: #ccc;
+          font-size: 12px;
+          font-weight: 700;
+          border-radius: 50px;
+          padding: 4px 12px;
+          cursor: pointer;
+        }
+        .copy-btn:hover {
+          background: #fff;
+          color: #000;
+        }
+        .modal-pre {
+          margin: 0;
+          padding: 14px 16px;
+          background: #0c0c0c;
+          border: 1px solid #222;
+          border-radius: 14px;
+          color: #e8e8e8;
+          font-family: inherit;
+          font-size: 14px;
+          line-height: 1.55;
+          white-space: pre-wrap;
+          word-break: break-word;
+          max-height: 300px;
+          overflow: auto;
+        }
+        .modal-pre.small {
+          max-height: 220px;
+          font-size: 13px;
+        }
+        .modal-msg {
+          margin-top: 10px;
+        }
+        .modal-who {
+          display: inline-block;
+          margin-bottom: 4px;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 1px;
+          color: #888;
+        }
+        .modal-msg.from-user .modal-who {
+          color: #a78bfa;
         }
         .table-wrap {
           background: #141414;

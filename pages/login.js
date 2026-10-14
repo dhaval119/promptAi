@@ -11,6 +11,7 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { useAuth } from '../lib/AuthContext';
+import { sendWelcomeEmail } from '../lib/welcomeEmail';
 
 function friendlyError(code) {
   switch (code) {
@@ -71,6 +72,7 @@ export default function Login() {
         last_login_at: serverTimestamp(),
         created_at: serverTimestamp(),
       });
+      return true; // brand-new Google user
     } else {
       await setDoc(
         ref,
@@ -78,6 +80,7 @@ export default function Login() {
         { merge: true }
       );
     }
+    return false;
   }
 
   // After successful login → send verification email if not verified
@@ -147,7 +150,8 @@ export default function Login() {
       }
 
       const result = await signInWithPopup(auth, googleProvider);
-      await ensureUserDoc(result.user);
+      const isNewUser = await ensureUserDoc(result.user);
+      if (isNewUser) sendWelcomeEmail(result.user);
 
       // Send email to user's email ID
       await sendLoginEmailIfNeeded(result.user);

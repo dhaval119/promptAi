@@ -7,7 +7,7 @@ const ROWS = [
   {
     n: '01',
     title: 'Natural Language Input Support',
-    desc: 'Users can enter their thoughts, questions, or situations in any language, in whatever way feels natural to them.',
+    desc: 'Users can enter their thoughts, questions, or situations in any language, even in broken or informal wording. The system intelligently interprets the meaning without requiring perfect grammar or structure.',
   },
   {
     n: '02',
@@ -55,6 +55,15 @@ export default function Features() {
                 key={row.n}
                 className={`feature-row ${i % 2 === 0 ? 'odd' : 'even'} ${active === i ? 'active' : ''}`}
                 onClick={() => setActive(active === i ? -1 : i)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setActive(active === i ? -1 : i);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-expanded={active === i}
               >
                 <div className="row-number">{row.n}</div>
                 <div className="row-title">{row.title}</div>
@@ -115,8 +124,8 @@ export default function Features() {
           position: absolute;
           top: 0;
           left: 3.89vw;
-          outline: 1px rgba(169, 169, 169, 0.75) solid;
-          outline-offset: -0.5px;
+          border-top: 1px solid rgba(169, 169, 169, 0.55);
+          box-sizing: border-box;
         }
         .feature-row {
           position: relative;
@@ -130,14 +139,17 @@ export default function Features() {
           min-height: 29vw;
           background-color: #050505;
         }
+        .feature-row:focus-visible {
+          outline: 1px solid rgba(255, 255, 255, 0.7);
+          outline-offset: -3px;
+        }
         .row-line {
           width: 79.78vw;
-          height: 0;
+          height: 1px;
           position: absolute;
           bottom: 0;
           left: 3.89vw;
-          outline: 1px rgba(169, 169, 169, 0.75) solid;
-          outline-offset: -0.5px;
+          background: rgba(169, 169, 169, 0.55);
         }
         .row-number {
           position: absolute;
@@ -193,70 +205,96 @@ export default function Features() {
           }
           .container {
             width: 100%;
-            min-height: 0;
+            max-width: none;
+            min-height: calc(100vh + 350px);
             padding: 0 0 80px;
             overflow-x: hidden;
           }
           .title {
             width: 90%;
-            left: 5%;
-            top: 100px;
-            font-size: clamp(24px, 7vw, 32px);
+            left: 4%;
+            top: 84px;
+            font-size: clamp(24px, 5vw, 32px);
             line-height: 1.2;
           }
           .features-list-wrapper {
-            top: 180px;
+            top: 158px;
             width: 100%;
           }
           .features-top-line,
           .row-line {
-            width: 92%;
-            left: 4%;
+            width: 94%;
+            left: 3%;
           }
           .feature-row {
-            min-height: 88px;
-            padding-bottom: 8px;
+            min-height: clamp(112px, 18.7vw, 150px);
+            padding: 0;
           }
           .feature-row.active {
-            min-height: auto;
-            padding-bottom: 24px;
+            min-height: clamp(205px, 31.5vw, 250px);
+            padding: 0;
           }
           .row-number {
-            font-size: 48px;
-            width: auto;
-            top: 12px;
-            left: 4%;
+            font-size: clamp(135px, 26vw, 200px);
+            line-height: 0.9;
+            width: 36%;
+            top: 0;
+            left: 3%;
+            clip-path: inset(0 0 36% 0);
+          }
+          .feature-row.active .row-number {
+            clip-path: inset(0 0 0 0);
           }
           .row-title {
-            width: 58%;
-            top: 18px;
-            left: 28%;
-            font-size: 15px;
+            width: 57%;
+            top: 6vw;
+            left: 39%;
+            font-size: clamp(14px, 2.2vw, 18px);
             line-height: 1.3;
           }
           .row-description {
-            width: 90%;
-            top: 60px;
-            left: 5%;
-            font-size: 13px;
-            line-height: 1.55;
-            position: relative;
-            margin-top: 8px;
+            width: 54%;
+            top: 11vw;
+            left: 39%;
+            font-size: clamp(11px, 1.8vw, 14px);
+            line-height: 1.45;
+            letter-spacing: 0;
+            padding-right: 2%;
+            box-sizing: border-box;
           }
         }
 
         @media (max-width: 480px) {
           .title {
+            top: 76px;
             font-size: 22px;
-            top: 90px;
+          }
+          .features-list-wrapper {
+            top: 143px;
+          }
+          .feature-row {
+            min-height: 112px;
+          }
+          .feature-row.active {
+            min-height: 218px;
           }
           .row-number {
-            font-size: 40px;
+            font-size: clamp(118px, 31vw, 145px);
+            width: 36%;
+            left: 2.5%;
           }
           .row-title {
-            font-size: 14px;
-            left: 26%;
-            width: 65%;
+            top: 23px;
+            left: 39%;
+            width: 57%;
+            font-size: 13px;
+          }
+          .row-description {
+            top: 62px;
+            left: 39%;
+            width: 56%;
+            font-size: 10.5px;
+            line-height: 1.35;
           }
         }
       `}</style>

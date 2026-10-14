@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import '../styles/globals.css';
 import { AuthProvider } from '../lib/AuthContext';
+import PremiumNotice from '../components/PremiumNotice';
 
 const SITE_URL = 'https://prompt-ai-teal.vercel.app';
 const OG_IMAGE = `${SITE_URL}/og-image.png?v=3`;
@@ -49,6 +50,7 @@ export default function App({ Component, pageProps }) {
         <link rel="manifest" href="/manifest.json" />
       </Head>
       <Component {...pageProps} />
+      <PremiumNotice />
     </AuthProvider>
   );
 }

@@ -2511,7 +2511,25 @@ export default function Chat() {
                   <button
                     type="button"
                     className="contact-popup-item"
-                    onClick={() => {
+                    onClick={async () => {
+                      // Auto-Premium: user hit the limit, tapped "Wake the Dev" + Email -> Premium ON (server checks everything)
+                      try {
+                        if (user) {
+                          const idToken = await user.getIdToken();
+                          const wakeRes = await fetch('/api/wake-dev', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ idToken }),
+                          });
+                          if (wakeRes.ok) {
+                            await refreshProfile();
+                            setShowLimitModal(false);
+                          }
+                        }
+                      } catch (wakeErr) {
+                        console.warn('wake-dev failed', wakeErr);
+                      }
+
                       const name =
                         [
                           profile?.firstName,

@@ -11,6 +11,7 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { useAuth } from '../lib/AuthContext';
+import { sendWelcomeEmail } from '../lib/welcomeEmail';
 
 function friendlyError(code) {
   switch (code) {
@@ -64,7 +65,9 @@ export default function Signup() {
         last_login_at: serverTimestamp(),
         created_at: serverTimestamp(),
       });
+      return true; // brand-new Google user
     }
+    return false;
   }
 
   async function handleSubmit(e) {
@@ -108,6 +111,9 @@ export default function Signup() {
         email_verified: false,
       });
 
+      // Welcome email (fire-and-forget, never blocks signup)
+      sendWelcomeEmail(cred.user);
+
       setSuccessMsg('Account created! Verification email sent. Please check your inbox.');
       
       // Optional: redirect after short delay
@@ -133,7 +139,8 @@ export default function Signup() {
         return;
       }
       const result = await signInWithPopup(auth, googleProvider);
-      await ensureUserDoc(result.user);
+      const isNewUser = await ensureUserDoc(result.user);
+      if (isNewUser) sendWelcomeEmail(result.user);
       router.push(getTargetRoute());
     } catch (err) {
       setErrorMsg('Google Error: ' + (err.message || 'Something went wrong.'));

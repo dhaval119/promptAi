@@ -41,6 +41,11 @@ function FaqAccordion({ idPrefix = '' }) {
           <div className="faq-answer">{item.a}</div>
         </div>
       ))}
+      <div style={{ textAlign: 'center', marginTop: 90, fontSize: 12, letterSpacing: 1, lineHeight: 1.8, color: 'rgba(255,255,255,0.45)' }}>
+        © 2026 PromptAI. Built by Dhaval, powered by chai and questionable decisions.
+        <br />
+        If you scrolled this far, you have nothing better to do. We respect that.
+      </div>
       <style jsx>{`
         .faq-wrapper {
           scroll-margin-top: 120px;
@@ -255,34 +260,34 @@ export default function Home() {
               <div className="feature-row" ref={row1Ref}>
                 <div className="feature-card">
                   <div className="card-bg-number">01</div>
-                  <div className="card-header">FEATURE 1</div>
+                  <div className="card-header">NO HOMEWORK</div>
                   <div className="card-body white">Ready-to-use prompts.</div>
                 </div>
                 <div className="feature-card">
                   <div className="card-bg-number">02</div>
-                  <div className="card-header">FEATURE 2</div>
+                  <div className="card-header">TOP SECRET</div>
                   <div className="card-body dark">Your ideas stay private.</div>
                 </div>
                 <div className="feature-card">
                   <div className="card-bg-number">03</div>
-                  <div className="card-header">FEATURE 3</div>
+                  <div className="card-header">FAST. REALLY.</div>
                   <div className="card-body white">Instant, quality results.</div>
                 </div>
               </div>
               <div className="feature-row" ref={row2Ref} style={{ marginTop: 52 }}>
                 <div className="feature-card">
                   <div className="card-bg-number">04</div>
-                  <div className="card-header">FEATURE 4</div>
+                  <div className="card-header">SAVED FOR LATER</div>
                   <div className="card-body dark">Keep and reuse your best ones.</div>
                 </div>
                 <div className="feature-card">
                   <div className="card-bg-number">05</div>
-                  <div className="card-header">FEATURE 5</div>
+                  <div className="card-header">BRAIN OPTIONAL</div>
                   <div className="card-body white">Think ideas, not words.</div>
                 </div>
                 <div className="feature-card">
                   <div className="card-bg-number">06</div>
-                  <div className="card-header">FEATURE 6</div>
+                  <div className="card-header">COPY. PASTE. DONE.</div>
                   <div className="card-body dark">Copy & use anywhere fast.</div>
                 </div>
               </div>
@@ -327,32 +332,32 @@ export default function Home() {
         <div className="m-feature-grid">
           <div className="feature-card">
             <div className="card-bg-number">01</div>
-            <div className="card-header">FEATURE 1</div>
+            <div className="card-header">NO HOMEWORK</div>
             <div className="card-body white">Ready-to-use prompts.</div>
           </div>
           <div className="feature-card">
             <div className="card-bg-number">02</div>
-            <div className="card-header">FEATURE 2</div>
+            <div className="card-header">TOP SECRET</div>
             <div className="card-body dark">Your ideas stay private.</div>
           </div>
           <div className="feature-card">
             <div className="card-bg-number">03</div>
-            <div className="card-header">FEATURE 3</div>
+            <div className="card-header">FAST. REALLY.</div>
             <div className="card-body white">Instant, quality results.</div>
           </div>
           <div className="feature-card">
             <div className="card-bg-number">04</div>
-            <div className="card-header">FEATURE 4</div>
+            <div className="card-header">SAVED FOR LATER</div>
             <div className="card-body dark">Keep and reuse your best ones.</div>
           </div>
           <div className="feature-card">
             <div className="card-bg-number">05</div>
-            <div className="card-header">FEATURE 5</div>
+            <div className="card-header">BRAIN OPTIONAL</div>
             <div className="card-body white">Think ideas, not words.</div>
           </div>
           <div className="feature-card">
             <div className="card-bg-number">06</div>
-            <div className="card-header">FEATURE 6</div>
+            <div className="card-header">COPY. PASTE. DONE.</div>
             <div className="card-body dark">Copy & use anywhere fast.</div>
           </div>
         </div>

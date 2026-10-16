@@ -12,8 +12,11 @@
 import { renderWelcomeEmail } from '../../lib/welcomeEmailTemplate';
 import { sendEmailDetailed, emailConfigured } from '../../lib/sendEmail';
 import { fv, readUserDoc, namesFromDoc } from '../../lib/firestoreRest';
+import { escapeHtml } from '../../lib/welcomeEmailTemplate';
 
 const DEFAULT_SITE_URL = 'https://prompt-ai-teal.vercel.app';
+// New-user alert goes here (override with ADMIN_NOTIFY_EMAIL in Vercel env).
+const ADMIN_NOTIFY_EMAIL = (process.env.ADMIN_NOTIFY_EMAIL || 'sonidhaval2468@gmail.com').trim();
 const ipHits = new Map();
 const sentUids = new Map();
 const IP_WINDOW_MS = 10 * 60 * 1000;
@@ -23,6 +26,95 @@ function getClientIp(req) {
   const fwd = req.headers['x-forwarded-for'];
   if (typeof fwd === 'string' && fwd.length > 0) return fwd.split(',')[0].trim();
   return req.socket?.remoteAddress || 'unknown';
+}
+
+// uid straight from the ID token payload (only used to start the Firestore read in parallel;
+// the real, verified uid still comes from Google's lookup and must match).
+function uidFromToken(idToken) {
+  try {
+    const part = idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = JSON.parse(Buffer.from(part, 'base64').toString('utf8'));
+    return json.user_id || json.sub || null;
+  } catch {
+    return null;
+  }
+}
+
+function headerText(req, name) {
+  const raw = req.headers[name];
+  if (!raw) return '';
+  const v = Array.isArray(raw) ? raw[0] : raw;
+  try {
+    return decodeURIComponent(String(v)).trim();
+  } catch {
+    return String(v).trim();
+  }
+}
+
+function describeLocation(req) {
+  const city = headerText(req, 'x-vercel-ip-city');
+  const region = headerText(req, 'x-vercel-ip-country-region');
+  const country = headerText(req, 'x-vercel-ip-country');
+  const parts = [city, region, country].filter(Boolean);
+  return parts.length ? parts.join(', ') : 'Unknown';
+}
+
+function describeDevice(req) {
+  const ua = String(req.headers['user-agent'] || '');
+  const kind = /Android|iPhone|iPad|iPod|Mobile/i.test(ua) ? 'Mobile' : 'PC';
+  const os = /Windows/i.test(ua)
+    ? 'Windows'
+    : /Android/i.test(ua)
+      ? 'Android'
+      : /iPhone|iPad|iPod/i.test(ua)
+        ? 'iOS'
+        : /Mac OS X|Macintosh/i.test(ua)
+          ? 'macOS'
+          : /Linux/i.test(ua)
+            ? 'Linux'
+            : 'Unknown OS';
+  const browser = /Edg\//i.test(ua)
+    ? 'Edge'
+    : /OPR\/|Opera/i.test(ua)
+      ? 'Opera'
+      : /Chrome\//i.test(ua)
+        ? 'Chrome'
+        : /Firefox\//i.test(ua)
+          ? 'Firefox'
+          : /Safari\//i.test(ua)
+            ? 'Safari'
+            : 'Browser';
+  return `${kind} · ${os} · ${browser}`;
+}
+
+function buildAdminAlert({ fullName, email, method, location, device, ip }) {
+  const when = new Date().toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+  const row = (k, v) =>
+    `<tr><td style="padding:8px 14px;border-bottom:1px solid #e5e5e5;font:bold 12px 'Courier New',monospace;letter-spacing:1px;color:#777;text-transform:uppercase;width:120px;">${k}</td><td style="padding:8px 14px;border-bottom:1px solid #e5e5e5;font:15px Arial,sans-serif;color:#111;">${escapeHtml(v)}</td></tr>`;
+  const subject = `New PromptAI user: ${fullName} (${location})`;
+  const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#f4f4f4;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;margin:0 auto;background:#ffffff;border:3px solid #111;">
+<tr><td style="background:#7c3aed;padding:12px 14px;font:bold 12px 'Courier New',monospace;letter-spacing:1.5px;color:#ffffff;">NEW SIGNUP &middot; ANOTHER ONE FELL FOR IT</td></tr>
+<tr><td style="padding:16px 14px 6px 14px;font:900 22px 'Arial Black',Arial,sans-serif;color:#111;">${escapeHtml(fullName)} just joined PromptAI.</td></tr>
+<tr><td><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+${row('Name', fullName)}${row('Email', email)}${row('Location', location)}${row('Signed up via', method)}${row('Device', device)}${row('IP', ip)}${row('Time (IST)', when)}
+</table></td></tr>
+<tr><td style="padding:14px;font:italic 13px Georgia,serif;color:#777;">Welcome email already sent. You owe them nothing. (Except a working product.)</td></tr>
+</table></body></html>`;
+  const text = [
+    `New PromptAI user: ${fullName}`,
+    `Email: ${email}`,
+    `Location: ${location}`,
+    `Signed up via: ${method}`,
+    `Device: ${device}`,
+    `IP: ${ip}`,
+    `Time (IST): ${when}`,
+  ].join('\n');
+  return { subject, html, text };
 }
 
 function ipLimited(ip) {
@@ -65,22 +157,28 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1) Verify the token + read the REAL email from Firebase (never trust the browser)
-    const lookup = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(fbKey)}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
-      }
-    );
+    // 1) Verify the token (Google) and read the user doc IN PARALLEL (was sequential = slower)
+    const guessedUid = uidFromToken(idToken);
+    const [lookup, profileGuess] = await Promise.all([
+      fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(fbKey)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken }),
+        }
+      ),
+      projectId && guessedUid
+        ? readUserDoc(projectId, guessedUid, idToken).catch(() => null)
+        : Promise.resolve(null),
+    ]);
     if (!lookup.ok) return res.status(401).json({ error: 'invalid_token' });
     const user = (await lookup.json())?.users?.[0];
     if (!user || !user.email) return res.status(400).json({ error: 'no_email' });
 
     // 2) Retry-safe: skip if already sent (client marker + short in-memory guard)
-    let profile = null;
-    if (projectId) {
+    let profile = guessedUid && guessedUid === user.localId ? profileGuess : null;
+    if (!profile && projectId) {
       try {
         profile = await readUserDoc(projectId, user.localId, idToken);
       } catch {
@@ -90,6 +188,8 @@ export default async function handler(req, res) {
     if (fv(profile, 'welcome_email_sent') === true || sentUids.has(user.localId)) {
       return res.status(409).json({ error: 'already_sent' });
     }
+    // Block double-sends from two quick requests (signup + auth listener) right away.
+    sentUids.set(user.localId, Date.now());
 
     // 3) Name: Firestore first_name/last_name → Auth displayName → email local-part
     const { firstName, fullName } = namesFromDoc(profile, user);
@@ -97,8 +197,33 @@ export default async function handler(req, res) {
     // 4) Build + send (template unchanged)
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL;
     const { subject, html, text } = renderWelcomeEmail({ firstName, fullName, siteUrl });
-    const result = await sendEmailDetailed({ to: user.email, subject, html, text });
+    // Welcome email + admin alert go out at the same time (alert never blocks / breaks the welcome).
+    const method =
+      fv(profile, 'signup_method') === 'manual' || fv(profile, 'signupMethod') === 'manual'
+        ? 'Email + password'
+        : (user.providerUserInfo || []).some((p) => p.providerId === 'google.com')
+          ? 'Google'
+          : 'Email + password';
+    const alertMail = ADMIN_NOTIFY_EMAIL
+      ? buildAdminAlert({
+          fullName,
+          email: user.email,
+          method,
+          location: describeLocation(req),
+          device: describeDevice(req),
+          ip: getClientIp(req),
+        })
+      : null;
+    const [result] = await Promise.all([
+      sendEmailDetailed({ to: user.email, subject, html, text }),
+      alertMail
+        ? sendEmailDetailed({ to: ADMIN_NOTIFY_EMAIL, ...alertMail }).catch((e) => {
+            console.error('[welcome-email] Admin alert failed.', { errorName: e?.name || 'Error' });
+          })
+        : Promise.resolve(null),
+    ]);
     if (!result.ok) {
+      sentUids.delete(user.localId); // allow a retry later
       console.error('[welcome-email] Delivery failed.', {
         status: result.status,
         code: result.code,

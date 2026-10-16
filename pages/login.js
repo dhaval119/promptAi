@@ -6,7 +6,6 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   sendPasswordResetEmail,
-  sendEmailVerification,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
@@ -83,18 +82,6 @@ export default function Login() {
     return false;
   }
 
-  // After successful login → send verification email if not verified
-  async function sendLoginEmailIfNeeded(fbUser) {
-    try {
-      if (fbUser && !fbUser.emailVerified) {
-        await sendEmailVerification(fbUser);
-        setSuccessMsg('Login successful! Verification email sent to your inbox.');
-      }
-    } catch (err) {
-      console.log('Verification email error:', err.message);
-    }
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
     setErrorMsg('');
@@ -129,9 +116,6 @@ export default function Login() {
       // sendWelcomeEmail skips accounts already marked as sent.
       sendWelcomeEmail(cred.user);
 
-      // Firebase verification email (separate from the branded welcome email).
-      await sendLoginEmailIfNeeded(cred.user);
-
       router.push(getTargetRoute());
     } catch (err) {
       setErrorMsg(friendlyError(err.code));
@@ -157,9 +141,6 @@ export default function Login() {
       await ensureUserDoc(result.user);
       // If an earlier welcome send failed, retry now. Already-sent users are skipped.
       sendWelcomeEmail(result.user);
-
-      // Firebase verification email (separate from the branded welcome email).
-      await sendLoginEmailIfNeeded(result.user);
 
       router.push(getTargetRoute());
     } catch (err) {

@@ -5,8 +5,7 @@ import { useRouter } from 'next/router';
 import { 
   createUserWithEmailAndPassword, 
   signInWithPopup, 
-  updateProfile,
-  sendEmailVerification 
+  updateProfile
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
@@ -96,9 +95,6 @@ export default function Signup() {
         displayName: `${firstName.trim()} ${lastName.trim()}`,
       });
 
-      // Send Email Verification (Free Firebase method)
-      await sendEmailVerification(cred.user);
-
       await setDoc(doc(db, 'users', cred.user.uid), {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -112,9 +108,9 @@ export default function Signup() {
       });
 
       // Welcome email (fire-and-forget, never blocks signup)
-      sendWelcomeEmail(cred.user);
+      sendWelcomeEmail(cred.user, { fresh: true });
 
-      setSuccessMsg('Account created! Verification email sent. Please check your inbox.');
+      setSuccessMsg('Account created! Check your inbox for your welcome email.');
       
       // Optional: redirect after short delay
       setTimeout(() => {

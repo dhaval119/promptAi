@@ -135,8 +135,8 @@ export default function Signup() {
         return;
       }
       const result = await signInWithPopup(auth, googleProvider);
-      await ensureUserDoc(result.user);
-      sendWelcomeEmail(result.user);
+      const isNewGoogle = await ensureUserDoc(result.user);
+      sendWelcomeEmail(result.user, { fresh: isNewGoogle === true });
       router.push(getTargetRoute());
     } catch (err) {
       setErrorMsg('Google Error: ' + (err.message || 'Something went wrong.'));

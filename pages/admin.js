@@ -13,6 +13,7 @@ import {
   orderBy,
   limit,
   collectionGroup,
+  onSnapshot,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -113,6 +114,9 @@ export default function AdminPage() {
     return { y: n.getFullYear(), m: n.getMonth() };
   });
   const [selectedChat, setSelectedChat] = useState(null); // chat opened in the detail popup
+  const [chatDraft, setChatDraft] = useState(null); // admin edit mode for the open chat
+  const [activityUserId, setActivityUserId] = useState(null); // user opened in "User Activity"
+  const [activityLog, setActivityLog] = useState([]);
 
   useEffect(() => {
     if (loading) return;
@@ -241,6 +245,51 @@ export default function AdminPage() {
     loadData();
   }, [loadData]);
 
+  // LIVE: new signups / profile changes show up instantly + chats re-sync every 12s (no manual refresh)
+  useEffect(() => {
+    if (!user || !isAdmin || !db) return undefined;
+    const unsub = onSnapshot(
+      collection(db, 'users'),
+      (snap) => {
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setUsers(list);
+        const blocked = list.filter((u) => u.is_blocked || u.isBlocked).length;
+        const premium = list.filter((u) => u.is_premium || u.isPremium).length;
+        setStats((st) => ({
+          ...st,
+          totalUsers: list.length,
+          blocked,
+          active: Math.max(0, list.length - blocked),
+          revenue: premium * 9.99,
+        }));
+      },
+      () => {}
+    );
+    const t = setInterval(() => {
+      if (typeof document === 'undefined' || !document.hidden) loadData();
+    }, 12000);
+    return () => {
+      unsub();
+      clearInterval(t);
+    };
+  }, [user, isAdmin, loadData]);
+
+  // Live activity timeline of the user opened in "User Activity"
+  useEffect(() => {
+    setActivityLog([]);
+    if (!activityUserId || !db) return undefined;
+    const unsub = onSnapshot(
+      query(collection(db, 'users', activityUserId, 'activity'), orderBy('at', 'desc'), limit(200)),
+      (snap) => setActivityLog(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      () => {}
+    );
+    return () => unsub();
+  }, [activityUserId]);
+
+  useEffect(() => {
+    setChatDraft(null);
+  }, [selectedChat]);
+
   // Close the chat popup with Escape
   useEffect(() => {
     if (!selectedChat) return;
@@ -250,6 +299,56 @@ export default function AdminPage() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedChat]);
+
+  async function adminDeleteChat(c) {
+    if (!db || busy || !c?.path) return;
+    if (!window.confirm(`Delete this chat permanently?\n\n${c.title || c.request || c.id}`)) return;
+    setBusy(true);
+    try {
+      // The same chat can exist in both the email-based and uid-based collection – delete every copy.
+      const copies = conversations.filter(
+        (x) => x.path === c.path || (x.id === c.id && (x.userEmail || '') === (c.userEmail || ''))
+      );
+      const paths = Array.from(new Set([c.path, ...copies.map((x) => x.path)]));
+      for (const pth of paths) await deleteDoc(doc(db, pth));
+      setConversations((prev) => prev.filter((x) => !paths.includes(x.path)));
+      setSelectedChat(null);
+    } catch (e) {
+      console.error(e);
+      alert('Delete failed. Check Firestore rules (admin must be allowed to delete chats).');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function adminSaveChat(c, draft) {
+    if (!db || busy || !c?.path || !draft) return;
+    setBusy(true);
+    try {
+      const msgs = draft.msgs
+        .map((m) => ({ sender: m.sender === 'user' ? 'user' : 'ai', text: String(m.text || '') }))
+        .filter((m) => m.text.trim());
+      const firstUser = msgs.find((m) => m.sender === 'user');
+      const lastAi = [...msgs].reverse().find((m) => m.sender === 'ai');
+      const payload = {
+        title: draft.title || '',
+        messages: msgs,
+        request: firstUser ? firstUser.text : '',
+        response: lastAi ? lastAi.text : '',
+        updatedAt: Date.now(),
+      };
+      await updateDoc(doc(db, c.path), payload);
+      const updated = { ...c, ...payload };
+      setConversations((prev) => prev.map((x) => (x.path === c.path ? updated : x)));
+      setSelectedChat(updated);
+      setChatDraft(null);
+    } catch (e) {
+      console.error(e);
+      alert('Save failed. Check Firestore rules (admin must be allowed to write chats).');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function toggleBlock(uid, current) {
     if (!db || busy) return;
@@ -455,6 +554,17 @@ export default function AdminPage() {
               {item.label}
             </button>
           ))}
+          <button
+            type="button"
+            className={`sidebar-link ${tab === 'activity' ? 'active' : ''}`}
+            style={{ marginTop: 'auto' }}
+            onClick={() => {
+              setTab('activity');
+              setActivityUserId(null);
+            }}
+          >
+            User Activity
+          </button>
         </aside>
 
         {/* Main */}
@@ -465,6 +575,7 @@ export default function AdminPage() {
             {tab === 'chats' && 'Chats'}
             {tab === 'payments' && 'Payments'}
                         {tab === 'logs' && 'User Profile Logs'}
+            {tab === 'activity' && (activityUserId ? 'User Details' : 'User Activity')}
           </h1>
 
           {loadError && (
@@ -836,6 +947,81 @@ export default function AdminPage() {
                       </button>
                     </div>
                     <div className="modal-body">
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                        {!chatDraft ? (
+                          <button
+                            type="button"
+                            className="copy-btn"
+                            onClick={() =>
+                              setChatDraft({
+                                title: c.title || '',
+                                msgs: (msgs.length
+                                  ? msgs
+                                  : [
+                                      { sender: 'user', text: reqText },
+                                      { sender: 'ai', text: resText },
+                                    ]
+                                ).map((m) => ({ sender: m.sender, text: m.text || '' })),
+                              })
+                            }
+                          >
+                            Edit chat
+                          </button>
+                        ) : (
+                          <>
+                            <button type="button" className="copy-btn" disabled={busy} onClick={() => adminSaveChat(c, chatDraft)}>
+                              Save changes
+                            </button>
+                            <button type="button" className="copy-btn" onClick={() => setChatDraft(null)}>
+                              Cancel
+                            </button>
+                          </>
+                        )}
+                        <button type="button" className="copy-btn" disabled={busy} onClick={() => adminDeleteChat(c)} style={{ color: '#ff6b6b' }}>
+                          Delete chat
+                        </button>
+                      </div>
+
+                      {chatDraft && (
+                        <div style={{ marginBottom: 16 }}>
+                          <div className="modal-label"><span>Title</span></div>
+                          <input
+                            value={chatDraft.title}
+                            onChange={(e) => setChatDraft({ ...chatDraft, title: e.target.value })}
+                            style={{ width: '100%', boxSizing: 'border-box', padding: 10, borderRadius: 8, border: '1px solid #333', background: '#0d0d0d', color: '#fff', marginBottom: 12 }}
+                          />
+                          {chatDraft.msgs.map((m, i) => (
+                            <div key={i} style={{ marginBottom: 10 }}>
+                              <div className="modal-label">
+                                <span>{m.sender === 'user' ? 'USER' : 'AI'} message {i + 1}</span>
+                                <button
+                                  type="button"
+                                  className="copy-btn"
+                                  onClick={() => setChatDraft({ ...chatDraft, msgs: chatDraft.msgs.filter((_, j) => j !== i) })}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                              <textarea
+                                value={m.text}
+                                rows={4}
+                                onChange={(e) => {
+                                  const next = chatDraft.msgs.slice();
+                                  next[i] = { ...next[i], text: e.target.value };
+                                  setChatDraft({ ...chatDraft, msgs: next });
+                                }}
+                                style={{ width: '100%', boxSizing: 'border-box', padding: 10, borderRadius: 8, border: '1px solid #333', background: '#0d0d0d', color: '#fff', fontFamily: 'inherit' }}
+                              />
+                            </div>
+                          ))}
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button type="button" className="copy-btn" onClick={() => setChatDraft({ ...chatDraft, msgs: [...chatDraft.msgs, { sender: 'user', text: '' }] })}>+ User message</button>
+                            <button type="button" className="copy-btn" onClick={() => setChatDraft({ ...chatDraft, msgs: [...chatDraft.msgs, { sender: 'ai', text: '' }] })}>+ AI message</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {!chatDraft && (<>
                       <div className="modal-label">
                         <span>Request</span>
                         <button type="button" className="copy-btn" onClick={() => copy(reqText)}>Copy</button>
@@ -861,11 +1047,122 @@ export default function AdminPage() {
                           ))}
                         </>
                       )}
+                      </>)}
                     </div>
                   </div>
                 </div>
               );
             })()}
+
+          {tab === 'activity' && (() => {
+            const fmt = (n) => (n ? new Date(n).toLocaleString() : '—');
+            const chatsOf = (u) => conversations.filter((c) => (u.email && c.userEmail === u.email) || c.uid === u.id);
+            const nameOf = (u) => [u.first_name || u.firstName, u.last_name || u.lastName].filter(Boolean).join(' ') || '—';
+            const au = activityUserId ? users.find((x) => x.id === activityUserId) : null;
+            if (!au) {
+              const sorted = [...users].sort((a, b) => {
+                const ta = a.last_seen_at?.toMillis ? a.last_seen_at.toMillis() : 0;
+                const tb = b.last_seen_at?.toMillis ? b.last_seen_at.toMillis() : 0;
+                return tb - ta;
+              });
+              return (
+                <div className="table-wrap">
+                  <p className="muted" style={{ margin: '4px 12px 10px' }}>Click a user to see everything about them. Updates live.</p>
+                  <table>
+                    <thead>
+                      <tr><th>Name</th><th>Email</th><th>Location</th><th>Device</th><th>Last seen</th><th>Chats</th></tr>
+                    </thead>
+                    <tbody>
+                      {sorted.length === 0 ? (
+                        <tr><td colSpan={6} className="empty">No users yet</td></tr>
+                      ) : (
+                        sorted.map((u) => (
+                          <tr key={u.id} className="row-click" onClick={() => setActivityUserId(u.id)}>
+                            <td>{nameOf(u)}</td>
+                            <td>{safeStr(u.email)}</td>
+                            <td>{locationLabel(u)}</td>
+                            <td>{deviceLabel(u.last_device)}</td>
+                            <td>{formatDate(u.last_seen_at)}</td>
+                            <td>{chatsOf(u).length}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            }
+            const uc = chatsOf(au);
+            const icon = { login: 'LOGIN', chat_opened: 'OPENED', chat_deleted: 'DELETED', prompt_generated: 'PROMPT' };
+            const sentence = (a) => {
+              const t = a.title ? `"${a.title}"` : 'a chat';
+              if (a.type === 'login') return `Logged in${[a.city, a.region, a.country].filter(Boolean).length ? ' from ' + [a.city, a.region, a.country].filter(Boolean).join(', ') : ''}${a.device ? ' (' + a.device + ')' : ''}`;
+              if (a.type === 'chat_opened') return `Viewed chat ${t}`;
+              if (a.type === 'chat_deleted') return `Deleted chat ${t}`;
+              if (a.type === 'prompt_generated') return `Generated a prompt ${t}`;
+              return a.type;
+            };
+            const box = { background: '#141414', border: '1px solid #262626', borderRadius: 12, padding: 14, minWidth: 180 };
+            const lab = { fontSize: 11, letterSpacing: 1, color: '#888', textTransform: 'uppercase', marginBottom: 4 };
+            return (
+              <div style={{ padding: '0 4px 40px' }}>
+                <button type="button" className="copy-btn" onClick={() => setActivityUserId(null)} style={{ marginBottom: 16 }}>← All users</button>
+                <h2 style={{ margin: '0 0 4px' }}>{nameOf(au)}</h2>
+                <p className="muted" style={{ marginTop: 0 }}>{safeStr(au.email)}</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, margin: '16px 0 24px' }}>
+                  {[
+                    ['Joined', formatDate(au.created_at || au.createdAt)],
+                    ['Last seen', formatDate(au.last_seen_at)],
+                    ['Last login', formatDate(au.last_login_at)],
+                    ['Location', locationLabel(au)],
+                    ['Device', deviceLabel(au.last_device)],
+                    ['Signed up via', safeStr(au.signup_method || 'manual')],
+                    ['Premium', (au.is_premium || au.isPremium) ? 'Yes' : 'No'],
+                    ['Blocked', (au.is_blocked || au.isBlocked) ? 'Yes' : 'No'],
+                    ['Usage today', String(au.usage_count ?? 0)],
+                    ['Total chats', String(uc.length)],
+                  ].map(([k, v]) => (
+                    <div key={k} style={box}><div style={lab}>{k}</div><div style={{ fontWeight: 700 }}>{v}</div></div>
+                  ))}
+                </div>
+
+                <h3>Chats ({uc.length})</h3>
+                <div className="table-wrap" style={{ marginBottom: 24 }}>
+                  <table>
+                    <thead><tr><th>Title</th><th>Request</th><th>Updated</th></tr></thead>
+                    <tbody>
+                      {uc.length === 0 ? (
+                        <tr><td colSpan={3} className="empty">No chats</td></tr>
+                      ) : (
+                        uc.map((c) => (
+                          <tr key={(c.path || '') + c.id} className="row-click" onClick={() => setSelectedChat(c)}>
+                            <td>{safeStr(c.title)}</td>
+                            <td className="clip">{safeStr(c.request).slice(0, 90)}</td>
+                            <td>{formatDate(c.updatedAt || c.createdAt)}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <h3>Activity timeline (live)</h3>
+                {activityLog.length === 0 ? (
+                  <p className="muted">No activity recorded yet. Logins, chats opened, prompts and deletions appear here from now on.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {activityLog.map((a) => (
+                      <div key={a.id} style={{ ...box, display: 'flex', gap: 12, alignItems: 'center', padding: '10px 14px' }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: a.type === 'chat_deleted' ? '#ff6b6b' : '#a78bfa', minWidth: 74 }}>{icon[a.type] || 'EVENT'}</span>
+                        <span style={{ flex: 1 }}>{sentence(a)}</span>
+                        <span style={{ color: '#888', fontSize: 12 }}>{fmt(a.at)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {tab === 'payments' && (
             <div className="table-wrap">

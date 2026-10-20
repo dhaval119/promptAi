@@ -9,15 +9,15 @@ import { useAuth } from '../lib/AuthContext';
 const FAQS = [
   {
     q: 'How does Prompt AI work?',
-    a: 'Simply type your situation or requirement in any language. Our system sends it to the AI model, processes it, and returns a refined, structured, and high-quality prompt that you can directly copy and use with any AI.',
+    a: 'You type what you want, in any language, however vague. We turn it into a proper prompt. That\'s the whole trick. No, it isn\'t magic. Yes, we\'re a little proud.',
   },
   {
     q: 'Do I need to write my input in English?',
-    a: 'No. You can write in any language - English, Hindi, Hinglish, or mixed. Prompt AI automatically transforms it into a professional English prompt.',
+    a: 'Nope. English, Hindi, Hinglish or a chaotic mix of all three. You bring the grammar crimes, we bring clean English.',
   },
   {
     q: 'Can I use the refined prompts directly in AI tools?',
-    a: 'Yes. Every refined prompt is fully optimized and ready to be pasted into any AI model without modification.',
+    a: 'Yes. Copy, paste, done. If the AI still gives a bad answer, it\'s probably just in a mood.',
   },
 ];
 
@@ -42,9 +42,9 @@ function FaqAccordion({ idPrefix = '' }) {
         </div>
       ))}
       <div style={{ textAlign: 'center', marginTop: 90, fontSize: 12, letterSpacing: 1, lineHeight: 1.8, color: 'rgba(255,255,255,0.45)' }}>
-        © 2026 PromptAI. Built by Dhaval, powered by chai and questionable decisions.
+        © 2026 PromptAI. Built by Dhaval, powered by cold coffee and zero sleep.
         <br />
-        If you scrolled this far, you have nothing better to do. We respect that.
+        You scrolled all the way down here. Wow. Go write a prompt, it's free.
       </div>
       <style jsx>{`
         .faq-wrapper {
@@ -247,13 +247,13 @@ export default function Home() {
             <h2 className="section-title title2">Built by Professionals, for Professionals</h2>
 
             <p className="description">
-              This is the place where you simply write your imagination, and AI transforms it into a fully AI-ready prompt.
+              This is where you dump your half-baked idea, and AI turns it into a prompt that actually works. You're welcome.
               <br />
               <br />
-              Whether you're writing blogs, creating social media posts, or working on any creative project — AI helps you express your thoughts clearly and professionally.
+              Blogs, social posts, that creative project you keep procrastinating on, we'll make it sound like you know what you're doing.
               <br />
               <br />
-              See how your simple ideas become "AI-ready prompts" — ready to use instantly with Gemini or any other model. Your words, our intelligence — together, we craft the perfect prompt.
+              Your idea goes in, a proper prompt comes out, ready for ChatGPT, Gemini or Claude. Your words, our brain. Fair deal.
             </p>
 
             <div className="features-container" ref={featuresWrapRef}>
@@ -261,7 +261,7 @@ export default function Home() {
                 <div className="feature-card">
                   <div className="card-bg-number">01</div>
                   <div className="card-header">NO HOMEWORK</div>
-                  <div className="card-body white">Ready-to-use prompts.</div>
+                  <div className="card-body white">Ready-to-use prompts. No homework.</div>
                 </div>
                 <div className="feature-card">
                   <div className="card-bg-number">02</div>
@@ -271,19 +271,19 @@ export default function Home() {
                 <div className="feature-card">
                   <div className="card-bg-number">03</div>
                   <div className="card-header">FAST. REALLY.</div>
-                  <div className="card-body white">Instant, quality results.</div>
+                  <div className="card-body white">One click to ChatGPT, Gemini, Claude.</div>
                 </div>
               </div>
               <div className="feature-row" ref={row2Ref} style={{ marginTop: 52 }}>
                 <div className="feature-card">
                   <div className="card-bg-number">04</div>
                   <div className="card-header">SAVED FOR LATER</div>
-                  <div className="card-body dark">Keep and reuse your best ones.</div>
+                  <div className="card-body dark">Chat history: rename, pin, reuse.</div>
                 </div>
                 <div className="feature-card">
                   <div className="card-bg-number">05</div>
                   <div className="card-header">BRAIN OPTIONAL</div>
-                  <div className="card-body white">Think ideas, not words.</div>
+                  <div className="card-body white">Any language in. Pro prompt out.</div>
                 </div>
                 <div className="feature-card">
                   <div className="card-bg-number">06</div>
@@ -298,8 +298,8 @@ export default function Home() {
             <div className="second-hero" id="about-section" />
 
             <h1 className="second-heading">
-              Get All the Type of prompt You Need <br />
-              In a Single Platform
+              Every prompt you'll ever need. <br />
+              One tab. Zero excuses.
             </h1>
             <div className="second-btn" onClick={goChat}>
               GET STARTED
@@ -326,14 +326,14 @@ export default function Home() {
 
         <h2 className="m-section-title">A Seamless User Experience</h2>
         <p className="m-description">
-          This is the place where you simply write your imagination, and AI transforms it into a fully AI-ready prompt. Whether you're writing blogs, social posts, or any creative project — AI helps you express your thoughts clearly and professionally.
+          This is where you dump your half-baked idea, and AI turns it into a prompt that actually works. You're welcome. Whether you're writing blogs, social posts, or any creative project — AI helps you express your thoughts clearly and professionally.
         </p>
 
         <div className="m-feature-grid">
           <div className="feature-card">
             <div className="card-bg-number">01</div>
             <div className="card-header">NO HOMEWORK</div>
-            <div className="card-body white">Ready-to-use prompts.</div>
+            <div className="card-body white">Ready-to-use prompts. No homework.</div>
           </div>
           <div className="feature-card">
             <div className="card-bg-number">02</div>
@@ -343,17 +343,17 @@ export default function Home() {
           <div className="feature-card">
             <div className="card-bg-number">03</div>
             <div className="card-header">FAST. REALLY.</div>
-            <div className="card-body white">Instant, quality results.</div>
+            <div className="card-body white">One click to ChatGPT, Gemini, Claude.</div>
           </div>
           <div className="feature-card">
             <div className="card-bg-number">04</div>
             <div className="card-header">SAVED FOR LATER</div>
-            <div className="card-body dark">Keep and reuse your best ones.</div>
+            <div className="card-body dark">Chat history: rename, pin, reuse.</div>
           </div>
           <div className="feature-card">
             <div className="card-bg-number">05</div>
             <div className="card-header">BRAIN OPTIONAL</div>
-            <div className="card-body white">Think ideas, not words.</div>
+            <div className="card-body white">Any language in. Pro prompt out.</div>
           </div>
           <div className="feature-card">
             <div className="card-bg-number">06</div>
@@ -367,7 +367,7 @@ export default function Home() {
         <h2 className="m-section-title" id="about-section-mobile">
           Built by Professionals, for Professionals
         </h2>
-        <h1 className="m-second-heading">Get All the Type of prompt You Need In a Single Platform</h1>
+        <h1 className="m-second-heading">Every prompt you'll ever need. One tab. Zero excuses.</h1>
         <div className="m-btn-big" onClick={goChat}>
           <span>GET STARTED</span>
           <img src="/assets/arrow.png" alt="Arrow" />
@@ -424,7 +424,9 @@ export default function Home() {
 
         .container {
           width: 1920px;
-          height: 4200px;
+          height: auto;
+          padding-top: 3450px;
+          box-sizing: border-box;
           position: relative;
           background: #020202;
           overflow: hidden;
@@ -625,12 +627,12 @@ export default function Home() {
         }
 
         .desktop-faq-wrapper {
-          position: absolute;
-          top: 3450px;
+          position: relative;
+          top: 0;
           left: 130px;
           width: 1650px;
           z-index: 2;
-          padding-bottom: 160px;
+          padding-bottom: 90px;
           scroll-margin-top: 100px;
         }
 

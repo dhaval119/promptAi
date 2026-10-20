@@ -25,11 +25,21 @@ export default function ScaleFit({ baseWidth = 1920, children }) {
     const t2 = setTimeout(update, 400);
     const t3 = setTimeout(update, 800);
 
+    // Re-measure whenever the content height changes (FAQ open/close, images loading)
+    let ro = null;
+    if (typeof ResizeObserver !== 'undefined' && innerRef.current) {
+      ro = new ResizeObserver(() => update());
+      ro.observe(innerRef.current);
+    }
+    window.addEventListener('load', update);
+
     return () => {
       window.removeEventListener('resize', update);
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
+      if (ro) ro.disconnect();
+      window.removeEventListener('load', update);
     };
   }, [baseWidth]);
 

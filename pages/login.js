@@ -138,9 +138,9 @@ export default function Login() {
       }
 
       const result = await signInWithPopup(auth, googleProvider);
-      await ensureUserDoc(result.user);
+      const isNewGoogle = await ensureUserDoc(result.user);
       // If an earlier welcome send failed, retry now. Already-sent users are skipped.
-      sendWelcomeEmail(result.user);
+      sendWelcomeEmail(result.user, { fresh: isNewGoogle === true });
 
       router.push(getTargetRoute());
     } catch (err) {

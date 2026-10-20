@@ -6,28 +6,43 @@ import Logo from '../components/Logo';
 const ROWS = [
   {
     n: '01',
-    title: 'Natural Language Input Support',
-    desc: 'Users can enter their thoughts, questions, or situations in any language, even in broken or informal wording. The system intelligently interprets the meaning without requiring perfect grammar or structure.',
+    title: 'Any Language, Any Mess',
+    desc: 'Type in English, Hindi, Hinglish or pure chaos. Broken grammar? Typos? We have seen worse. Honestly.',
   },
   {
     n: '02',
-    title: 'Clean & User-Friendly Output',
-    desc: 'The output is formatted perfectly - clear, structured, and ready to paste straight into any AI model.',
+    title: 'Clean, Paste-Ready Output',
+    desc: 'Clear, structured and ready to paste into any AI. No editing, no sighing, no "make it better".',
   },
   {
     n: '03',
-    title: 'Multilingual Compatibility',
-    desc: 'Communicate in your preferred language and still get a polished, professional English prompt back.',
+    title: 'One-Click Launch',
+    desc: 'Open the finished prompt straight in ChatGPT, Gemini or Claude. Your clipboard can finally retire.',
   },
   {
     n: '04',
-    title: 'Situation-to-Prompt Conversion',
-    desc: 'Simply describe a scenario and Prompt AI turns it into a precise, high-quality prompt automatically.',
+    title: 'Chat History That Remembers',
+    desc: 'Rename, pin and delete your chats, so your best prompts never vanish into the void like your motivation.',
   },
   {
     n: '05',
-    title: 'Time-Saving Workflow',
-    desc: 'Streamline your daily tasks - stop rewriting prompts by hand and let Prompt AI do the heavy lifting.',
+    title: 'Situation-to-Prompt Magic',
+    desc: 'Describe a scenario and get a precise, high-quality prompt. Prompt engineering without the engineering.',
+  },
+  {
+    n: '06',
+    title: 'Google or Email Login',
+    desc: 'Sign in with Google in two clicks, or use email and password if you enjoy typing them.',
+  },
+  {
+    n: '07',
+    title: 'Works On Your Phone Too',
+    desc: 'Fully mobile-friendly, with swipe gestures for the sidebar. Yes, we thought of the couch.',
+  },
+  {
+    n: '08',
+    title: '3 Free Prompts A Day',
+    desc: 'Free daily prompts, no card, no catch. The dev spent the rest of the budget on emails.',
   },
 ];
 

@@ -2,7 +2,21 @@
 // Serverless replacement for the PHP callGemini()/callGroq() pipeline.
 // No database, no login, no payment - just: text in -> refined prompt out.
 
+function todayIST() {
+  return new Date().toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+const DETAILS_MARK = 'Details provided by user:';
+
 const SYSTEM_PROMPT = (userText) => `You are the world's BEST Prompt Engineer with over 10 years of experience working with Gemini, GPT-4o, Claude 3.5, Groq, and other top AI models.
+
+Today's date: ${todayIST()}.
 
 The user has given a casual situation: '${userText}'
 
@@ -14,23 +28,85 @@ STRICT RULES (never break these):
 3. Include proper role, goal, context, constraints, output format, examples, and step-by-step thinking where needed.
 4. Use a professional tone and expert-level instructions.
 5. The final prompt should be so powerful and effective that it gives significantly better results than if the user had entered their original situation directly.
+6. If the situation contains a block called "${DETAILS_MARK}", use EVERY detail from it literally inside the prompt (names, company, dates, reasons, tone, language). Never invent placeholders like [Your Name] for details that were provided.
 
 Now create a perfect, unique, and high-quality prompt.`;
 
-async function callGemini(prompt, key) {
-  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${key}`;
+// One call that either asks the user for the missing details or directly returns the final prompt.
+const SMART_PROMPT = (userText) => `You are the world's BEST Prompt Engineer (10+ years, Gemini / GPT-4o / Claude / Groq).
+
+Today's date: ${todayIST()}.
+
+The user typed this casual request: '${userText}'
+
+STEP 1 - DECIDE: does a great result REQUIRE personal / specific details the user did NOT give?
+Ask for details ONLY for tasks like: emails, letters, leave / job / bank applications, resumes, cover letters, messages to a person, invitations, social posts or ads for a specific business, speeches, complaints, reports about a specific person/company.
+Do NOT ask for generic tasks (explain a concept, write code, recipe, ideas, summary, translation, general how-to) - go straight to STEP 3.
+Never ask about something the user already told you.
+
+STEP 2 - IF details are missing, output EXACTLY this and nothing else:
+[[ASK]]
+{"intro":"<one short friendly line in the user's language style (Hinglish if they wrote Hinglish)>","questions":[{"id":"snake_case","label":"<short question>","type":"text|textarea|date|date_range|select","placeholder":"<example>","options":["only for select"],"required":true|false}]}
+
+Rules for questions:
+- Maximum 6 questions, most important first, short labels.
+- Email / letter: ask recipient name (and designation), sender's name, company / school / organization, the exact reason or key points, tone (select), and language (select) if not obvious.
+- Dates: if one day is enough use type "date"; if it can span several days (leave, trip, event, deadline) use type "date_range" (from - to). Also ask the date for applications / invitations / events.
+- Mark only the truly necessary ones as required:true, the rest false.
+- Valid JSON only, no markdown fences.
+
+STEP 3 - OTHERWISE output ONLY the final, EXTREMELY POWERFUL, HIGHLY DETAILED, professional prompt (role, goal, context, constraints, output format, examples, step-by-step thinking where needed). No introduction, no explanation, no "Here is your prompt". It must never start with [[ASK]].`;
+
+const IMAGE_PROMPT = (userText) => `You are an expert at reverse-engineering AI-generated images into prompts for AI image generators (ChatGPT / GPT-image, Gemini / Imagen, Midjourney, Flux, Stable Diffusion).
+
+The user attached an image and wrote: '${userText}'
+
+Study the image extremely carefully and write ONE prompt that would recreate it as EXACTLY as possible. Cover, in a natural flowing structure:
+- Subject(s): count, gender presentation, approximate age range, expression, pose, gaze, hands, body position
+- Hair, skin tone, makeup, outfit (every garment, colors, fabric, fit, accessories, jewelry)
+- Setting / background: location, props, depth, time of day, weather
+- Lighting: type, direction, softness, color temperature, shadows, highlights
+- Camera: shot type, angle, lens (mm), aperture / depth of field, framing, composition
+- Style: photorealistic / cinematic / editorial / anime / 3D render / illustration, color grading, film look, texture, mood, quality keywords
+- Aspect ratio (match the image), and a short "Negative prompt" line (what to avoid)
+
+RULES:
+1. Output ONLY the final prompt. No intro, no explanation.
+2. Never identify or name any real person; describe people only by visible traits.
+3. If the user may upload their own photo to get this trend, end with one line: "If a reference photo is attached, keep that person's face and identity exactly the same and apply everything above."
+4. If the image shows nudity, sexual content, or a minor in a sexualized way, output only: "I can't create a prompt for this image."
+5. Write the prompt in English unless the user clearly asked for another language.`;
+
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+
+async function callGemini(prompt, key, image) {
+  const url = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+  const parts = [{ text: prompt }];
+  if (image) parts.push({ inlineData: { mimeType: image.mime, data: image.data } });
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+    body: JSON.stringify({ contents: [{ parts }] }),
   });
   if (!res.ok) return false;
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  return text ? text.trim() : false;
+  const text = (data?.candidates?.[0]?.content?.parts || [])
+    .map((p) => p.text || '')
+    .join('')
+    .trim();
+  return text || false;
 }
 
-async function callGroq(prompt, key, model) {
+async function callGroq(prompt, key, model, image) {
+  const useModel = image
+    ? process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct'
+    : model;
+  const content = image
+    ? [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: `data:${image.mime};base64,${image.data}` } },
+      ]
+    : prompt;
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -38,8 +114,8 @@ async function callGroq(prompt, key, model) {
       Authorization: `Bearer ${key}`,
     },
     body: JSON.stringify({
-      model,
-      messages: [{ role: 'user', content: prompt }],
+      model: useModel,
+      messages: [{ role: 'user', content }],
       temperature: 0.7,
       max_tokens: 2048,
     }),
@@ -48,6 +124,58 @@ async function callGroq(prompt, key, model) {
   const data = await res.json();
   const text = data?.choices?.[0]?.message?.content;
   return text ? text.trim() : false;
+}
+
+const QUESTION_TYPES = ['text', 'textarea', 'date', 'date_range', 'select'];
+
+// Parses the "[[ASK]] {json}" reply. Returns null when it is not a valid, usable question list.
+function parseAsk(raw) {
+  if (typeof raw !== 'string' || !raw.trim().startsWith('[[ASK]]')) return null;
+  try {
+    let body = raw.trim().slice(7).trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+    const start = body.indexOf('{');
+    const end = body.lastIndexOf('}');
+    if (start < 0 || end < start) return null;
+    const j = JSON.parse(body.slice(start, end + 1));
+    const seen = new Set();
+    const questions = (Array.isArray(j.questions) ? j.questions : [])
+      .map((q, idx) => {
+        const type = QUESTION_TYPES.includes(q?.type) ? q.type : 'text';
+        let id = String(q?.id || `q${idx + 1}`).replace(/[^a-z0-9_]/gi, '_').slice(0, 30) || `q${idx + 1}`;
+        if (seen.has(id)) id = `${id}_${idx}`;
+        seen.add(id);
+        const options =
+          type === 'select' && Array.isArray(q?.options)
+            ? q.options.map((o) => String(o).slice(0, 40)).filter(Boolean).slice(0, 8)
+            : undefined;
+        return {
+          id,
+          label: String(q?.label || '').trim().slice(0, 120),
+          type: type === 'select' && (!options || options.length < 2) ? 'text' : type,
+          placeholder: String(q?.placeholder || '').trim().slice(0, 100),
+          options,
+          required: q?.required === true,
+        };
+      })
+      .filter((q) => q.label)
+      .slice(0, 6);
+    if (!questions.length) return null;
+    return { intro: String(j.intro || '').trim().slice(0, 200), questions };
+  } catch {
+    return null;
+  }
+}
+
+async function runModels({ prompt, image, primary, geminiKey, groqKey, groqModel }) {
+  let out = false;
+  if (primary === 'groq' && groqKey) {
+    out = await callGroq(prompt, groqKey, groqModel, image);
+    if (out === false && geminiKey) out = await callGemini(prompt, geminiKey, image);
+  } else {
+    if (geminiKey) out = await callGemini(prompt, geminiKey, image);
+    if (out === false && groqKey) out = await callGroq(prompt, groqKey, groqModel, image);
+  }
+  return out;
 }
 
 // --- Basic in-memory rate limiting -----------------------------------
@@ -126,33 +254,68 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'empty_message' });
   }
 
-  const geminiKey = process.env.GEMINI_API_KEY || '';
-  const groqKey = process.env.GROQ_API_KEY || '';
-  const groqModel = process.env.GROQ_MODEL || 'llama3-70b-8192';
-  const primary = (process.env.PRIMARY_API || 'gemini').toLowerCase();
-
-  const prompt = SYSTEM_PROMPT(userText);
-  let aiText = false;
-
-  try {
-    if (primary === 'groq' && groqKey) {
-      aiText = await callGroq(prompt, groqKey, groqModel);
-      if (aiText === false && geminiKey) aiText = await callGemini(prompt, geminiKey);
-    } else {
-      if (geminiKey) aiText = await callGemini(prompt, geminiKey);
-      if (aiText === false && groqKey) aiText = await callGroq(prompt, groqKey, groqModel);
+  // Optional image (screenshot -> exact prompt). The browser already shrinks it.
+  let image = null;
+  const rawImg = req.body?.image;
+  if (rawImg) {
+    const mime = String(rawImg.mime || '').toLowerCase();
+    let data = String(rawImg.data || '').replace(/^data:[^,]*,/, '');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mime) || !/^[A-Za-z0-9+/=]+$/.test(data.slice(0, 200))) {
+      return res.status(400).json({ error: 'invalid_image' });
     }
-  } catch (err) {
-    aiText = false;
+    if (data.length > 3_500_000) {
+      return res.status(413).json({ error: 'image_too_large', text: 'Image is too large. Please use a smaller screenshot.' });
+    }
+    image = { mime, data };
   }
 
-  if (aiText === false) {
-    return res.status(200).json({
+  const geminiKey = process.env.GEMINI_API_KEY || '';
+  const groqKey = process.env.GROQ_API_KEY || '';
+  const groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+  const primary = (process.env.PRIMARY_API || 'gemini').toLowerCase();
+  const cfg = { primary, geminiKey, groqKey, groqModel };
+
+  const title = userText.length > 45 ? userText.slice(0, 45) + '...' : userText;
+  const failed = () =>
+    res.status(200).json({
       error: 'generation_failed',
       text: 'Error generating prompt. Please check your API keys in .env.local and try again.',
     });
-  }
 
-  const title = userText.length > 45 ? userText.slice(0, 45) + '...' : userText;
-  return res.status(200).json({ text: aiText, title });
+  try {
+    // ---------- IMAGE -> PROMPT ----------
+    if (image) {
+      const out = await runModels({ ...cfg, prompt: IMAGE_PROMPT(userText), image });
+      if (out === false) return failed();
+      return res.status(200).json({ text: out, title: 'Image to prompt' });
+    }
+
+    // ---------- SMART: ask for missing details OR generate ----------
+    // Skipped when the client says "direct", when answers were already supplied, or the request is already long/detailed.
+    const mode = req.body?.mode === 'direct' ? 'direct' : 'auto';
+    const canAsk = mode === 'auto' && !userText.includes(DETAILS_MARK) && userText.length <= 400;
+
+    if (canAsk) {
+      const out = await runModels({ ...cfg, prompt: SMART_PROMPT(userText) });
+      if (out === false) return failed();
+      if (out.startsWith('[[ASK]]')) {
+        const ask = parseAsk(out);
+        if (ask) return res.status(200).json({ needs_info: true, ...ask, title });
+        // Unparseable question list -> fall back to a normal generation below
+      } else {
+        return res.status(200).json({ text: out, title });
+      }
+    }
+
+    const out = await runModels({ ...cfg, prompt: SYSTEM_PROMPT(userText) });
+    if (out === false) return failed();
+    return res.status(200).json({ text: out, title });
+  } catch (err) {
+    return failed();
+  }
 }
+
+export const config = {
+  maxDuration: 30,
+  api: { bodyParser: { sizeLimit: '4mb' } },
+};

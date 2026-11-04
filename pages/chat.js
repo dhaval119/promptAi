@@ -16,6 +16,27 @@ import {
   isOverLimit,
 } from '../lib/usage';
 
+const DETAILS_MARK = 'Details provided by user:';
+const DEFAULT_IMAGE_TEXT = 'Write an exact prompt to recreate this image.';
+
+function fmtDay(v) {
+  if (!v) return '';
+  const d = new Date(`${v}T00:00:00`);
+  if (isNaN(d.getTime())) return String(v);
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function answerText(q, a) {
+  if (q.type === 'date_range') {
+    const f = fmtDay(a?.from);
+    const t = fmtDay(a?.to);
+    if (f && t) return `${f} to ${t}`;
+    return f || t || '';
+  }
+  if (q.type === 'date') return fmtDay(a);
+  return String(a || '').trim();
+}
+
 function getDateLabel(ts) {
   if (!ts) return 'Recent';
   const d = new Date(ts);
@@ -418,6 +439,10 @@ export default function Chat() {
   const threadRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [clarify, setClarify] = useState(null);
+  const [clarifyErr, setClarifyErr] = useState('');
+  const [attachedImage, setAttachedImage] = useState(null);
   const menuRef = useRef(null);
 
   const skipNextLoadRef =
@@ -784,6 +809,8 @@ export default function Chat() {
 
     setCurrentChatId(0);
     setMessages([]);
+    setClarify(null);
+    setAttachedImage(null);
     setDisplayRequest('');
     setMenuOpenId(null);
 
@@ -801,6 +828,7 @@ export default function Chat() {
   }
 
   async function openChat(id) {
+    setClarify(null);
     try {
       const conv =
         await getConversation(
@@ -1093,17 +1121,26 @@ export default function Chat() {
     8000;
 
   async function sendMessage(
-    overrideText
+    overrideText,
+    opts = {}
   ) {
-    const text = (
-      overrideText ??
-      input
+    const reuse = !!opts.reuse;
+    const imageNow = reuse ? null : attachedImage;
+
+    let text = (
+      typeof overrideText === 'string'
+        ? overrideText
+        : input
     )
       .trim()
       .slice(
         0,
         MAX_MESSAGE_LENGTH
       );
+
+    if (!text && imageNow) {
+      text = DEFAULT_IMAGE_TEXT;
+    }
 
     if (
       !text ||
@@ -1166,14 +1203,35 @@ export default function Chat() {
       }
     }
 
-    const prevMessagesSnapshot =
-      messages;
+    // A pending "please give details" card leaves one unanswered user message at the end.
+    // Re-use / replace it instead of adding a duplicate.
+    const hasOrphan =
+      (reuse || !!clarify) &&
+      messages.length > 0 &&
+      messages[messages.length - 1].sender === 'user';
 
-    setMessages((prev) => [
-      ...prev,
+    const baseMessages = hasOrphan
+      ? messages.slice(0, -1)
+      : messages;
+
+    const prevMessagesSnapshot =
+      baseMessages;
+
+    setClarify(null);
+    setClarifyErr('');
+
+    if (imageNow) {
+      setAttachedImage(null);
+    }
+
+    setMessages([
+      ...baseMessages,
       {
         sender: 'user',
         text,
+        ...(imageNow
+          ? { image: imageNow.dataUrl }
+          : {}),
       },
     ]);
 
@@ -1277,6 +1335,19 @@ export default function Chat() {
             body:
               JSON.stringify({
                 msg: text,
+                mode:
+                  reuse ||
+                  opts.skipClarify
+                    ? 'direct'
+                    : 'auto',
+                image: imageNow
+                  ? {
+                      mime:
+                        imageNow.mime,
+                      data:
+                        imageNow.data,
+                    }
+                  : undefined,
               }),
             signal:
               controller.signal,
@@ -1285,6 +1356,27 @@ export default function Chat() {
 
       const data =
         await res.json();
+
+      // The AI needs a few more details first (name, company, dates ...) -> show the question card.
+      if (
+        data &&
+        data.needs_info &&
+        Array.isArray(data.questions) &&
+        data.questions.length
+      ) {
+        setClarify({
+          original: text,
+          intro:
+            data.intro || '',
+          questions:
+            data.questions,
+          answers: {},
+        });
+
+        setLoading(false);
+
+        return;
+      }
 
       const aiText =
         data.text ||
@@ -1364,6 +1456,9 @@ export default function Chat() {
           {
             sender: 'user',
             text,
+            ...(imageNow
+              ? { image: imageNow.dataUrl }
+              : {}),
           },
           {
             sender: 'ai',
@@ -1385,8 +1480,7 @@ export default function Chat() {
               text,
             response:
               aiText,
-            messages:
-              finalMessages,
+            messages: finalMessages.map(({ image, ...rest }) => rest),
           },
           email
         );
@@ -1463,6 +1557,140 @@ export default function Chat() {
         );
       }
     }
+  }
+
+  function setClarifyAnswer(id, value) {
+    setClarifyErr('');
+    setClarify((c) =>
+      c
+        ? {
+            ...c,
+            answers: {
+              ...c.answers,
+              [id]: value,
+            },
+          }
+        : c
+    );
+  }
+
+  function submitClarify(skip) {
+    if (!clarify || loading) return;
+
+    if (skip) {
+      sendMessage(clarify.original, {
+        reuse: true,
+        skipClarify: true,
+      });
+      return;
+    }
+
+    const lines = [];
+
+    for (const q of clarify.questions) {
+      const txt = answerText(
+        q,
+        clarify.answers[q.id]
+      );
+
+      if (!txt && q.required) {
+        setClarifyErr(
+          `Please fill: ${q.label}`
+        );
+        return;
+      }
+
+      if (txt) {
+        lines.push(`- ${q.label}: ${txt}`);
+      }
+    }
+
+    const combined = lines.length
+      ? `${clarify.original}\n\n${DETAILS_MARK}\n${lines.join('\n')}`
+      : clarify.original;
+
+    sendMessage(
+      combined.slice(0, MAX_MESSAGE_LENGTH),
+      { reuse: true, skipClarify: true }
+    );
+  }
+
+  function loadImageFile(file) {
+    if (!file) return;
+
+    if (
+      !/^image\/(jpeg|png|webp)$/i.test(
+        file.type || ''
+      )
+    ) {
+      alert(
+        'Please choose a JPG, PNG or WEBP image.'
+      );
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const img = new Image();
+
+      img.onload = () => {
+        const max = 1280;
+        const scale = Math.min(
+          1,
+          max /
+            Math.max(
+              img.width,
+              img.height
+            )
+        );
+        const w = Math.max(
+          1,
+          Math.round(img.width * scale)
+        );
+        const h = Math.max(
+          1,
+          Math.round(img.height * scale)
+        );
+        const c =
+          document.createElement(
+            'canvas'
+          );
+
+        c.width = w;
+        c.height = h;
+
+        const ctx = c.getContext('2d');
+
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+
+        const dataUrl = c.toDataURL(
+          'image/jpeg',
+          0.82
+        );
+
+        setAttachedImage({
+          dataUrl,
+          mime: 'image/jpeg',
+          data: dataUrl.split(',')[1],
+        });
+
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 50);
+      };
+
+      img.onerror = () =>
+        alert(
+          'Could not read this image.'
+        );
+
+      img.src = reader.result;
+    };
+
+    reader.readAsDataURL(file);
   }
 
   function copyPrompt(
@@ -1605,6 +1833,7 @@ export default function Chat() {
         <title>
           PromptAI – Chat
         </title>
+        <meta name="robots" content="noindex, nofollow" />
 
         <meta
           name="viewport"
@@ -2035,11 +2264,33 @@ export default function Chat() {
                       className="user-message-wrap"
                       key={`u-${i}`}
                     >
+                      {m.image ? (
+                        <img
+                          src={m.image}
+                          alt="Attached"
+                          className="user-attach-img"
+                        />
+                      ) : null}
+
                       <div className="user-message">
-                        {
-                          m.text
-                        }
+                        {(
+                          m.text || ''
+                        )
+                          .split(
+                            DETAILS_MARK
+                          )[0]
+                          .trim()}
                       </div>
+
+                      {(
+                        m.text || ''
+                      ).includes(
+                        DETAILS_MARK
+                      ) ? (
+                        <span className="user-details-note">
+                          + your details added
+                        </span>
+                      ) : null}
 
                       <div
                         className="user-action-row"
@@ -2058,7 +2309,10 @@ export default function Chat() {
                           aria-label="Retry request"
                           onClick={() =>
                             sendMessage(
-                              m.text
+                              m.text,
+                              {
+                                skipClarify: true,
+                              }
                             )
                           }
                           disabled={
@@ -2270,6 +2524,250 @@ export default function Chat() {
                 )
             )}
 
+            {clarify && !loading ? (
+              <section className="ai-group clarify-card">
+                <h2 className="ai-heading">
+                  A few details first:
+                </h2>
+
+                {clarify.intro ? (
+                  <p className="clarify-intro">
+                    {clarify.intro}
+                  </p>
+                ) : null}
+
+                <div className="clarify-fields">
+                  {clarify.questions.map(
+                    (q) => {
+                      const a =
+                        clarify.answers[
+                          q.id
+                        ];
+
+                      return (
+                        <label
+                          className="clarify-field"
+                          key={q.id}
+                        >
+                          <span className="clarify-label">
+                            {q.label}
+                            {q.required
+                              ? ' *'
+                              : ''}
+                          </span>
+
+                          {q.type ===
+                          'select' ? (
+                            <select
+                              className="clarify-input"
+                              value={
+                                a || ''
+                              }
+                              onChange={(
+                                e
+                              ) =>
+                                setClarifyAnswer(
+                                  q.id,
+                                  e.target
+                                    .value
+                                )
+                              }
+                            >
+                              <option value="">
+                                Select...
+                              </option>
+
+                              {(
+                                q.options ||
+                                []
+                              ).map(
+                                (o) => (
+                                  <option
+                                    key={o}
+                                    value={o}
+                                  >
+                                    {o}
+                                  </option>
+                                )
+                              )}
+                            </select>
+                          ) : q.type ===
+                            'date' ? (
+                            <input
+                              className="clarify-input"
+                              type="date"
+                              value={
+                                a || ''
+                              }
+                              onChange={(
+                                e
+                              ) =>
+                                setClarifyAnswer(
+                                  q.id,
+                                  e.target
+                                    .value
+                                )
+                              }
+                            />
+                          ) : q.type ===
+                            'date_range' ? (
+                            <span className="clarify-range">
+                              <input
+                                className="clarify-input"
+                                type="date"
+                                aria-label="From"
+                                value={
+                                  a?.from ||
+                                  ''
+                                }
+                                onChange={(
+                                  e
+                                ) =>
+                                  setClarifyAnswer(
+                                    q.id,
+                                    {
+                                      ...(a ||
+                                        {}),
+                                      from: e
+                                        .target
+                                        .value,
+                                    }
+                                  )
+                                }
+                              />
+
+                              <span className="clarify-to">
+                                to
+                              </span>
+
+                              <input
+                                className="clarify-input"
+                                type="date"
+                                aria-label="To"
+                                value={
+                                  a?.to ||
+                                  ''
+                                }
+                                min={
+                                  a?.from ||
+                                  undefined
+                                }
+                                onChange={(
+                                  e
+                                ) =>
+                                  setClarifyAnswer(
+                                    q.id,
+                                    {
+                                      ...(a ||
+                                        {}),
+                                      to: e
+                                        .target
+                                        .value,
+                                    }
+                                  )
+                                }
+                              />
+                            </span>
+                          ) : q.type ===
+                            'textarea' ? (
+                            <textarea
+                              className="clarify-input clarify-textarea"
+                              rows={3}
+                              maxLength={600}
+                              placeholder={
+                                q.placeholder ||
+                                ''
+                              }
+                              value={
+                                a || ''
+                              }
+                              onChange={(
+                                e
+                              ) =>
+                                setClarifyAnswer(
+                                  q.id,
+                                  e.target
+                                    .value
+                                )
+                              }
+                            />
+                          ) : (
+                            <input
+                              className="clarify-input"
+                              type="text"
+                              maxLength={200}
+                              placeholder={
+                                q.placeholder ||
+                                ''
+                              }
+                              value={
+                                a || ''
+                              }
+                              onChange={(
+                                e
+                              ) =>
+                                setClarifyAnswer(
+                                  q.id,
+                                  e.target
+                                    .value
+                                )
+                              }
+                              onKeyDown={(
+                                e
+                              ) => {
+                                if (
+                                  e.key ===
+                                  'Enter'
+                                ) {
+                                  e.preventDefault();
+
+                                  submitClarify(
+                                    false
+                                  );
+                                }
+                              }}
+                            />
+                          )}
+                        </label>
+                      );
+                    }
+                  )}
+                </div>
+
+                {clarifyErr ? (
+                  <p className="clarify-error">
+                    {clarifyErr}
+                  </p>
+                ) : null}
+
+                <div className="clarify-actions">
+                  <button
+                    type="button"
+                    className="clarify-btn clarify-primary"
+                    onClick={() =>
+                      submitClarify(
+                        false
+                      )
+                    }
+                  >
+                    Generate prompt
+                  </button>
+
+                  <button
+                    type="button"
+                    className="clarify-btn clarify-ghost"
+                    onClick={() =>
+                      submitClarify(
+                        true
+                      )
+                    }
+                  >
+                    Skip, generate anyway
+                  </button>
+                </div>
+              </section>
+            ) : null}
+
             {loading ? (
               <div className="ai-group skeleton-group">
                 <div className="skeleton-line sk-title" />
@@ -2300,7 +2798,27 @@ export default function Chat() {
             <div className="chat-input-wrapper">
               <textarea
                 className="chat-input"
-                placeholder="Ask anything..."
+                placeholder={
+                  attachedImage
+                    ? 'Optional note, or just press send'
+                    : 'Ask anything...'
+                }
+                onPaste={(e) => {
+                  const f =
+                    e.clipboardData
+                      ?.files?.[0];
+
+                  if (
+                    f &&
+                    /^image\//i.test(
+                      f.type
+                    )
+                  ) {
+                    e.preventDefault();
+
+                    loadImageFile(f);
+                  }
+                }}
                 autoComplete="off"
                 ref={inputRef}
                 value={input}
@@ -2344,6 +2862,83 @@ export default function Chat() {
                 }}
                 disabled={loading}
               />
+
+              {attachedImage ? (
+                <div className="attach-preview">
+                  <img
+                    src={
+                      attachedImage.dataUrl
+                    }
+                    alt="Attached"
+                  />
+
+                  <button
+                    type="button"
+                    aria-label="Remove image"
+                    onClick={() =>
+                      setAttachedImage(
+                        null
+                      )
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : null}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                style={{
+                  display: 'none',
+                }}
+                onChange={(e) => {
+                  const f =
+                    e.target.files?.[0];
+
+                  e.target.value = '';
+
+                  loadImageFile(f);
+                }}
+              />
+
+              <button
+                className="chat-attach-button"
+                type="button"
+                title="Attach an image to get its prompt"
+                aria-label="Attach image"
+                disabled={loading}
+                onClick={() =>
+                  fileInputRef.current?.click()
+                }
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="3"
+                    y="4"
+                    width="18"
+                    height="16"
+                    rx="2.5"
+                  />
+
+                  <circle
+                    cx="9"
+                    cy="10"
+                    r="1.6"
+                  />
+
+                  <path d="M21 16l-5-5-8 9" />
+                </svg>
+              </button>
 
               <button
                 className="chat-submit-button"
@@ -4231,6 +4826,231 @@ export default function Chat() {
 
           .limit-mobile-hint {
             font-size: 11.5px;
+          }
+        }
+        /* ---- details card, image attach (additive, existing design untouched) ---- */
+        .chat-input-wrapper .chat-input {
+          padding-right: 100px !important;
+        }
+
+        .chat-attach-button {
+          position: absolute;
+          bottom: 6px;
+          right: 54px;
+          width: 38px;
+          height: 38px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: transparent;
+          border: none;
+          color: #a2a2a2;
+          cursor: pointer;
+          padding: 0;
+          transition: color 0.15s ease;
+        }
+
+        .chat-attach-button:hover {
+          color: #fff;
+        }
+
+        .chat-attach-button:disabled {
+          opacity: 0.4;
+          cursor: default;
+        }
+
+        .chat-attach-button svg {
+          width: 22px;
+          height: 22px;
+        }
+
+        .view-landing .chat-attach-button {
+          right: 46px;
+          bottom: 4px;
+          width: 36px;
+          height: 36px;
+        }
+
+        .attach-preview {
+          position: absolute;
+          bottom: calc(100% + 8px);
+          left: 18px;
+          width: 64px;
+          height: 64px;
+          border-radius: 12px;
+          border: 1px solid #2b2b2b;
+          background: #111;
+          z-index: 5;
+        }
+
+        .attach-preview img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 11px;
+          display: block;
+        }
+
+        .attach-preview button {
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          border: 1px solid #333;
+          background: #000;
+          color: #fff;
+          font-size: 14px;
+          line-height: 1;
+          cursor: pointer;
+          padding: 0;
+        }
+
+        .user-attach-img {
+          align-self: flex-end;
+          max-width: min(100%, 260px);
+          max-height: 260px;
+          border-radius: 12px;
+          border: 1px solid #2b2b2b;
+          object-fit: cover;
+        }
+
+        .user-details-note {
+          align-self: flex-end;
+          font-size: 12px;
+          color: #8a8a8a;
+        }
+
+        .clarify-card {
+          gap: 12px;
+        }
+
+        .clarify-intro {
+          margin: 0;
+          color: #bdbdbd;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        .clarify-fields {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          background: #111;
+          border: 1px solid #222;
+          border-radius: 12px;
+          padding: 18px;
+          box-sizing: border-box;
+        }
+
+        .clarify-field {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          min-width: 0;
+        }
+
+        .clarify-label {
+          color: #fff;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .clarify-input {
+          width: 100%;
+          background: #0e0e0e;
+          border: 1px solid #2b2b2b;
+          border-radius: 10px;
+          padding: 11px 13px;
+          color: #fff;
+          font-size: 15px;
+          font-family: inherit;
+          outline: none;
+          box-sizing: border-box;
+          color-scheme: dark;
+          min-width: 0;
+        }
+
+        .clarify-input:focus {
+          border-color: #555;
+        }
+
+        .clarify-input::placeholder {
+          color: #7a7a7a;
+        }
+
+        .clarify-textarea {
+          resize: vertical;
+        }
+
+        .clarify-range {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .clarify-to {
+          color: #8a8a8a;
+          font-size: 13px;
+        }
+
+        .clarify-error {
+          margin: 0;
+          color: #ff6b6b;
+          font-size: 13px;
+        }
+
+        .clarify-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .clarify-btn {
+          font-family: inherit;
+          font-size: 14px;
+          font-weight: 700;
+          border-radius: 999px;
+          padding: 11px 20px;
+          cursor: pointer;
+        }
+
+        .clarify-primary {
+          background: #fff;
+          color: #000;
+          border: 1px solid #fff;
+        }
+
+        .clarify-ghost {
+          background: transparent;
+          color: #a2a2a2;
+          border: 1px solid #2b2b2b;
+        }
+
+        .clarify-ghost:hover {
+          color: #fff;
+          border-color: #555;
+        }
+
+        @media (max-width: 900px) {
+          .chat-attach-button {
+            right: 48px;
+          }
+
+          .chat-input-wrapper .chat-input {
+            padding-right: 92px !important;
+          }
+
+          .clarify-fields {
+            padding: 14px;
+          }
+
+          .clarify-range {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 6px;
           }
         }
       `}</style>

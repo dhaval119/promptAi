@@ -6,6 +6,7 @@ import NavPill from '../components/NavPill';
 import Logo from '../components/Logo';
 import { useAuth } from '../lib/AuthContext';
 
+import Seo from '../components/Seo';
 const FAQS = [
   {
     q: 'How does Prompt AI work?',
@@ -217,10 +218,22 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>PromptAI – Home</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
+      <Seo
+        title="PromptAI – Free AI Prompt Generator for ChatGPT, Gemini & Claude"
+        path="/"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'WebApplication',
+          name: 'PromptAI',
+          applicationCategory: 'ProductivityApplication',
+          operatingSystem: 'Web',
+          description: 'Turn a rough idea into a powerful, ready-to-use AI prompt in seconds.',
+          offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+        }}
+      />
 
       <Logo onClick={() => router.push('/')} />
       <div className="nav-fixed">

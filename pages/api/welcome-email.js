@@ -11,7 +11,7 @@
 
 import { renderWelcomeEmail } from '../../lib/welcomeEmailTemplate';
 import { sendEmailDetailed, emailConfigured } from '../../lib/sendEmail';
-import { fv, readUserDoc, namesFromDoc } from '../../lib/firestoreRest';
+import { fv, readUserDoc, namesFromDoc, markWelcomeSent } from '../../lib/firestoreRest';
 import { escapeHtml } from '../../lib/welcomeEmailTemplate';
 
 const DEFAULT_SITE_URL = 'https://prompt-ai-teal.vercel.app';
@@ -185,11 +185,18 @@ export default async function handler(req, res) {
         profile = null;
       }
     }
-    if (fv(profile, 'welcome_email_sent') === true || sentUids.has(user.localId)) {
+    if (fv(profile, 'welcome_email_sent') === true) {
       return res.status(409).json({ error: 'already_sent' });
     }
+    const known = sentUids.get(user.localId);
+    if (known && known.state === 'sent') return res.status(409).json({ error: 'already_sent' });
+    // Another request for the same user is still sending. This is NOT "already sent" (it may still fail),
+    // so the client must not mark the account as done.
+    if (known && known.state === 'pending' && Date.now() - known.t < 45000) {
+      return res.status(202).json({ ok: true, error: 'in_progress' });
+    }
     // Block double-sends from two quick requests (signup + auth listener) right away.
-    sentUids.set(user.localId, Date.now());
+    sentUids.set(user.localId, { state: 'pending', t: Date.now() });
 
     // 3) Name: Firestore first_name/last_name → Auth displayName → email local-part
     const { firstName, fullName } = namesFromDoc(profile, user);
@@ -240,14 +247,20 @@ export default async function handler(req, res) {
       });
     }
 
-    sentUids.set(user.localId, Date.now());
+    sentUids.set(user.localId, { state: 'sent', t: Date.now() });
     if (sentUids.size > 3000) {
       const cutoff = Date.now() - 30 * 60 * 1000;
-      for (const [k, t] of sentUids) if (t < cutoff) sentUids.delete(k);
+      for (const [k, v] of sentUids) if (v.t < cutoff) sentUids.delete(k);
     }
+    // Mark it on the server too, so it can never be re-sent even if the browser tab closes right now.
+    if (projectId) await markWelcomeSent(projectId, user.localId, idToken);
 
     return res.status(200).json({ ok: true, emailId: result.id || undefined });
   } catch (err) {
+    try {
+      const u = uidFromToken(idToken);
+      if (u && sentUids.get(u)?.state === 'pending') sentUids.delete(u);
+    } catch {}
     console.error('[welcome-email] Handler failed.', { errorName: err?.name || 'Error' });
     return res.status(500).json({ error: 'server_error' });
   }

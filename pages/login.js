@@ -12,6 +12,7 @@ import { auth, db, googleProvider } from '../lib/firebase';
 import { useAuth } from '../lib/AuthContext';
 import { sendWelcomeEmail } from '../lib/welcomeEmail';
 
+import Seo from '../components/Seo';
 function friendlyError(code) {
   switch (code) {
     case 'auth/invalid-email':
@@ -181,8 +182,8 @@ export default function Login() {
     <>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-        <title>Login</title>
       </Head>
+      <Seo title="Login – PromptAI" description="Log in to PromptAI and generate powerful AI prompts in seconds." path="/login" />
 
       {/* ===================== DESKTOP LAYOUT ===================== */}
       <div className="desktop-layout v492_121">

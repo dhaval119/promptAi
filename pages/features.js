@@ -3,6 +3,7 @@ import Head from 'next/head';
 import NavPill from '../components/NavPill';
 import Logo from '../components/Logo';
 
+import Seo from '../components/Seo';
 const ROWS = [
   {
     n: '01',
@@ -52,9 +53,9 @@ export default function Features() {
   return (
     <>
       <Head>
-        <title>Why Prompt AI Stands Out</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
+      <Seo title="Why PromptAI Stands Out – Features" description="See what makes PromptAI different: smart follow-up questions, image-to-prompt, one-click launch in ChatGPT, Gemini and Claude." path="/features" />
       <div className="desktop">
         <Logo />
         <div className="nav-fixed">

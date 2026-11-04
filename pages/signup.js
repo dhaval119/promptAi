@@ -12,6 +12,7 @@ import { auth, db, googleProvider } from '../lib/firebase';
 import { useAuth } from '../lib/AuthContext';
 import { sendWelcomeEmail } from '../lib/welcomeEmail';
 
+import Seo from '../components/Seo';
 function friendlyError(code) {
   switch (code) {
     case 'auth/email-already-in-use':
@@ -149,8 +150,8 @@ export default function Signup() {
     <>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-        <title>Sign Up Account</title>
       </Head>
+      <Seo title="Sign Up – PromptAI" description="Create a free PromptAI account and turn rough ideas into powerful AI prompts." path="/signup" />
 
       {/* ===================== DESKTOP LAYOUT (Unchanged Logic & UI) ===================== */}
       <div className="desktop-layout v492_121">

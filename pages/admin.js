@@ -267,7 +267,7 @@ export default function AdminPage() {
     );
     const t = setInterval(() => {
       if (typeof document === 'undefined' || !document.hidden) loadData();
-    }, 12000);
+    }, 30000);
     return () => {
       unsub();
       clearInterval(t);

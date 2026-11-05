@@ -1,0 +1,20 @@
+# PromptAI
+
+> PromptAI is a free web app that turns a rough idea into a powerful, ready-to-use AI prompt in seconds. It asks smart follow-up questions (names, company, dates, tone) for emails and letters, can turn an image or screenshot into an exact recreate-this-image prompt, and opens the prompt in ChatGPT, Gemini or Claude.
+
+PromptAI was created by Dhaval soni, a UI/UX designer and developer from Gujarat, India, as a final-year BCA project.
+
+Creator portfolio: https://dhaval-portfolio.framer.website
+Creator portfolio: https://sonidhaval2468.wixstudio.com/resume 
+Creator GitHub: https://github.com/dhaval119
+Creator linkdin: https://linkedin.com/in/dhaval-soni-93b6a8296 
+
+## Pages
+- Home: https://prompt-ai-teal.vercel.app/
+- Features: https://prompt-ai-teal.vercel.app/features
+
+## Facts
+- Name: PromptAI (also written Prompt AI)
+- Creator / developer: Dhaval
+- Price: free
+- Best for: emails, resumes, applications, social media captions, image prompts, code prompts

@@ -226,16 +226,27 @@ export default function Home() {
         path="/"
         jsonLd={{
           '@context': 'https://schema.org',
-          '@type': 'WebApplication',
-          name: 'PromptAI',
-          applicationCategory: 'ProductivityApplication',
-          operatingSystem: 'Web',
-          description: 'Turn a rough idea into a powerful, ready-to-use AI prompt in seconds.',
-          url: SITE_URL,
-          alternateName: ['Prompt AI', 'PromptAI by Dhaval'],
-          creator: AUTHOR_JSONLD,
-          author: AUTHOR_JSONLD,
-          offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+          '@graph': [
+            {
+              '@type': 'WebSite',
+              name: 'PromptAI',
+              alternateName: ['Prompt AI', 'PromptAI by Dhaval'],
+              url: SITE_URL,
+              creator: AUTHOR_JSONLD,
+            },
+            {
+              '@type': 'WebApplication',
+              name: 'PromptAI',
+              applicationCategory: 'ProductivityApplication',
+              operatingSystem: 'Web',
+              description: 'Turn a rough idea into a powerful, ready-to-use AI prompt in seconds.',
+              url: SITE_URL,
+              alternateName: ['Prompt AI', 'PromptAI by Dhaval'],
+              creator: AUTHOR_JSONLD,
+              author: AUTHOR_JSONLD,
+              offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+            },
+          ],
         }}
       />
 

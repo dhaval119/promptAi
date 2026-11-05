@@ -20,6 +20,11 @@ export const AUTHOR_JSONLD = {
   sameAs: AUTHOR_SAME_AS,
 };
 
+// Google Search Console + Bing Webmaster verification (kept in code so it never gets lost on redeploy)
+const GOOGLE_VERIFICATION =
+  process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '-mmQQVlRiVFxsgRzmCiE7k7few5aU_I69o7mmn4zS98';
+const BING_VERIFICATION = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || '';
+
 const DEFAULT_DESC =
   'PromptAI turns your rough idea into a powerful, ready-to-use AI prompt in seconds. Works with ChatGPT, Gemini and Claude. Emails, resumes, images, code and more.';
 
@@ -35,9 +40,8 @@ export default function Seo({ title, description = DEFAULT_DESC, path = '/', noi
       <meta name="theme-color" content="#000000" />
       <meta name="author" content={AUTHOR_NAME} />
       <meta name="application-name" content="PromptAI" />
-      {process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ? (
-        <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION} />
-      ) : null}
+      <meta name="google-site-verification" content={GOOGLE_VERIFICATION} />
+      {BING_VERIFICATION ? <meta name="msvalidate.01" content={BING_VERIFICATION} /> : null}
       <meta property="og:type" content="website" />
       <meta property="og:site_name" content="PromptAI" />
       <meta property="og:title" content={title} />

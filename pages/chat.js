@@ -205,6 +205,12 @@ function normalizeMessages(conv) {
         typeof m.text === 'string'
           ? m.text
           : '',
+      // keep the saved image thumbnail so it is still there after refresh / back
+      ...(m.sender === 'user' &&
+      typeof m.image === 'string' &&
+      m.image.startsWith('data:image/')
+        ? { image: m.image }
+        : {}),
     }));
 
   const request =

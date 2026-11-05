@@ -465,7 +465,7 @@ export default function Home() {
           left: 0;
           width: 100%;
           height: 906px;
-          background: url('/assets/video.webp') center/cover no-repeat;
+          background: url('/assets/video.gif') center/cover no-repeat;
           filter: blur(35px);
           z-index: 0;
         }
@@ -604,7 +604,7 @@ export default function Home() {
           left: 750px;
           width: 1300px;
           height: 1300px;
-          background: url('/assets/main12.webp') center/cover no-repeat;
+          background: url('/assets/main12.gif') center/cover no-repeat;
           border-radius: 50%;
           z-index: 0;
           filter: blur(45px);
@@ -618,7 +618,7 @@ export default function Home() {
           width: 100%;
           height: 906px;
           scroll-margin-top: 80px;
-          background: url('/assets/video.webp') center/cover no-repeat;
+          background: url('/assets/video.gif') center/cover no-repeat;
           filter: blur(35px);
           z-index: 0;
         }
@@ -696,7 +696,7 @@ export default function Home() {
             left: 0;
             width: 100%;
             height: 450px;
-            background: url('/assets/video.webp') center/cover no-repeat;
+            background: url('/assets/video.gif') center/cover no-repeat;
             filter: blur(25px);
             opacity: 0.7;
             z-index: 0;
@@ -787,7 +787,7 @@ export default function Home() {
             left: -10%;
             width: 120%;
             height: 500px;
-            background: url('/assets/main12.webp') center/cover no-repeat;
+            background: url('/assets/main12.gif') center/cover no-repeat;
             filter: blur(40px);
             z-index: 0;
             opacity: 0.6;

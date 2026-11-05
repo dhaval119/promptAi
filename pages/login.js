@@ -644,7 +644,7 @@ export default function Login() {
           left: 50%;
           width: 145%;
           height: 145%;
-          background: url('/assets/video.webp') center/cover no-repeat;
+          background: url('/assets/video.gif') center/cover no-repeat;
           filter: blur(35px);
           transform: translate(-50%, -50%) rotate(45deg) scale(1.45);
           transform-origin: center center;
@@ -863,7 +863,7 @@ export default function Login() {
             left: 50%;
             width: 180%;
             height: 180%;
-            background: url('/assets/video.webp') center/cover no-repeat;
+            background: url('/assets/video.gif') center/cover no-repeat;
             filter: blur(45px);
             opacity: 0.85;
             transform: translate(-50%, -50%) rotate(45deg) scale(1.5);

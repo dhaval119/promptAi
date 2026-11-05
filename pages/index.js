@@ -6,7 +6,7 @@ import NavPill from '../components/NavPill';
 import Logo from '../components/Logo';
 import { useAuth } from '../lib/AuthContext';
 
-import Seo from '../components/Seo';
+import Seo, { AUTHOR_JSONLD, SITE_URL } from '../components/Seo';
 const FAQS = [
   {
     q: 'How does Prompt AI work?',
@@ -231,6 +231,10 @@ export default function Home() {
           applicationCategory: 'ProductivityApplication',
           operatingSystem: 'Web',
           description: 'Turn a rough idea into a powerful, ready-to-use AI prompt in seconds.',
+          url: SITE_URL,
+          alternateName: ['Prompt AI', 'PromptAI by Dhaval'],
+          creator: AUTHOR_JSONLD,
+          author: AUTHOR_JSONLD,
           offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
         }}
       />
@@ -450,7 +454,7 @@ export default function Home() {
           left: 0;
           width: 100%;
           height: 906px;
-          background: url('/assets/video.gif') center/cover no-repeat;
+          background: url('/assets/video.webp') center/cover no-repeat;
           filter: blur(35px);
           z-index: 0;
         }
@@ -589,7 +593,7 @@ export default function Home() {
           left: 750px;
           width: 1300px;
           height: 1300px;
-          background: url('/assets/main12.gif') center/cover no-repeat;
+          background: url('/assets/main12.webp') center/cover no-repeat;
           border-radius: 50%;
           z-index: 0;
           filter: blur(45px);
@@ -603,7 +607,7 @@ export default function Home() {
           width: 100%;
           height: 906px;
           scroll-margin-top: 80px;
-          background: url('/assets/video.gif') center/cover no-repeat;
+          background: url('/assets/video.webp') center/cover no-repeat;
           filter: blur(35px);
           z-index: 0;
         }
@@ -681,7 +685,7 @@ export default function Home() {
             left: 0;
             width: 100%;
             height: 450px;
-            background: url('/assets/video.gif') center/cover no-repeat;
+            background: url('/assets/video.webp') center/cover no-repeat;
             filter: blur(25px);
             opacity: 0.7;
             z-index: 0;
@@ -772,7 +776,7 @@ export default function Home() {
             left: -10%;
             width: 120%;
             height: 500px;
-            background: url('/assets/main12.gif') center/cover no-repeat;
+            background: url('/assets/main12.webp') center/cover no-repeat;
             filter: blur(40px);
             z-index: 0;
             opacity: 0.6;

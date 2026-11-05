@@ -17,6 +17,23 @@ import {
 } from '../lib/usage';
 
 const DETAILS_MARK = 'Details provided by user:';
+
+// Keeps small image thumbnails in saved chats (so they survive a refresh) while staying far below Firestore's 1 MB doc limit.
+function persistable(msgs) {
+  let budget = 450000;
+  const out = [...msgs];
+  for (let i = out.length - 1; i >= 0; i--) {
+    const im = out[i] && out[i].image;
+    if (!im) continue;
+    if (im.length < 70000 && im.length <= budget) {
+      budget -= im.length;
+    } else {
+      const { image, ...rest } = out[i];
+      out[i] = rest;
+    }
+  }
+  return out;
+}
 const DEFAULT_IMAGE_TEXT = 'Write an exact prompt to recreate this image.';
 
 function fmtDay(v) {
@@ -277,7 +294,7 @@ async function typeWriter(
     return;
   }
 
-  const chunkSize = 12;
+  const chunkSize = Math.max(48, Math.ceil(fullText.length / 14));
 
   let current = '';
 
@@ -304,7 +321,7 @@ async function typeWriter(
     onUpdate(current);
 
     await new Promise((resolve) =>
-      setTimeout(resolve, 4)
+      setTimeout(resolve, 0)
     );
   }
 
@@ -1230,7 +1247,7 @@ export default function Chat() {
         sender: 'user',
         text,
         ...(imageNow
-          ? { image: imageNow.dataUrl }
+          ? { image: imageNow.thumb }
           : {}),
       },
     ]);
@@ -1378,9 +1395,25 @@ export default function Chat() {
         return;
       }
 
+      if (data && data.error) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: 'ai',
+            text:
+              data.text ||
+              'Oops! Our AI just tripped over a cable and face-planted. 🙈 Refresh the page and try again, it usually behaves after that.',
+          },
+        ]);
+
+        setLoading(false);
+
+        return;
+      }
+
       const aiText =
         data.text ||
-        'Something went wrong. Please try again.';
+        'Oops! Our AI just tripped over a cable and face-planted. 🙈 Refresh the page and try again, it usually behaves after that.';
 
       resolvedAiText =
         aiText;
@@ -1457,7 +1490,7 @@ export default function Chat() {
             sender: 'user',
             text,
             ...(imageNow
-              ? { image: imageNow.dataUrl }
+              ? { image: imageNow.thumb }
               : {}),
           },
           {
@@ -1480,7 +1513,7 @@ export default function Chat() {
               text,
             response:
               aiText,
-            messages: finalMessages.map(({ image, ...rest }) => rest),
+            messages: persistable(finalMessages),
           },
           email
         );
@@ -1541,7 +1574,7 @@ export default function Chat() {
         {
           sender: 'ai',
           text:
-            'Network error. Please try again.',
+            'Oops! The internet just ghosted us. 👻 Check your connection, refresh the page and try again.',
         },
       ]);
 
@@ -1671,8 +1704,37 @@ export default function Chat() {
           0.82
         );
 
+        const ts = Math.min(
+          1,
+          480 /
+            Math.max(img.width, img.height)
+        );
+        const tc =
+          document.createElement(
+            'canvas'
+          );
+
+        tc.width = Math.max(
+          1,
+          Math.round(img.width * ts)
+        );
+        tc.height = Math.max(
+          1,
+          Math.round(img.height * ts)
+        );
+
+        const tctx = tc.getContext('2d');
+
+        tctx.fillStyle = '#fff';
+        tctx.fillRect(0, 0, tc.width, tc.height);
+        tctx.drawImage(img, 0, 0, tc.width, tc.height);
+
         setAttachedImage({
           dataUrl,
+          thumb: tc.toDataURL(
+            'image/jpeg',
+            0.7
+          ),
           mime: 'image/jpeg',
           data: dataUrl.split(',')[1],
         });
@@ -2922,21 +2984,7 @@ export default function Chat() {
                   strokeLinejoin="round"
                   aria-hidden="true"
                 >
-                  <rect
-                    x="3"
-                    y="4"
-                    width="18"
-                    height="16"
-                    rx="2.5"
-                  />
-
-                  <circle
-                    cx="9"
-                    cy="10"
-                    r="1.6"
-                  />
-
-                  <path d="M21 16l-5-5-8 9" />
+                  <path d="M12 5v14M5 12h14" />
                 </svg>
               </button>
 
@@ -4830,13 +4878,13 @@ export default function Chat() {
         }
         /* ---- details card, image attach (additive, existing design untouched) ---- */
         .chat-input-wrapper .chat-input {
-          padding-right: 100px !important;
+          padding-left: 54px !important;
         }
 
         .chat-attach-button {
           position: absolute;
           bottom: 6px;
-          right: 54px;
+          left: 10px;
           width: 38px;
           height: 38px;
           display: flex;
@@ -4865,7 +4913,7 @@ export default function Chat() {
         }
 
         .view-landing .chat-attach-button {
-          right: 46px;
+          left: 8px;
           bottom: 4px;
           width: 36px;
           height: 36px;
@@ -5036,11 +5084,11 @@ export default function Chat() {
 
         @media (max-width: 900px) {
           .chat-attach-button {
-            right: 48px;
+            left: 8px;
           }
 
           .chat-input-wrapper .chat-input {
-            padding-right: 92px !important;
+            padding-left: 50px !important;
           }
 
           .clarify-fields {

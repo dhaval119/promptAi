@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  compress: true,
+  poweredByHeader: false,
 
   // Security headers applied to every response.
   async headers() {
@@ -20,6 +22,13 @@ const nextConfig = {
             value: 'max-age=63072000; includeSubDomains; preload',
           },
           { key: 'X-XSS-Protection', value: '1; mode=block' },
+        ],
+      },
+      {
+        // Static images / animated backgrounds: let the browser and CDN cache them -> much faster repeat loads
+        source: '/assets/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' },
         ],
       },
       {

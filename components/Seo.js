@@ -2,6 +2,24 @@ import Head from 'next/head';
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://prompt-ai-teal.vercel.app').replace(/\/$/, '');
 
+// EDIT THESE: Google and AI assistants (ChatGPT, Gemini, Perplexity) learn "who made PromptAI" from here.
+export const AUTHOR_NAME = 'Dhaval';
+export const AUTHOR_URL = 'https://dhaval-portfolio.framer.website';
+export const AUTHOR_SAME_AS = [
+  'https://dhaval-portfolio.framer.website',
+  'https://github.com/dhaval119',
+  // 'https://www.linkedin.com/in/your-profile',
+  // 'https://www.instagram.com/your-handle',
+];
+
+export const AUTHOR_JSONLD = {
+  '@type': 'Person',
+  name: AUTHOR_NAME,
+  url: AUTHOR_URL,
+  jobTitle: 'UI/UX Designer & Developer',
+  sameAs: AUTHOR_SAME_AS,
+};
+
 const DEFAULT_DESC =
   'PromptAI turns your rough idea into a powerful, ready-to-use AI prompt in seconds. Works with ChatGPT, Gemini and Claude. Emails, resumes, images, code and more.';
 
@@ -15,6 +33,8 @@ export default function Seo({ title, description = DEFAULT_DESC, path = '/', noi
       <link rel="canonical" href={url} />
       <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
       <meta name="theme-color" content="#000000" />
+      <meta name="author" content={AUTHOR_NAME} />
+      <meta name="application-name" content="PromptAI" />
       {process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ? (
         <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION} />
       ) : null}

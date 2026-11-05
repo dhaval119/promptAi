@@ -77,24 +77,57 @@ RULES:
 4. If the image shows nudity, sexual content, or a minor in a sexualized way, output only: "I can't create a prompt for this image."
 5. Write the prompt in English unless the user clearly asked for another language.`;
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_MODELS = [
+  process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.0-flash',
+].filter((m, i, arr) => arr.indexOf(m) === i);
 
-async function callGemini(prompt, key, image) {
-  const url = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function geminiOnce(model, prompt, key, image, withThinkingOff) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   const parts = [{ text: prompt }];
   if (image) parts.push({ inlineData: { mimeType: image.mime, data: image.data } });
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts }] }),
-  });
-  if (!res.ok) return false;
-  const data = await res.json();
-  const text = (data?.candidates?.[0]?.content?.parts || [])
-    .map((p) => p.text || '')
-    .join('')
-    .trim();
-  return text || false;
+  const generationConfig = { maxOutputTokens: 2048, temperature: 0.7 };
+  // Gemini 2.5 Flash "thinks" before answering, which adds many seconds. A prompt rewrite does not need it.
+  if (withThinkingOff && /2\.5-flash/.test(model)) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts }], generationConfig }),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) return { status: res.status };
+    const data = await res.json();
+    const text = (data?.candidates?.[0]?.content?.parts || [])
+      .map((p) => p.text || '')
+      .join('')
+      .trim();
+    return text ? { text } : { status: 204 };
+  } catch {
+    return { status: 0 };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Tries the main model, retries temporary errors (429 / 5xx / timeout) and falls back to lighter models.
+async function callGemini(prompt, key, image, deadline) {
+  for (const model of GEMINI_MODELS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (Date.now() > deadline) return false;
+      let r = await geminiOnce(model, prompt, key, image, true);
+      if (r.status === 400) r = await geminiOnce(model, prompt, key, image, false);
+      if (r.text) return r.text;
+      if (r.status === 400 || r.status === 403 || r.status === 404) break; // this model is unusable -> next model
+      await sleep(350 * (attempt + 1));
+    }
+  }
+  return false;
 }
 
 async function callGroq(prompt, key, model, image) {
@@ -107,23 +140,36 @@ async function callGroq(prompt, key, model, image) {
         { type: 'image_url', image_url: { url: `data:${image.mime};base64,${image.data}` } },
       ]
     : prompt;
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model: useModel,
-      messages: [{ role: 'user', content }],
-      temperature: 0.7,
-      max_tokens: 2048,
-    }),
-  });
-  if (!res.ok) return false;
-  const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content;
-  return text ? text.trim() : false;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+        body: JSON.stringify({
+          model: useModel,
+          messages: [{ role: 'user', content }],
+          temperature: 0.7,
+          max_tokens: 2048,
+        }),
+        signal: ctrl.signal,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const text = data?.choices?.[0]?.message?.content;
+        if (text) return text.trim();
+      } else if (![429, 500, 502, 503].includes(res.status)) {
+        return false;
+      }
+    } catch {
+      // timeout / network -> retry once
+    } finally {
+      clearTimeout(timer);
+    }
+    await sleep(400);
+  }
+  return false;
 }
 
 const QUESTION_TYPES = ['text', 'textarea', 'date', 'date_range', 'select'];
@@ -166,16 +212,25 @@ function parseAsk(raw) {
   }
 }
 
+// Starts the primary model. If it is slow (6s) or fails, the backup model starts too and the first good answer wins.
 async function runModels({ prompt, image, primary, geminiKey, groqKey, groqModel }) {
-  let out = false;
-  if (primary === 'groq' && groqKey) {
-    out = await callGroq(prompt, groqKey, groqModel, image);
-    if (out === false && geminiKey) out = await callGemini(prompt, geminiKey, image);
-  } else {
-    if (geminiKey) out = await callGemini(prompt, geminiKey, image);
-    if (out === false && groqKey) out = await callGroq(prompt, groqKey, groqModel, image);
-  }
-  return out;
+  const deadline = Date.now() + 24000;
+  const g = geminiKey ? () => callGemini(prompt, geminiKey, image, deadline) : null;
+  const q = groqKey ? () => callGroq(prompt, groqKey, groqModel, image) : null;
+  const [first, second] = primary === 'groq' ? [q, g] : [g, q];
+  const a = first || second;
+  const b = first ? second : null;
+  if (!a) return false;
+  if (!b) return await a();
+
+  const pa = a().catch(() => false);
+  const hedge = new Promise((r) => setTimeout(r, 6000, 'hedge'));
+  const early = await Promise.race([pa, hedge]);
+  if (early && early !== 'hedge') return early;
+
+  const pb = b().catch(() => false);
+  if (early === false) return await pb;
+  return await Promise.race([pa.then((v) => v || pb), pb.then((v) => v || pa)]);
 }
 
 // --- Basic in-memory rate limiting -----------------------------------
@@ -279,7 +334,7 @@ export default async function handler(req, res) {
   const failed = () =>
     res.status(200).json({
       error: 'generation_failed',
-      text: 'Error generating prompt. Please check your API keys in .env.local and try again.',
+      text: 'Oops! Our AI just tripped over a cable and face-planted. 🙈 Refresh the page and try again, it usually behaves after that.',
     });
 
   try {

@@ -101,7 +101,14 @@ async function geminiOnce(model, prompt, key, image, withThinkingOff) {
       body: JSON.stringify({ contents: [{ parts }], generationConfig }),
       signal: ctrl.signal,
     });
-    if (!res.ok) return { status: res.status };
+    if (!res.ok) {
+      let msg = '';
+      try {
+        msg = String((await res.json())?.error?.message || '').slice(0, 160);
+      } catch {}
+      console.error(`[chat] gemini ${model} failed: HTTP ${res.status} ${msg}`);
+      return { status: res.status };
+    }
     const data = await res.json();
     const text = (data?.candidates?.[0]?.content?.parts || [])
       .map((p) => p.text || '')
@@ -159,8 +166,13 @@ async function callGroq(prompt, key, model, image) {
         const data = await res.json();
         const text = data?.choices?.[0]?.message?.content;
         if (text) return text.trim();
-      } else if (![429, 500, 502, 503].includes(res.status)) {
-        return false;
+      } else {
+        let msg = '';
+        try {
+          msg = String((await res.json())?.error?.message || '').slice(0, 160);
+        } catch {}
+        console.error(`[chat] groq ${useModel} failed: HTTP ${res.status} ${msg}`);
+        if (![429, 500, 502, 503].includes(res.status)) return false;
       }
     } catch {
       // timeout / network -> retry once
@@ -329,6 +341,9 @@ export default async function handler(req, res) {
   const groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
   const primary = (process.env.PRIMARY_API || 'gemini').toLowerCase();
   const cfg = { primary, geminiKey, groqKey, groqModel };
+  if (!geminiKey && !groqKey) {
+    console.error('[chat] No GEMINI_API_KEY or GROQ_API_KEY is set in the environment.');
+  }
 
   const title = userText.length > 45 ? userText.slice(0, 45) + '...' : userText;
   const failed = () =>

@@ -20,12 +20,12 @@ const DETAILS_MARK = 'Details provided by user:';
 
 // Keeps small image thumbnails in saved chats (so they survive a refresh) while staying far below Firestore's 1 MB doc limit.
 function persistable(msgs) {
-  let budget = 450000;
+  let budget = 700000;
   const out = [...msgs];
   for (let i = out.length - 1; i >= 0; i--) {
     const im = out[i] && out[i].image;
     if (!im) continue;
-    if (im.length < 70000 && im.length <= budget) {
+    if (im.length < 150000 && im.length <= budget) {
       budget -= im.length;
     } else {
       const { image, ...rest } = out[i];
@@ -1712,7 +1712,7 @@ export default function Chat() {
 
         const ts = Math.min(
           1,
-          480 /
+          420 /
             Math.max(img.width, img.height)
         );
         const tc =
@@ -1739,7 +1739,7 @@ export default function Chat() {
           dataUrl,
           thumb: tc.toDataURL(
             'image/jpeg',
-            0.7
+            0.65
           ),
           mime: 'image/jpeg',
           data: dataUrl.split(',')[1],
